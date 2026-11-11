@@ -40,8 +40,8 @@ uv run --no-sync pytest tests/integration/test_postgres_migrations.py
 Remove-Item Env:RUN_POSTGRES_TESTS
 ```
 
-O teste verifica a versão do PostgreSQL, aplica `head`, confere o schema e a
-revisão gravada e reverte para `base`. Ao final, a tabela de controle pode
+O teste verifica a versão do PostgreSQL, aplica `head`, confere o schema, a tabela Outbox e a
+revisão gravada e reverte até `base` passando pela revisão `0001`. Ao final, a tabela de controle pode
 continuar presente com zero revisões aplicadas.
 
 Para aplicar e inspecionar manualmente:
