@@ -60,3 +60,8 @@ Veja o [guia de configuração local](docs/runbooks/isolamento-e-segredos.md).
 ## Telemetria local
 
 Veja o [guia de telemetria no VS Code](docs/runbooks/telemetria-local.md).
+
+## Histórico de mercado
+
+Veja o [guia de coleta do BTCUSDT](docs/runbooks/historico-btcusdt.md)
+para baixar e validar um dia de candles públicos no VS Code.
