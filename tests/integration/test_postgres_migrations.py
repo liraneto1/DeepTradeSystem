@@ -54,7 +54,11 @@ from trade_system.control.paper import ControlPolicy, Side, TradingIntent
 from trade_system.market_data.binance_archive import collect_day
 from trade_system.market_data.binance_stream import Observation
 from trade_system.risk.execution_costs import ExecutionCosts
-from trade_system.risk.futures import FundingObservation, FuturesBalance
+from trade_system.risk.futures import (
+    FundingObservation,
+    FuturesBalance,
+    LiquidationMark,
+)
 from trade_system.risk.paper import PaperBalance, RiskLimits, SyntheticQuote
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -103,9 +107,14 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0013"
+            == "0014"
         )
 
+    command.downgrade(config, "0013")
+    with engine.connect() as connection:
+        assert not inspect(connection).has_table(
+            "paper_futures_liquidation", schema="trade_system"
+        )
     command.downgrade(config, "0012")
     with engine.connect() as connection:
         assert not inspect(connection).has_table(
@@ -1741,4 +1750,113 @@ def test_funding_collector_resumes_after_partial_run(outbox_database: Engine) ->
         assert report.stored.cash == Decimal("899.96")
     finally:
         with outbox_database.begin() as connection:
+            connection.execute(text("DELETE FROM trade_system.paper_futures_funding"))
+
+
+@pytest.mark.parametrize(
+    ("price", "equity", "maintenance", "released"),
+    [("16000", "40", "40", "40"), ("21000", "-10", "52.5", "0")],
+)
+def test_futures_liquidation_margin_cutoff_and_reconciliation(
+    outbox_database: Engine, price: str, equity: str, maintenance: str, released: str
+) -> None:
+    baseline = paper_ledger(outbox_database)
+    ledger = PaperFuturesLedger(outbox_database, baseline.control, baseline.limits)
+    ledger.open_account(Decimal(1000))
+    opened_at = datetime(2025, 11, 10, 16, 0, tzinfo=UTC)
+    funding_at = opened_at + timedelta(seconds=1)
+    marked_at = opened_at + timedelta(seconds=2)
+    available_at = marked_at + timedelta(seconds=1)
+    intent = TradingIntent(
+        "liquidation-open",
+        "liquidation-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "SELL",
+        Decimal("0.01"),
+        opened_at,
+        opened_at + timedelta(minutes=1),
+    )
+    quote = SyntheticQuote("fixture:entry", "BTCUSDT", Decimal(10000), opened_at)
+    ledger.submit(intent, quote, opened_at, reduce_only=False)
+    funding = FundingObservation(
+        funding_at, funding_at, Decimal(10000), Decimal("0.0001"), "fixture:funding"
+    )
+    mark = LiquidationMark(marked_at, available_at, Decimal(price), "fixture:mark")
+    rate = Decimal("0.25")
+    try:
+        ledger.apply_funding(funding, as_of=funding_at)
+        with pytest.raises(ValueError, match="liquidation: out_of_order"):
+            ledger.liquidate_if_needed(
+                replace(mark, observed_at=opened_at, available_at=marked_at),
+                maintenance_rate=rate,
+                as_of=marked_at,
+            )
+        for cutoff in (marked_at, available_at + timedelta(seconds=2)):
+            with pytest.raises(ValueError, match="liquidation: invalid_cutoff"):
+                ledger.liquidate_if_needed(mark, maintenance_rate=rate, as_of=cutoff)
+        assert (
+            ledger.liquidate_if_needed(
+                replace(mark, price=Decimal("15999")),
+                maintenance_rate=rate,
+                as_of=available_at,
+            )
+            is None
+        )
+        assert ledger.reconcile().liquidations == 0
+
+        settlement = ledger.liquidate_if_needed(
+            mark, maintenance_rate=rate, as_of=available_at
+        )
+        assert settlement is not None
+        assert settlement.isolated_equity == Decimal(equity)
+        assert settlement.maintenance_margin == Decimal(maintenance)
+        assert settlement.released_margin == Decimal(released)
+        assert settlement.after == FuturesBalance(
+            Decimal("900.01") + Decimal(released),
+            realized_pnl=Decimal(released) - Decimal(100),
+        )
+        restarted = PaperFuturesLedger(outbox_database, ledger.control, ledger.limits)
+        assert (
+            restarted.liquidate_if_needed(
+                mark, maintenance_rate=rate, as_of=available_at
+            )
+            == settlement
+        )
+        with pytest.raises(ValueError, match="liquidation: conflicting_observation"):
+            restarted.liquidate_if_needed(
+                mark, maintenance_rate=Decimal("0.20"), as_of=available_at
+            )
+        with pytest.raises(ValueError, match="funding: out_of_order"):
+            restarted.apply_funding(
+                replace(funding, funding_at=marked_at, available_at=available_at),
+                as_of=available_at,
+            )
+        with pytest.raises(ValueError, match="liquidation: fill_precedes_settlement"):
+            restarted.submit(
+                replace(intent, intent_id="backdated-fill"),
+                quote,
+                marked_at,
+                reduce_only=False,
+            )
+        report = restarted.reconcile()
+        assert report.consistent and report.liquidations == 1
+        assert report.funding_entries == 1 and report.fills == 1
+        assert report.stored == settlement.after
+
+        with outbox_database.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE trade_system.paper_futures_liquidation "
+                    "SET maintenance_margin = 0"
+                )
+            )
+        assert restarted.reconcile().first_divergent_liquidation_at == marked_at
+    finally:
+        with outbox_database.begin() as connection:
+            connection.execute(
+                text("DELETE FROM trade_system.paper_futures_liquidation")
+            )
             connection.execute(text("DELETE FROM trade_system.paper_futures_funding"))

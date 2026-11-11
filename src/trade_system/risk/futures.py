@@ -117,6 +117,58 @@ def settle_funding(
     return FundingSettlement(delta, replace(balance, cash=cash))
 
 
+@dataclass(frozen=True)
+class LiquidationMark:
+    observed_at: datetime
+    available_at: datetime
+    price: Decimal
+    reference: str
+
+    def validate(self, as_of: datetime, max_age: timedelta) -> None:
+        if (
+            any(
+                t.utcoffset() is None
+                for t in (self.observed_at, self.available_at, as_of)
+            )
+            or not self.observed_at <= self.available_at <= as_of
+            or not timedelta(0) < max_age
+            or as_of - self.observed_at > max_age
+        ):
+            raise ValueError("liquidation: invalid_cutoff")
+        if not self.price.is_finite() or self.price <= 0 or not self.reference.strip():
+            raise ValueError("liquidation: invalid_mark")
+
+
+@dataclass(frozen=True)
+class LiquidationSettlement:
+    isolated_equity: Decimal
+    maintenance_margin: Decimal
+    released_margin: Decimal
+    after: FuturesBalance
+
+
+def settle_liquidation(
+    balance: FuturesBalance, mark: LiquidationMark, maintenance_rate: Decimal
+) -> LiquidationSettlement | None:
+    if not maintenance_rate.is_finite() or not 0 < maintenance_rate < 1:
+        raise ValueError("liquidation: invalid_maintenance_rate")
+    if not balance.quantity:
+        return None
+    with localcontext() as context:
+        context.prec = 50
+        context.traps[Inexact] = True
+        equity = balance.margin + balance.quantity * (mark.price - balance.entry_price)
+        required = balance.quantity.copy_abs() * mark.price * maintenance_rate
+        if equity > required:
+            return None
+        released = max(ZERO, equity)
+        after = FuturesBalance(
+            balance.cash + released,
+            realized_pnl=balance.realized_pnl + (released - balance.margin),
+        )
+        return LiquidationSettlement(equity, required, released, after)
+
+
 def assess_futures(
     intent: TradingIntent,
     quote: SyntheticQuote,

@@ -42,7 +42,7 @@ Remove-Item Env:RUN_POSTGRES_TESTS
 A simulação atual exige fechamento integral e colateral suficiente.
 Se a perda exceder a margem reservada, o modelo bloqueia o fill para
 revisão.
-Liquidação e alavancagem superior a 1× seguem fora deste recorte.
+A simulação usa alavancagem de 1×.
 A reversão de `0012` remove a evidência Market State dos fills.
 A reversão de `0011` remove as tabelas do livro Futures. LIVE permanece indisponível
 e G0 segue aberto.
@@ -119,3 +119,49 @@ Durante a recuperação, processe o funding antes de retomar os fills.
 Se houver fill já registrado no instante do funding ou posterior,
 o coletor encerra com erro de ordenação e a conta requer revisão.
 A coleta usa somente o endpoint público de histórico.
+
+
+## Liquidação simulada
+
+A revisão `0014` registra o fechamento integral por liquidação no
+livro Futures PAPER. O chamador fornece o preço de marcação de
+BTCUSDT, o horário da observação, a disponibilidade e a referência.
+A idade máxima é `RiskLimits.max_quote_age`. A taxa de manutenção é
+um parâmetro decimal da simulação, escolhido explicitamente.
+
+```python
+from datetime import UTC, datetime
+from decimal import Decimal
+
+from trade_system.risk.futures import LiquidationMark
+
+mark = LiquidationMark(
+    observed_at=datetime(2025, 11, 10, 16, 0, 2, tzinfo=UTC),
+    available_at=datetime(2025, 11, 10, 16, 0, 3, tzinfo=UTC),
+    price=Decimal("16000"),
+    reference="fixture:btcusdt-mark",
+)
+settlement = ledger.liquidate_if_needed(
+    mark, maintenance_rate=Decimal("0.25"), as_of=mark.available_at
+)
+report = ledger.reconcile()
+```
+
+A margem disponível para a posição é a margem isolada reservada mais
+o P&L não realizado ao preço de marcação. O mínimo exigido é
+`|quantidade| × preço de marcação × taxa de manutenção`. A posição
+é liquidada quando a margem disponível atinge ou cai abaixo do
+mínimo. O saldo recebe o residual positivo da margem, e a perda
+realizada fica limitada à margem reservada. A taxa do exemplo é
+um parâmetro de teste. A simulação cobre fechamento integral,
+com taxa fixa de manutenção e sem tarifa de liquidação. Com margem
+inicial de 1× e preço positivo, uma posição comprada fica acima da
+manutenção nesse modelo. A Binance descreve seu protocolo de marcação
+e margem, que inclui regras próprias de liquidação.
+[Protocolo de liquidação da Binance Futures](https://www.binance.com/en/support/faq/detail/360033525271)
+
+A avaliação rejeita marcação futura, indisponível, vencida ou
+anterior a um lançamento relevante da conta. Um replay dentro do
+corte válido devolve a liquidação persistida. Funding, fills e
+liquidações são reconciliados na ordem do livro. A reversão de
+`0014` exige uma tabela de liquidações vazia.

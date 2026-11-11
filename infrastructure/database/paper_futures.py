@@ -18,9 +18,12 @@ from trade_system.risk.futures import (
     FundingSettlement,
     FuturesBalance,
     FuturesFill,
+    LiquidationMark,
+    LiquidationSettlement,
     apply_fill,
     assess_futures,
     settle_funding,
+    settle_liquidation,
 )
 from trade_system.risk.paper import RiskLimits, SyntheticQuote
 
@@ -135,6 +138,9 @@ def apply_funding(
                 SELECT 1 FROM trade_system.paper_futures_fill
                 WHERE account_id = :account AND filled_at >= :funding_at
                 UNION ALL
+                SELECT 1 FROM trade_system.paper_futures_liquidation
+                WHERE account_id = :account AND applied_at >= :funding_at
+                UNION ALL
                 SELECT 1 FROM trade_system.paper_futures_funding
                 WHERE account_id = :account
                   AND (funding_at > :funding_at OR applied_at > :as_of)
@@ -172,6 +178,21 @@ def apply_funding(
         return settlement
 
 
+def liquidation_mark(row: RowMapping) -> LiquidationMark:
+    return LiquidationMark(
+        row["observed_at"], row["available_at"], row["mark_price"], row["reference"]
+    )
+
+
+def decode_liquidation(row: RowMapping) -> LiquidationSettlement:
+    return LiquidationSettlement(
+        row["isolated_equity"],
+        row["maintenance_margin"],
+        row["released_margin"],
+        decode_balance(row["balance_after"]),
+    )
+
+
 @dataclass(frozen=True)
 class FuturesReconciliation:
     fills: int
@@ -180,12 +201,15 @@ class FuturesReconciliation:
     first_divergent_fill: str | None
     funding_entries: int = 0
     first_divergent_funding_at: datetime | None = None
+    liquidations: int = 0
+    first_divergent_liquidation_at: datetime | None = None
 
     @property
     def consistent(self) -> bool:
         return (
             self.first_divergent_fill is None
             and self.first_divergent_funding_at is None
+            and self.first_divergent_liquidation_at is None
             and self.expected == self.stored
         )
 
@@ -290,6 +314,16 @@ class PaperFuturesLedger:
             if latest_funding is not None and now < latest_funding:
                 raise ValueError("funding: fill_precedes_settlement")
 
+            latest_liquidation: datetime | None = connection.execute(
+                text("""
+                SELECT max(applied_at) FROM trade_system.paper_futures_liquidation
+                WHERE account_id = :account
+                """),
+                keys,
+            ).scalar_one()
+            if latest_liquidation is not None and now < latest_liquidation:
+                raise ValueError("liquidation: fill_precedes_settlement")
+
             quote, market_state = quote_provider()
             if (pricing_close_at is None) != (market_state is None) or (
                 market_state is not None
@@ -346,6 +380,92 @@ class PaperFuturesLedger:
             self.engine, self.control.account_id, observation, as_of=as_of
         )
 
+    def liquidate_if_needed(
+        self, mark: LiquidationMark, *, maintenance_rate: Decimal, as_of: datetime
+    ) -> LiquidationSettlement | None:
+        require_paper()
+        account_id = self.control.account_id
+        max_age = self.limits.max_quote_age
+        mark.validate(as_of, max_age)
+        keys = {"account": account_id, "observed_at": mark.observed_at}
+        with self.engine.begin() as connection:
+            account = locked_account(connection, account_id)
+            previous = (
+                connection.execute(
+                    text("""
+                SELECT * FROM trade_system.paper_futures_liquidation
+                WHERE account_id = :account AND observed_at = :observed_at
+                """),
+                    keys,
+                )
+                .mappings()
+                .one_or_none()
+            )
+            if previous is not None:
+                if (
+                    mark != liquidation_mark(previous)
+                    or not maintenance_rate.is_finite()
+                    or maintenance_rate != previous["maintenance_rate"]
+                    or max_age != previous["max_age"]
+                ):
+                    raise ValueError("liquidation: conflicting_observation")
+                if as_of < previous["applied_at"]:
+                    raise ValueError("liquidation: invalid_cutoff")
+                return decode_liquidation(previous)
+
+            out_of_order: bool = connection.execute(
+                text("""
+                SELECT EXISTS (
+                    SELECT 1 FROM trade_system.paper_futures_fill
+                    WHERE account_id = :account AND filled_at > :observed_at
+                    UNION ALL
+                    SELECT 1 FROM trade_system.paper_futures_funding
+                    WHERE account_id = :account AND applied_at > :observed_at
+                    UNION ALL
+                    SELECT 1 FROM trade_system.paper_futures_liquidation
+                    WHERE account_id = :account AND applied_at > :observed_at
+                )
+                """),
+                keys,
+            ).scalar_one()
+            if out_of_order:
+                raise ValueError("liquidation: out_of_order")
+            try:
+                settlement = settle_liquidation(
+                    decode_balance(account["balance"]), mark, maintenance_rate
+                )
+            except DecimalException as error:
+                raise ValueError("liquidation: arithmetic_out_of_range") from error
+            if settlement is None:
+                return None
+
+            connection.execute(
+                text("""
+                INSERT INTO trade_system.paper_futures_liquidation
+                (account_id, observed_at, available_at, applied_at, mark_price,
+                 reference, maintenance_rate, max_age, isolated_equity,
+                 maintenance_margin, released_margin, balance_after)
+                VALUES (:account, :observed_at, :available_at, :applied_at, :mark_price,
+                        :reference, :maintenance_rate, :max_age, :isolated_equity,
+                        :maintenance_margin, :released_margin, :balance_after)
+                """).bindparams(bindparam("balance_after", type_=JSONB)),
+                {
+                    **keys,
+                    "available_at": mark.available_at,
+                    "applied_at": as_of,
+                    "mark_price": mark.price,
+                    "reference": mark.reference,
+                    "maintenance_rate": maintenance_rate,
+                    "max_age": max_age,
+                    "isolated_equity": settlement.isolated_equity,
+                    "maintenance_margin": settlement.maintenance_margin,
+                    "released_margin": settlement.released_margin,
+                    "balance_after": balance_json(settlement.after),
+                },
+            )
+            update_balance(connection, account_id, settlement.after)
+            return settlement
+
     def reconcile(self) -> FuturesReconciliation:
         require_paper()
         account_id = self.control.account_id
@@ -378,14 +498,55 @@ class PaperFuturesLedger:
                 .mappings()
                 .all()
             )
+            liquidations = (
+                connection.execute(
+                    text("""
+                SELECT * FROM trade_system.paper_futures_liquidation
+                WHERE account_id = :account
+                """),
+                    {"account": account_id},
+                )
+                .mappings()
+                .all()
+            )
+            divergent_liquidation: datetime | None = None
             divergent: str | None = None
             divergent_funding: datetime | None = None
             latest_fill: datetime | None = None
             latest_funding_at: datetime | None = None
             latest_applied_at: datetime | None = None
             for row in sorted(
-                [*rows, *funding], key=lambda entry: entry["sequence_id"]
+                [*rows, *funding, *liquidations], key=lambda entry: entry["sequence_id"]
             ):
+                if "observed_at" in row:
+                    mark = liquidation_mark(row)
+                    try:
+                        mark.validate(row["applied_at"], row["max_age"])
+                        if (
+                            latest_fill is not None and mark.observed_at < latest_fill
+                        ) or (
+                            latest_applied_at is not None
+                            and mark.observed_at < latest_applied_at
+                        ):
+                            raise ValueError("liquidation: out_of_order")
+                        liquidation = settle_liquidation(
+                            expected, mark, row["maintenance_rate"]
+                        )
+                        if liquidation is None:
+                            raise ValueError("liquidation: threshold_not_met")
+                    except (ValueError, DecimalException):
+                        divergent_liquidation = (
+                            divergent_liquidation or mark.observed_at
+                        )
+                        break
+                    expected = liquidation.after
+                    latest_applied_at = row["applied_at"]
+                    latest_fill = latest_applied_at
+                    if liquidation != decode_liquidation(row):
+                        divergent_liquidation = (
+                            divergent_liquidation or mark.observed_at
+                        )
+                    continue
                 if "funding_at" in row:
                     observation = funding_observation(row)
                     applied_at = row["applied_at"]
@@ -452,5 +613,12 @@ class PaperFuturesLedger:
                 if divergent is None and recomputed != decode_fill(row["fill"]):
                     divergent = row["intent_id"]
             return FuturesReconciliation(
-                len(rows), expected, stored, divergent, len(funding), divergent_funding
+                len(rows),
+                expected,
+                stored,
+                divergent,
+                len(funding),
+                divergent_funding,
+                len(liquidations),
+                divergent_liquidation,
             )
