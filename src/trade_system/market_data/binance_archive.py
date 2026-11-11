@@ -27,6 +27,20 @@ def download(url: str) -> bytes:
     return data
 
 
+def normalize_archive(
+    archive: bytes, day: date, interval: str, *, market: str
+) -> tuple[bytes, int, str]:
+    """Validate the expected CSV member and normalize its candles."""
+    member = f"{SYMBOL}-{interval}-{day.isoformat()}.csv"
+    with ZipFile(BytesIO(archive)) as zipped:
+        if (
+            zipped.namelist() != [member]
+            or zipped.getinfo(member).file_size > MAX_BYTES
+        ):
+            raise ValueError("Unexpected Binance archive contents.")
+        return normalize_day(zipped.read(member), day, interval, market=market)
+
+
 def collect_day(
     *,
     market: str,
@@ -61,16 +75,9 @@ def collect_day(
     if archive_hash != checksum[0].lower():
         raise ValueError("Binance archive SHA-256 mismatch.")
 
-    member = f"{stem}.csv"
-    with ZipFile(BytesIO(archive)) as zipped:
-        if (
-            zipped.namelist() != [member]
-            or zipped.getinfo(member).file_size > MAX_BYTES
-        ):
-            raise ValueError("Unexpected Binance archive contents.")
-        normalized, rows, timestamp_unit = normalize_day(
-            zipped.read(member), day, interval, market=market
-        )
+    normalized, rows, timestamp_unit = normalize_archive(
+        archive, day, interval, market=market
+    )
 
     run_id = uuid4().hex
     target = output / market / SYMBOL / interval / day.isoformat() / run_id

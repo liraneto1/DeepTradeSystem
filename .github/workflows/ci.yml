@@ -35,4 +35,4 @@ jobs:
           compose=(docker compose -p deeptrade-ci -f deploy/compose/postgres.yml)
           trap '"${compose[@]}" down --volumes' EXIT
           "${compose[@]}" up -d --wait --wait-timeout 60
-          uv run --no-sync pytest tests/integration/test_postgres_migrations.py
+          uv run --no-sync pytest tests/integration

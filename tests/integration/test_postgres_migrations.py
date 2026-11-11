@@ -5,7 +5,12 @@ import socket
 import subprocess
 import sys
 from collections.abc import Iterator, Mapping
+from datetime import UTC, date, datetime
+from decimal import Decimal
+from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 from alembic import command
@@ -27,6 +32,7 @@ from sqlalchemy.exc import IntegrityError
 
 from apps.api.main import app
 from infrastructure.database.config import local_database_url
+from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
 from infrastructure.events.consumer import PROCESSED_EVENT, consume_once
 from infrastructure.events.diagnostic_projection import (
     DIAGNOSTIC_COUNT,
@@ -35,6 +41,7 @@ from infrastructure.events.diagnostic_projection import (
 from infrastructure.events.dispatcher import MAX_ATTEMPTS, dispatch_once
 from infrastructure.events.local_delivery import DELIVERY, LocalPublisher
 from infrastructure.events.outbox import OUTBOX, append_event
+from trade_system.market_data.binance_archive import collect_day
 
 ROOT = Path(__file__).resolve().parents[2]
 pytestmark = pytest.mark.skipif(
@@ -82,8 +89,14 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0005"
+            == "0006"
         )
+
+    command.downgrade(config, "0005")
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        assert not inspector.has_table("market_candle", schema="trade_system")
+        assert not inspector.has_table("market_history_source", schema="trade_system")
 
     command.downgrade(config, "0004")
     with engine.connect() as connection:
@@ -650,4 +663,107 @@ def test_workers_restart_after_database_connection_failure(
         assert (
             connection.execute(select(PROCESSED_EVENT.c.event_id)).scalar_one()
             == event["event_id"]
+        )
+
+
+def history_snapshot(
+    output: Path, day: date, market: str, *, opening: str = "2.00000001"
+) -> Path:
+    scale = 1_000_000 if market == "spot" else 1000
+    start = int(datetime(day.year, day.month, day.day, tzinfo=UTC).timestamp()) * scale
+    step = 3600 * scale
+    stem = f"BTCUSDT-1h-{day.isoformat()}"
+    csv = "\n".join(
+        f"{tick},{opening},3,1,2.5,5,{tick + step - 1},10,3,4,8,0"
+        for tick in range(start, start + step * 24, step)
+    )
+    zipped = BytesIO()
+    with ZipFile(zipped, "w") as archive:
+        archive.writestr(stem + ".csv", csv)
+    raw = zipped.getvalue()
+
+    def fetch(url: str) -> bytes:
+        if url.endswith(".CHECKSUM"):
+            return f"{sha256(raw).hexdigest()}  {stem}.zip\n".encode()
+        return raw
+
+    return collect_day(
+        market=market, day=day, interval="1h", output=output, fetch=fetch
+    )
+
+
+def test_market_history_persists_lineage_and_reimports_idempotently(
+    outbox_database: Engine, tmp_path: Path
+) -> None:
+    days = (date(2025, 11, 9), date(2025, 11, 10))
+    for market in ("spot", "futures-um"):
+        snapshots = [history_snapshot(tmp_path, day, market) for day in days]
+        assert persist_history(outbox_database, snapshots) == (48, 0)
+        assert persist_history(outbox_database, snapshots) == (0, 2)
+
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(select(func.count()).select_from(CANDLE)).scalar_one()
+            == 96
+        )
+        assert (
+            connection.execute(select(func.count()).select_from(SOURCE)).scalar_one()
+            == 4
+        )
+        sample = connection.execute(
+            select(CANDLE.c.open, SOURCE.c.manifest, SOURCE.c.archive_sha256)
+            .join_from(
+                CANDLE,
+                SOURCE,
+                (CANDLE.c.market == SOURCE.c.market)
+                & (CANDLE.c.symbol == SOURCE.c.symbol)
+                & (CANDLE.c.interval == SOURCE.c.interval)
+                & (CANDLE.c.day_utc == SOURCE.c.day_utc),
+            )
+            .where(CANDLE.c.market == "spot")
+            .order_by(CANDLE.c.open_time_utc)
+            .limit(1)
+        ).one()
+        assert sample.open == Decimal("2.00000001")
+        assert sample.manifest["date_utc"] == "2025-11-09"
+        assert sample.archive_sha256 == sample.manifest["sha256"]["source.zip"]
+
+
+def test_market_history_rejects_gaps_and_changed_files(
+    outbox_database: Engine, tmp_path: Path
+) -> None:
+    early = history_snapshot(tmp_path, date(2025, 11, 8), "spot")
+    later = history_snapshot(tmp_path, date(2025, 11, 10), "spot")
+    with pytest.raises(ValueError, match="contiguous UTC days"):
+        persist_history(outbox_database, [early, later])
+    later.with_name("candles.csv").write_bytes(b"corrupted")
+    with pytest.raises(ValueError, match="SHA-256 mismatch"):
+        persist_history(outbox_database, [later])
+
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(select(func.count()).select_from(SOURCE)).scalar_one()
+            == 0
+        )
+        assert (
+            connection.execute(select(func.count()).select_from(CANDLE)).scalar_one()
+            == 0
+        )
+
+
+def test_market_history_rolls_back_window_on_source_revision(
+    outbox_database: Engine, tmp_path: Path
+) -> None:
+    day = date(2025, 11, 10)
+    original = history_snapshot(tmp_path, day, "spot")
+    earlier = history_snapshot(tmp_path, date(2025, 11, 9), "spot")
+    changed = history_snapshot(tmp_path, day, "spot", opening="2.20")
+    assert persist_history(outbox_database, [original]) == (24, 0)
+    with pytest.raises(ValueError, match="Source changed"):
+        persist_history(outbox_database, [earlier, changed])
+    with outbox_database.connect() as connection:
+        assert connection.execute(select(SOURCE.c.day_utc)).scalar_one() == day
+        assert (
+            connection.execute(select(func.count()).select_from(CANDLE)).scalar_one()
+            == 24
         )

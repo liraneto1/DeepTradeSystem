@@ -32,6 +32,40 @@ a coleta antes da publicação do snapshot. `received_at` e
 `available_at` identificam a ingestão do arquivo e não representam
 quando um agente histórico teria recebido cada candle.
 
-O comando usa HTTPS público e a política local aceita TRAINING e PAPER.
-LIVE permanece indisponível. Persistência operacional, ingestão contínua
-e recuperação automática de lacunas seguem como etapas de I01.
+## Coletar uma janela e persistir no PostgreSQL
+
+Inicie o [PostgreSQL local](postgresql-local.md), defina a senha do banco
+na sessão e aplique as migrations. A janela usa dias UTC completos e
+inclui as duas datas. Cada comando carrega um mercado.
+
+```powershell
+$env:TRADE_SYSTEM_ENVIRONMENT = "TRAINING"
+$env:LIVE_ENABLED = "false"
+uv run --no-sync alembic upgrade head
+uv run --no-sync python -m apps.market_data --market spot --start 2025-11-04 --end 2025-11-10 --persist
+uv run --no-sync python -m apps.market_data --market futures-um --start 2025-11-04 --end 2025-11-10 --persist
+```
+
+A revisão `0006` cria `trade_system.market_candle` e
+`trade_system.market_history_source`. Uma chave estrangeira liga cada
+candle ao manifesto diário. Preços e volumes usam `NUMERIC`, e os
+horários usam `TIMESTAMPTZ`. O comando verifica os arquivos locais antes
+de iniciar a transação. Uma carga idêntica preserva o manifesto original
+e não cria candles duplicados. Se o arquivo de uma data já carregada
+mudar, a transação inteira é revertida para revisão da origem.
+
+Para inspecionar a janela:
+
+```sql
+SELECT market, count(*) AS candles, count(DISTINCT day_utc) AS dias
+FROM trade_system.market_candle
+WHERE symbol = 'BTCUSDT' AND interval = '5m'
+  AND day_utc BETWEEN DATE '2025-11-04' AND DATE '2025-11-10'
+GROUP BY market
+ORDER BY market;
+```
+
+O [registro de evidências](../evidence/I01-persistencia-btcusdt.md) descreve
+a carga de validação e o dump local. O comando usa HTTPS público e a
+política local aceita TRAINING e PAPER. LIVE permanece indisponível.
+Ingestão contínua e recuperação automática de lacunas seguem em I01.
