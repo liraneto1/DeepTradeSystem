@@ -21,7 +21,7 @@ from trade_system.market_state.snapshot import (
 WINDOW_QUERY = text("""
 WITH candidates AS (
     SELECT c.open_time_utc, c.close_time_exclusive_utc, c.high, c.low,
-           c.close, c.volume,
+           c.close, c.volume, c.taker_buy_volume,
            CASE WHEN s.archive_sha256 IS NOT NULL
                 THEN CAST(s.manifest ->> 'available_at' AS timestamptz)
            END AS archive_at,
@@ -94,14 +94,21 @@ def read_window(
                 row["volume"],
                 row["available_at"].astimezone(UTC),
                 source,
+                row["taker_buy_volume"],
             )
         )
     return candles
 
 
 def read_state(
-    market: str, close_at: datetime, as_of: datetime, *, multi_interval: bool = False
+    market: str,
+    close_at: datetime,
+    as_of: datetime,
+    *,
+    multi_interval: bool = False,
+    extended: bool = False,
 ) -> dict[str, object]:
+    multi_interval = multi_interval or extended
     cutoffs = closing_times(close_at, as_of) if multi_interval else {"5m": close_at}
     engine = create_engine(
         local_database_url(),
@@ -118,7 +125,9 @@ def read_state(
     finally:
         engine.dispose()
     if multi_interval:
-        return build_multi_state(windows, market=market, close_at=close_at, as_of=as_of)
+        return build_multi_state(
+            windows, market=market, close_at=close_at, as_of=as_of, extended=extended
+        )
     return build_state(windows["5m"], market=market, close_at=close_at, as_of=as_of)
 
 
@@ -128,6 +137,7 @@ def main() -> None:
     parser.add_argument("--close-at", required=True, type=utc_time)
     parser.add_argument("--as-of", type=utc_time)
     parser.add_argument("--multi-interval", action="store_true")
+    parser.add_argument("--extended", action="store_true")
     args = parser.parse_args()
     try:
         print(
@@ -137,6 +147,7 @@ def main() -> None:
                     args.close_at,
                     args.as_of or datetime.now(UTC),
                     multi_interval=args.multi_interval,
+                    extended=args.extended,
                 ),
                 indent=2,
             )

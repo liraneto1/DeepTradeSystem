@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from trade_system.features.candles import STEP, WINDOW, Candle
+from trade_system.features.candles import STEP, WINDOW, Candle, calculate
 from trade_system.market_state.snapshot import (
     build_multi_state,
     build_state,
@@ -96,3 +96,30 @@ def test_multi_interval_uses_only_aligned_and_available_candles() -> None:
         build_multi_state(windows, market="spot", close_at=decision, as_of=decision)
     with pytest.raises(ValueError, match="five-minute UTC"):
         closing_times(decision - timedelta(minutes=1), decision)
+
+
+def test_extended_features_known_values() -> None:
+    candles = window()
+    candles[-1] = replace(
+        candles[-1],
+        high=Decimal(130),
+        low=Decimal(120),
+        close=Decimal(125),
+        taker_buy_volume=Decimal(15),
+    )
+    values = calculate(candles, extended=True)
+    assert values["momentum_return_5"] == "0.25"
+    assert values["rsi_sma_14"] == "100"
+    assert values["range_over_close"] == "0.08"
+    assert values["taker_buy_fraction"] == "0.75"
+    assert "momentum_return_5" not in calculate(candles)
+
+
+def test_extended_features_handle_flat_losses_and_empty_volume() -> None:
+    candles = window()
+    candles[-1] = replace(candles[-1], volume=Decimal(0), taker_buy_volume=Decimal(0))
+    flat = calculate(candles, extended=True)
+    assert flat["rsi_sma_14"] == "50"
+    assert flat["taker_buy_fraction"] is None
+    candles[-1] = replace(candles[-1], close=Decimal(99))
+    assert calculate(candles, extended=True)["rsi_sma_14"] == "0"

@@ -43,3 +43,23 @@ por candle. Se uma janela falhar, o comando bloqueia o estado inteiro.
 
 O formato de 5m `1.0.0` continua disponível pelo comando inicial.
 O recorte é diagnóstico. LIVE permanece indisponível.
+
+## Consultar features adicionais
+
+```powershell
+uv run --no-sync python -m apps.market_data.state --market spot --close-at 2025-11-10T22:35:00Z --extended
+```
+
+`--extended` gera o estado multi-intervalo `2.1.0` com features
+`1.1.0`. Cada período usa seus próprios candles nativos.
+
+| Feature | Cálculo |
+|---|---|
+| `momentum_return_5` | Fechamento atual dividido pelo fechamento de cinco candles atrás, menos 1. |
+| `rsi_sma_14` | 100 vezes a soma dos ganhos dividida pela soma de ganhos e perdas absolutas nas últimas 14 variações. Em uma janela plana, vale 50. |
+| `range_over_close` | Diferença entre máxima e mínima do último candle dividida pelo seu fechamento. |
+| `taker_buy_fraction` | Volume comprador agressor da fonte dividido pelo volume base do último candle. Retorna `null` quando o volume base é zero ou quando falta o numerador. |
+
+As proporções são frações decimais. O RSI vai de 0 a 100. Os cortes
+temporais e a linhagem por candle seguem as mesmas regras do estado
+multi-intervalo `2.0.0`.
