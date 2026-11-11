@@ -6,6 +6,8 @@ import pytest
 
 from trade_system.control.paper import ControlPolicy, TradingIntent
 from trade_system.execution.paper import PaperSimulator
+from trade_system.risk.execution_costs import ExecutionCosts
+from trade_system.risk.futures import FuturesBalance, assess_futures
 from trade_system.risk.paper import PaperBalance, RiskLimits, SyntheticQuote
 
 NOW = datetime(2025, 11, 10, tzinfo=UTC)
@@ -124,3 +126,18 @@ def test_risk_rejections_preserve_balance(
     with pytest.raises(ValueError, match=f"risk: {reason}"):
         simulator.submit(intent, quote, NOW)
     assert simulator.balance == balance
+
+
+def test_futures_short_position_limit_does_not_round_quantity() -> None:
+    quantity = Decimal("0.010000000000000000000000000000001")
+    limits = replace(LIMITS, max_position_quantity=Decimal("0.01"))
+    with pytest.raises(ValueError, match="risk: position_limit"):
+        assess_futures(
+            replace(INTENT, side="SELL", quantity=quantity),
+            replace(QUOTE, price=Decimal(1)),
+            FuturesBalance(Decimal(1000)),
+            limits,
+            ExecutionCosts(),
+            NOW,
+            reduce_only=False,
+        )

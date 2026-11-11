@@ -1,0 +1,233 @@
+"""Persist and reconcile synthetic USDⓈ-M PAPER fills."""
+
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from decimal import Decimal, DecimalException
+from typing import cast
+
+from sqlalchemy import bindparam, text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.engine import Connection, Engine, RowMapping
+
+from infrastructure.database.paper_ledger import require_paper
+from trade_system.control.paper import ControlPolicy, Side, TradingIntent, authorize
+from trade_system.risk.execution_costs import ExecutionCosts
+from trade_system.risk.futures import (
+    FuturesBalance,
+    FuturesFill,
+    apply_fill,
+    assess_futures,
+)
+from trade_system.risk.paper import RiskLimits, SyntheticQuote
+
+LOCK = text("""
+SELECT opening_cash, balance FROM trade_system.paper_futures_account
+WHERE account_id = :account FOR UPDATE
+""")
+
+
+def balance_json(balance: FuturesBalance) -> dict[str, str]:
+    return {key: str(value) for key, value in asdict(balance).items()}
+
+
+def decode_balance(value: dict[str, str]) -> FuturesBalance:
+    return FuturesBalance(**{key: Decimal(amount) for key, amount in value.items()})
+
+
+def fill_json(fill: FuturesFill) -> dict[str, object]:
+    return {
+        "price": str(fill.price),
+        "notional": str(fill.notional),
+        "fee": str(fill.fee),
+        "realized_pnl": str(fill.realized_pnl),
+        "after": balance_json(fill.after),
+    }
+
+
+def decode_fill(value: dict[str, object]) -> FuturesFill:
+    return FuturesFill(
+        Decimal(cast(str, value["price"])),
+        Decimal(cast(str, value["notional"])),
+        Decimal(cast(str, value["fee"])),
+        Decimal(cast(str, value["realized_pnl"])),
+        decode_balance(cast(dict[str, str], value["after"])),
+    )
+
+
+def locked_account(connection: Connection, account: str) -> RowMapping:
+    row = connection.execute(LOCK, {"account": account}).mappings().one_or_none()
+    if row is None:
+        raise ValueError("control: paper_futures_account_missing")
+    return row
+
+
+@dataclass(frozen=True)
+class FuturesReconciliation:
+    fills: int
+    expected: FuturesBalance
+    stored: FuturesBalance
+    first_divergent_fill: str | None
+
+    @property
+    def consistent(self) -> bool:
+        return self.first_divergent_fill is None and self.expected == self.stored
+
+
+class PaperFuturesLedger:
+    def __init__(
+        self,
+        engine: Engine,
+        control: ControlPolicy,
+        limits: RiskLimits,
+        *,
+        costs: ExecutionCosts = ExecutionCosts(),
+    ) -> None:
+        self.engine = engine
+        self.control = control
+        self.limits = limits
+        self.costs = costs
+
+    def open_account(self, cash: Decimal) -> None:
+        require_paper()
+        if not self.control.account_id.strip() or not cash.is_finite() or cash < 0:
+            raise ValueError("risk: invalid_opening_balance")
+        with self.engine.begin() as connection:
+            connection.execute(
+                text("""
+                INSERT INTO trade_system.paper_futures_account
+                (account_id, opening_cash, balance)
+                VALUES (:account, :cash, :balance)
+                """).bindparams(bindparam("balance", type_=JSONB)),
+                {
+                    "account": self.control.account_id,
+                    "cash": cash,
+                    "balance": balance_json(FuturesBalance(cash)),
+                },
+            )
+
+    def submit(
+        self,
+        intent: TradingIntent,
+        quote: SyntheticQuote,
+        now: datetime,
+        *,
+        reduce_only: bool,
+    ) -> FuturesFill:
+        require_paper()
+        authorize(intent, self.control, now)
+        identity = {
+            "actor_id": intent.actor_id,
+            "environment_id": intent.environment_id,
+            "symbol": intent.symbol,
+            "side": intent.side,
+            "correlation_id": intent.correlation_id,
+            "issued_at": intent.issued_at.astimezone(UTC).isoformat(),
+            "expires_at": intent.expires_at.astimezone(UTC).isoformat(),
+            "reduce_only": reduce_only,
+        }
+        keys = {"account": intent.account_id, "intent_id": intent.intent_id}
+        with self.engine.begin() as connection:
+            account = locked_account(connection, intent.account_id)
+            previous = (
+                connection.execute(
+                    text("""
+                SELECT intent, quantity, fill FROM trade_system.paper_futures_fill
+                WHERE account_id = :account AND intent_id = :intent_id
+                """),
+                    keys,
+                )
+                .mappings()
+                .one_or_none()
+            )
+            if previous is not None:
+                if (
+                    not intent.quantity.is_finite()
+                    or previous["quantity"] != intent.quantity
+                    or previous["intent"] != identity
+                ):
+                    raise ValueError("control: conflicting_intent_id")
+                return decode_fill(previous["fill"])
+
+            try:
+                fill = assess_futures(
+                    intent,
+                    quote,
+                    decode_balance(account["balance"]),
+                    self.limits,
+                    self.costs,
+                    now,
+                    reduce_only=reduce_only,
+                )
+            except DecimalException as error:
+                raise ValueError("risk: arithmetic_out_of_range") from error
+            connection.execute(
+                text("""
+                INSERT INTO trade_system.paper_futures_fill
+                (account_id, intent_id, intent, quantity, reference_price, fee_bps,
+                 slippage_bps, quote_reference, filled_at, fill)
+                VALUES (:account, :intent_id, :intent, :quantity, :reference_price,
+                        :fee_bps,
+                        :slippage_bps, :quote_reference, :filled_at, :fill)
+                """).bindparams(
+                    bindparam("intent", type_=JSONB), bindparam("fill", type_=JSONB)
+                ),
+                {
+                    **keys,
+                    "intent": identity,
+                    "quantity": intent.quantity,
+                    "reference_price": quote.price,
+                    "fee_bps": self.costs.fee_bps,
+                    "slippage_bps": self.costs.slippage_bps,
+                    "quote_reference": quote.reference,
+                    "filled_at": now.astimezone(UTC),
+                    "fill": fill_json(fill),
+                },
+            )
+            connection.execute(
+                text("""
+                UPDATE trade_system.paper_futures_account SET balance = :balance
+                WHERE account_id = :account
+                """).bindparams(bindparam("balance", type_=JSONB)),
+                {"account": intent.account_id, "balance": balance_json(fill.after)},
+            )
+            return fill
+
+    def reconcile(self) -> FuturesReconciliation:
+        require_paper()
+        account_id = self.control.account_id
+        with self.engine.begin() as connection:
+            account = locked_account(connection, account_id)
+            expected = FuturesBalance(account["opening_cash"])
+            stored = decode_balance(account["balance"])
+            rows = (
+                connection.execute(
+                    text("""
+                SELECT intent_id, intent, quantity, reference_price,
+                       fee_bps, slippage_bps, fill
+                FROM trade_system.paper_futures_fill
+                WHERE account_id = :account ORDER BY sequence_id
+                """),
+                    {"account": account_id},
+                )
+                .mappings()
+                .all()
+            )
+            divergent: str | None = None
+            for row in rows:
+                intent = row["intent"]
+                try:
+                    recomputed = apply_fill(
+                        expected,
+                        cast(Side, intent["side"]),
+                        row["quantity"],
+                        row["reference_price"],
+                        ExecutionCosts(row["fee_bps"], row["slippage_bps"]),
+                        reduce_only=intent["reduce_only"],
+                    )
+                except (ValueError, DecimalException):
+                    divergent = divergent or row["intent_id"]
+                    break
+                expected = recomputed.after
+                if divergent is None and recomputed != decode_fill(row["fill"]):
+                    divergent = row["intent_id"]
+            return FuturesReconciliation(len(rows), expected, stored, divergent)

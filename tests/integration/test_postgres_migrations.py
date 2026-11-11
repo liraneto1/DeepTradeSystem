@@ -38,6 +38,7 @@ from apps.market_data.paper import submit_market_intent
 from infrastructure.database.config import local_database_url
 from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
 from infrastructure.database.market_stream import OBSERVATION, StreamStore
+from infrastructure.database.paper_futures import PaperFuturesLedger
 from infrastructure.database.paper_ledger import PaperLedger, market_state_reference
 from infrastructure.events.consumer import PROCESSED_EVENT, consume_once
 from infrastructure.events.diagnostic_projection import (
@@ -52,6 +53,7 @@ from trade_system.control.paper import ControlPolicy, TradingIntent
 from trade_system.market_data.binance_archive import collect_day
 from trade_system.market_data.binance_stream import Observation
 from trade_system.risk.execution_costs import ExecutionCosts
+from trade_system.risk.futures import FuturesBalance
 from trade_system.risk.paper import PaperBalance, RiskLimits, SyntheticQuote
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -100,7 +102,13 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0010"
+            == "0011"
+        )
+
+    command.downgrade(config, "0010")
+    with engine.connect() as connection:
+        assert not inspect(connection).has_table(
+            "paper_futures_fill", schema="trade_system"
         )
 
     command.downgrade(config, "0009")
@@ -950,9 +958,11 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from sqlalchemy import create_engine
 from infrastructure.database.config import local_database_url
+from infrastructure.database.paper_futures import PaperFuturesLedger
 from infrastructure.database.paper_ledger import PaperLedger, market_state_reference
 from trade_system.control.paper import ControlPolicy, TradingIntent
 from trade_system.risk.execution_costs import ExecutionCosts
+from trade_system.risk.futures import FuturesBalance
 from trade_system.risk.paper import RiskLimits, SyntheticQuote
 
 now = datetime(2025, 11, 10, tzinfo=UTC)
@@ -1253,3 +1263,127 @@ def test_paper_risk_uses_slipped_notional_and_fee(outbox_database: Engine) -> No
         ledger.submit(intent, quote, now)
     report = ledger.reconcile()
     assert report.consistent and report.fills == 0 and report.stored == opening
+
+
+def test_futures_long_and_short_fills_reconcile(outbox_database: Engine) -> None:
+    baseline = paper_ledger(outbox_database)
+    costs = ExecutionCosts(fee_bps=Decimal(10), slippage_bps=Decimal(100))
+    ledger = PaperFuturesLedger(
+        outbox_database, baseline.control, baseline.limits, costs=costs
+    )
+    ledger.open_account(Decimal(1000))
+    now = datetime(2025, 11, 10, tzinfo=UTC)
+    intent = TradingIntent(
+        "long-open",
+        "futures-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "BUY",
+        Decimal("0.01"),
+        now,
+        now + timedelta(seconds=5),
+    )
+    quote = SyntheticQuote("futures-reference", "BTCUSDT", Decimal(10000), now)
+    opened = ledger.submit(intent, quote, now, reduce_only=False)
+    assert opened.after == FuturesBalance(
+        Decimal("898.899"), Decimal("0.01"), Decimal(10100), Decimal(101)
+    )
+
+    restarted = PaperFuturesLedger(outbox_database, ledger.control, ledger.limits)
+    assert restarted.submit(intent, quote, now, reduce_only=False) == opened
+    with pytest.raises(ValueError, match="conflicting_intent_id"):
+        restarted.submit(intent, quote, now, reduce_only=True)
+    with pytest.raises(ValueError, match="full_reduce_only_required"):
+        ledger.submit(
+            replace(
+                intent, intent_id="partial", side="SELL", quantity=Decimal("0.005")
+            ),
+            quote,
+            now,
+            reduce_only=True,
+        )
+
+    closed = ledger.submit(
+        replace(intent, intent_id="long-close", side="SELL"),
+        replace(quote, price=Decimal(11000)),
+        now,
+        reduce_only=True,
+    )
+    assert closed.realized_pnl == Decimal("7.9") and closed.fee == Decimal("0.1089")
+    assert closed.after == FuturesBalance(
+        Decimal("1007.6901"), realized_pnl=Decimal("7.9")
+    )
+
+    short = ledger.submit(
+        replace(intent, intent_id="short-open", side="SELL"),
+        quote,
+        now,
+        reduce_only=False,
+    )
+    assert short.after.quantity == Decimal("-0.01")
+    assert short.after.margin == Decimal(99)
+    with pytest.raises(ValueError, match="isolated_margin_exhausted"):
+        ledger.submit(
+            replace(intent, intent_id="short-exhausted"),
+            replace(quote, price=Decimal(22000)),
+            now,
+            reduce_only=True,
+        )
+    covered = ledger.submit(
+        replace(intent, intent_id="short-close"),
+        replace(quote, price=Decimal(9000)),
+        now,
+        reduce_only=True,
+    )
+    assert covered.realized_pnl == Decimal("8.1") and covered.fee == Decimal("0.0909")
+    report = restarted.reconcile()
+    assert report.consistent and report.fills == 4
+    assert report.expected == FuturesBalance(
+        Decimal("1015.6002"), realized_pnl=Decimal(16)
+    )
+    assert covered.after == report.expected
+
+    with outbox_database.begin() as connection:
+        connection.execute(
+            text("""
+            UPDATE trade_system.paper_futures_fill
+            SET fill = fill || '{"fee":"0"}'::jsonb WHERE intent_id = 'short-close'
+        """)
+        )
+    assert restarted.reconcile().first_divergent_fill == "short-close"
+
+
+def test_futures_blocks_live_and_insufficient_collateral(
+    outbox_database: Engine,
+) -> None:
+    baseline = paper_ledger(outbox_database)
+    ledger = PaperFuturesLedger(outbox_database, baseline.control, baseline.limits)
+    ledger.open_account(Decimal(99))
+    now = datetime(2025, 11, 10, tzinfo=UTC)
+    intent = TradingIntent(
+        "futures-blocked",
+        "futures-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "SELL",
+        Decimal("0.01"),
+        now,
+        now + timedelta(seconds=5),
+    )
+    quote = SyntheticQuote("futures-reference", "BTCUSDT", Decimal(10000), now)
+    with pytest.raises(ValueError, match="control: paper_required"):
+        ledger.submit(
+            replace(intent, environment_id="LIVE"), quote, now, reduce_only=False
+        )
+    with pytest.raises(ValueError, match="insufficient_futures_collateral"):
+        ledger.submit(intent, quote, now, reduce_only=False)
+    report = ledger.reconcile()
+    assert (
+        report.consistent
+        and report.fills == 0
+        and report.stored == FuturesBalance(Decimal(99))
+    )
