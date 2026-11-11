@@ -49,11 +49,11 @@ from infrastructure.events.dispatcher import MAX_ATTEMPTS, dispatch_once
 from infrastructure.events.local_delivery import DELIVERY, LocalPublisher
 from infrastructure.events.outbox import OUTBOX, append_event
 from infrastructure.security.config import ConfigurationError
-from trade_system.control.paper import ControlPolicy, TradingIntent
+from trade_system.control.paper import ControlPolicy, Side, TradingIntent
 from trade_system.market_data.binance_archive import collect_day
 from trade_system.market_data.binance_stream import Observation
 from trade_system.risk.execution_costs import ExecutionCosts
-from trade_system.risk.futures import FuturesBalance
+from trade_system.risk.futures import FundingObservation, FuturesBalance
 from trade_system.risk.paper import PaperBalance, RiskLimits, SyntheticQuote
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -102,9 +102,14 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0012"
+            == "0013"
         )
 
+    command.downgrade(config, "0012")
+    with engine.connect() as connection:
+        assert not inspect(connection).has_table(
+            "paper_futures_funding", schema="trade_system"
+        )
     command.downgrade(config, "0011")
     with engine.connect() as connection:
         columns = inspect(connection).get_columns(
@@ -1526,3 +1531,96 @@ def test_futures_market_state_cutoff_and_reconciliation(
             {"intent_id": intent.intent_id},
         )
     assert restarted.reconcile().first_divergent_fill == intent.intent_id
+
+
+@pytest.mark.parametrize(("side", "delta"), [("BUY", "-0.02"), ("SELL", "0.02")])
+def test_futures_funding_cutoff_replay_and_reconciliation(
+    outbox_database: Engine, monkeypatch: pytest.MonkeyPatch, side: Side, delta: str
+) -> None:
+    baseline = paper_ledger(outbox_database)
+    ledger = PaperFuturesLedger(outbox_database, baseline.control, baseline.limits)
+    ledger.open_account(Decimal(1000))
+    opened_at = datetime(2025, 11, 10, 15, 59, 59, tzinfo=UTC)
+    funding_at = opened_at + timedelta(seconds=1)
+    available_at = funding_at + timedelta(seconds=2)
+    intent = TradingIntent(
+        "funding-open",
+        "funding-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        side,
+        Decimal("0.01"),
+        opened_at,
+        opened_at + timedelta(minutes=1),
+    )
+    quote = SyntheticQuote("funding-fixture", "BTCUSDT", Decimal(10000), opened_at)
+    opened = ledger.submit(intent, quote, opened_at, reduce_only=False)
+    event = FundingObservation(
+        funding_at, available_at, Decimal(20000), Decimal("0.0001"), "fixture:funding"
+    )
+
+    try:
+        for cutoff in (opened_at, funding_at, available_at.replace(tzinfo=None)):
+            with pytest.raises(ValueError, match="funding: invalid_cutoff"):
+                ledger.apply_funding(event, as_of=cutoff)
+        with pytest.raises(ValueError, match="funding: out_of_order"):
+            ledger.apply_funding(
+                replace(event, funding_at=opened_at), as_of=available_at
+            )
+        with pytest.raises(ValueError, match="funding: invalid_observation"):
+            ledger.apply_funding(
+                replace(event, rate=Decimal("NaN")), as_of=available_at
+            )
+        assert ledger.reconcile().stored == opened.after
+        assert ledger.reconcile().funding_entries == 0
+
+        settled = ledger.apply_funding(event, as_of=available_at)
+        assert settled.cash_delta == Decimal(delta)
+        assert settled.after == replace(
+            opened.after, cash=Decimal(900) + Decimal(delta)
+        )
+        restarted = PaperFuturesLedger(outbox_database, ledger.control, ledger.limits)
+        with pytest.raises(ValueError, match="funding: conflicting_observation"):
+            restarted.apply_funding(replace(event, rate=Decimal(0)), as_of=available_at)
+        closing = replace(
+            intent, intent_id="funding-close", side="SELL" if side == "BUY" else "BUY"
+        )
+        with pytest.raises(ValueError, match="funding: fill_precedes_settlement"):
+            restarted.submit(closing, quote, funding_at, reduce_only=True)
+        closed = restarted.submit(
+            closing,
+            replace(quote, observed_at=available_at),
+            available_at,
+            reduce_only=True,
+        )
+        assert closed.after == FuturesBalance(Decimal(1000) + Decimal(delta))
+        assert restarted.apply_funding(event, as_of=available_at) == settled
+
+        flat_at = available_at + timedelta(seconds=1)
+        flat_event = replace(event, funding_at=flat_at, available_at=flat_at)
+        assert restarted.apply_funding(flat_event, as_of=flat_at).cash_delta == 0
+        report = restarted.reconcile()
+        assert report.consistent and report.fills == 2 and report.funding_entries == 2
+        assert report.stored == closed.after
+
+        with monkeypatch.context() as scope:
+            scope.setenv("TRADE_SYSTEM_ENVIRONMENT", "TRAINING")
+            with pytest.raises(ConfigurationError, match="requires the PAPER"):
+                restarted.apply_funding(flat_event, as_of=flat_at)
+
+        with outbox_database.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE trade_system.paper_futures_funding SET cash_delta = 0 "
+                    "WHERE funding_at = :funding_at"
+                ),
+                {"funding_at": funding_at},
+            )
+        report = restarted.reconcile()
+        assert not report.consistent and report.first_divergent_funding_at == funding_at
+    finally:
+        # The disposable fixture downgrades to base; discard its funding entries first.
+        with outbox_database.begin() as connection:
+            connection.execute(text("DELETE FROM trade_system.paper_futures_funding"))

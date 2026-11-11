@@ -42,7 +42,51 @@ Remove-Item Env:RUN_POSTGRES_TESTS
 A simulação atual exige fechamento integral e colateral suficiente.
 Se a perda exceder a margem reservada, o modelo bloqueia o fill para
 revisão.
-Funding, liquidação e alavancagem superior a 1× seguem fora deste
-recorte. A reversão de `0012` remove a evidência Market State dos fills.
+Liquidação e alavancagem superior a 1× seguem fora deste recorte.
+A reversão de `0012` remove a evidência Market State dos fills.
 A reversão de `0011` remove as tabelas do livro Futures. LIVE permanece indisponível
 e G0 segue aberto.
+
+
+## Funding simulado
+
+A revisão `0013` registra funding de BTCUSDT em USDⓈ-M Futures.
+A simulação recebe horário do evento, horário em que os dados ficaram
+disponíveis, taxa, preço de marcação e referência da observação. Os dados
+são fornecidos pelo chamador. A taxa é uma fração, de modo que
+`Decimal("0.0001")` representa 0,01%. A documentação da corretora
+descreve os campos de referência.
+[Histórico de funding USDⓈ-M](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Get-Funding-Rate-History)
+
+Com uma conta PAPER já aberta e a migração aplicada, use:
+
+```python
+from datetime import UTC, datetime
+from decimal import Decimal
+
+from trade_system.risk.futures import FundingObservation
+
+event = FundingObservation(
+    funding_at=datetime(2025, 11, 10, 16, 0, tzinfo=UTC),
+    available_at=datetime(2025, 11, 10, 16, 0, 2, tzinfo=UTC),
+    mark_price=Decimal("20000"),
+    rate=Decimal("0.0001"),
+    reference="fixture:btcusdt-funding",
+)
+settlement = ledger.apply_funding(event, as_of=event.available_at)
+report = ledger.reconcile()
+```
+
+O ajuste em USDT é `-quantidade assinada × preço de marcação × taxa`.
+Com taxa positiva, uma posição comprada paga e uma vendida recebe.
+Uma conta sem posição recebe um lançamento de valor zero. Se o débito
+exceder o caixa livre, a transação é rejeitada. Margem e P&L de fills
+continuam registrados nos próprios campos.
+
+Em um replay, aplique o funding após a observação ficar disponível e
+antes de submeter fills no instante do evento ou posteriores. O livro
+rejeita funding retroativo quando um desses fills já estiver gravado.
+Reenviar a mesma observação para a conta e o mesmo horário devolve o
+lançamento gravado. Mudar a observação nessa chave gera conflito.
+A reconciliação reproduz funding e fills na ordem registrada. A
+reversão de `0013` exige que a tabela de funding esteja vazia.

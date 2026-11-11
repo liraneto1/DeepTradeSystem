@@ -1,6 +1,6 @@
 """Risk and accounting for one synthetic linear USDⓈ-M position at 1×."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from decimal import Decimal, Inexact, localcontext
 
@@ -69,6 +69,52 @@ def apply_fill(
         if after.cash < 0:
             raise ValueError("risk: insufficient_futures_collateral")
         return FuturesFill(price, notional, fee, pnl, after)
+
+
+@dataclass(frozen=True)
+class FundingObservation:
+    funding_at: datetime
+    available_at: datetime
+    mark_price: Decimal
+    rate: Decimal
+    reference: str
+
+    def validate(self, as_of: datetime) -> None:
+        if (
+            any(
+                t.utcoffset() is None
+                for t in (self.funding_at, self.available_at, as_of)
+            )
+            or not self.funding_at <= self.available_at <= as_of
+        ):
+            raise ValueError("funding: invalid_cutoff")
+        if (
+            not self.mark_price.is_finite()
+            or self.mark_price <= 0
+            or not self.rate.is_finite()
+            or self.rate.copy_abs() > 1
+            or not self.reference.strip()
+        ):
+            raise ValueError("funding: invalid_observation")
+
+
+@dataclass(frozen=True)
+class FundingSettlement:
+    cash_delta: Decimal
+    after: FuturesBalance
+
+
+def settle_funding(
+    balance: FuturesBalance, observation: FundingObservation
+) -> FundingSettlement:
+    with localcontext() as context:
+        context.prec = 50
+        context.traps[Inexact] = True
+        delta = -balance.quantity * observation.mark_price * observation.rate
+        cash = balance.cash + delta
+    if cash < 0:
+        raise ValueError("funding: insufficient_cash")
+    return FundingSettlement(delta, replace(balance, cash=cash))
 
 
 def assess_futures(

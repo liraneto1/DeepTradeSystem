@@ -14,10 +14,13 @@ from infrastructure.database.paper_ledger import market_state_reference, require
 from trade_system.control.paper import ControlPolicy, Side, TradingIntent, authorize
 from trade_system.risk.execution_costs import ExecutionCosts
 from trade_system.risk.futures import (
+    FundingObservation,
+    FundingSettlement,
     FuturesBalance,
     FuturesFill,
     apply_fill,
     assess_futures,
+    settle_funding,
 )
 from trade_system.risk.paper import RiskLimits, SyntheticQuote
 
@@ -62,16 +65,44 @@ def locked_account(connection: Connection, account: str) -> RowMapping:
     return row
 
 
+def update_balance(
+    connection: Connection, account_id: str, balance: FuturesBalance
+) -> None:
+    connection.execute(
+        text("""
+        UPDATE trade_system.paper_futures_account SET balance = :balance
+        WHERE account_id = :account
+        """).bindparams(bindparam("balance", type_=JSONB)),
+        {"account": account_id, "balance": balance_json(balance)},
+    )
+
+
+def funding_observation(row: RowMapping) -> FundingObservation:
+    return FundingObservation(
+        row["funding_at"],
+        row["available_at"],
+        row["mark_price"],
+        row["rate"],
+        row["reference"],
+    )
+
+
 @dataclass(frozen=True)
 class FuturesReconciliation:
     fills: int
     expected: FuturesBalance
     stored: FuturesBalance
     first_divergent_fill: str | None
+    funding_entries: int = 0
+    first_divergent_funding_at: datetime | None = None
 
     @property
     def consistent(self) -> bool:
-        return self.first_divergent_fill is None and self.expected == self.stored
+        return (
+            self.first_divergent_fill is None
+            and self.first_divergent_funding_at is None
+            and self.expected == self.stored
+        )
 
 
 class PaperFuturesLedger:
@@ -164,6 +195,16 @@ class PaperFuturesLedger:
                     raise ValueError("control: conflicting_intent_id")
                 return decode_fill(previous["fill"])
 
+            latest_funding: datetime | None = connection.execute(
+                text("""
+                SELECT max(applied_at) FROM trade_system.paper_futures_funding
+                WHERE account_id = :account
+                """),
+                keys,
+            ).scalar_one()
+            if latest_funding is not None and now < latest_funding:
+                raise ValueError("funding: fill_precedes_settlement")
+
             quote, market_state = quote_provider()
             if (pricing_close_at is None) != (market_state is None) or (
                 market_state is not None
@@ -210,14 +251,81 @@ class PaperFuturesLedger:
                     "market_state": market_state,
                 },
             )
+            update_balance(connection, intent.account_id, fill.after)
+            return fill
+
+    def apply_funding(
+        self, observation: FundingObservation, *, as_of: datetime
+    ) -> FundingSettlement:
+        require_paper()
+        observation.validate(as_of)
+        account_id = self.control.account_id
+        keys = {"account": account_id, "funding_at": observation.funding_at}
+        with self.engine.begin() as connection:
+            account = locked_account(connection, account_id)
+            previous = (
+                connection.execute(
+                    text("""
+                SELECT * FROM trade_system.paper_futures_funding
+                WHERE account_id = :account AND funding_at = :funding_at
+                """),
+                    keys,
+                )
+                .mappings()
+                .one_or_none()
+            )
+            if previous is not None:
+                if observation != funding_observation(previous):
+                    raise ValueError("funding: conflicting_observation")
+                if as_of < previous["applied_at"]:
+                    raise ValueError("funding: invalid_cutoff")
+                return FundingSettlement(
+                    previous["cash_delta"], decode_balance(previous["balance_after"])
+                )
+
+            out_of_order: bool = connection.execute(
+                text("""
+                SELECT EXISTS (
+                    SELECT 1 FROM trade_system.paper_futures_fill
+                    WHERE account_id = :account AND filled_at >= :funding_at
+                    UNION ALL
+                    SELECT 1 FROM trade_system.paper_futures_funding
+                    WHERE account_id = :account
+                      AND (funding_at > :funding_at OR applied_at > :as_of)
+                )
+                """),
+                {**keys, "as_of": as_of},
+            ).scalar_one()
+            if out_of_order:
+                raise ValueError("funding: out_of_order")
+
+            try:
+                settlement = settle_funding(
+                    decode_balance(account["balance"]), observation
+                )
+            except DecimalException as error:
+                raise ValueError("funding: arithmetic_out_of_range") from error
             connection.execute(
                 text("""
-                UPDATE trade_system.paper_futures_account SET balance = :balance
-                WHERE account_id = :account
-                """).bindparams(bindparam("balance", type_=JSONB)),
-                {"account": intent.account_id, "balance": balance_json(fill.after)},
+                INSERT INTO trade_system.paper_futures_funding
+                (account_id, funding_at, available_at, applied_at, mark_price, rate,
+                 reference, cash_delta, balance_after)
+                VALUES (:account, :funding_at, :available_at, :applied_at, :mark_price,
+                        :rate, :reference, :cash_delta, :balance_after)
+                """).bindparams(bindparam("balance_after", type_=JSONB)),
+                {
+                    **keys,
+                    "available_at": observation.available_at,
+                    "applied_at": as_of,
+                    "mark_price": observation.mark_price,
+                    "rate": observation.rate,
+                    "reference": observation.reference,
+                    "cash_delta": settlement.cash_delta,
+                    "balance_after": balance_json(settlement.after),
+                },
             )
-            return fill
+            update_balance(connection, account_id, settlement.after)
+            return settlement
 
     def reconcile(self) -> FuturesReconciliation:
         require_paper()
@@ -229,8 +337,9 @@ class PaperFuturesLedger:
             rows = (
                 connection.execute(
                     text("""
-                SELECT intent_id, intent, quantity, reference_price,
-                       fee_bps, slippage_bps, fill, quote_reference, market_state
+                SELECT sequence_id, filled_at, intent_id, intent, quantity,
+                       reference_price, fee_bps, slippage_bps, fill,
+                       quote_reference, market_state
                 FROM trade_system.paper_futures_fill
                 WHERE account_id = :account ORDER BY sequence_id
                 """),
@@ -239,8 +348,64 @@ class PaperFuturesLedger:
                 .mappings()
                 .all()
             )
+            funding = (
+                connection.execute(
+                    text("""
+                SELECT * FROM trade_system.paper_futures_funding
+                WHERE account_id = :account ORDER BY sequence_id
+                """),
+                    {"account": account_id},
+                )
+                .mappings()
+                .all()
+            )
             divergent: str | None = None
-            for row in rows:
+            divergent_funding: datetime | None = None
+            latest_fill: datetime | None = None
+            latest_funding_at: datetime | None = None
+            latest_applied_at: datetime | None = None
+            for row in sorted(
+                [*rows, *funding], key=lambda entry: entry["sequence_id"]
+            ):
+                if "funding_at" in row:
+                    observation = funding_observation(row)
+                    applied_at = row["applied_at"]
+                    try:
+                        observation.validate(applied_at)
+                        if (
+                            (
+                                latest_fill is not None
+                                and observation.funding_at <= latest_fill
+                            )
+                            or (
+                                latest_funding_at is not None
+                                and observation.funding_at <= latest_funding_at
+                            )
+                            or (
+                                latest_applied_at is not None
+                                and applied_at < latest_applied_at
+                            )
+                        ):
+                            raise ValueError("funding: out_of_order")
+                        settlement = settle_funding(expected, observation)
+                    except (ValueError, DecimalException):
+                        divergent_funding = observation.funding_at
+                        break
+                    expected = settlement.after
+                    latest_funding_at = observation.funding_at
+                    latest_applied_at = applied_at
+                    if divergent_funding is None and (
+                        settlement.cash_delta != row["cash_delta"]
+                        or expected != decode_balance(row["balance_after"])
+                    ):
+                        divergent_funding = observation.funding_at
+                    continue
+                filled_at = row["filled_at"]
+                latest_fill = (
+                    filled_at if latest_fill is None else max(latest_fill, filled_at)
+                )
+                if latest_applied_at is not None and filled_at < latest_applied_at:
+                    divergent = divergent or row["intent_id"]
                 intent = row["intent"]
                 market_state = row["market_state"]
                 if divergent is None and (
@@ -267,4 +432,6 @@ class PaperFuturesLedger:
                 expected = recomputed.after
                 if divergent is None and recomputed != decode_fill(row["fill"]):
                     divergent = row["intent_id"]
-            return FuturesReconciliation(len(rows), expected, stored, divergent)
+            return FuturesReconciliation(
+                len(rows), expected, stored, divergent, len(funding), divergent_funding
+            )
