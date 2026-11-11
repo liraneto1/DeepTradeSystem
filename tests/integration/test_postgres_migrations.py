@@ -34,7 +34,7 @@ from sqlalchemy.exc import IntegrityError
 
 from apps.api.main import app
 from apps.market_data.continuous import ingest
-from apps.market_data.paper import submit_market_intent
+from apps.market_data.paper import submit_futures_market_intent, submit_market_intent
 from infrastructure.database.config import local_database_url
 from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
 from infrastructure.database.market_stream import OBSERVATION, StreamStore
@@ -102,8 +102,15 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0011"
+            == "0012"
         )
+
+    command.downgrade(config, "0011")
+    with engine.connect() as connection:
+        columns = inspect(connection).get_columns(
+            "paper_futures_fill", schema="trade_system"
+        )
+        assert "market_state" not in {column["name"] for column in columns}
 
     command.downgrade(config, "0010")
     with engine.connect() as connection:
@@ -1060,16 +1067,13 @@ def test_paper_ledger_blocks_live(
         )
 
 
-def test_paper_market_state_obeys_decision_cutoff_and_preserves_evidence(
-    outbox_database: Engine, monkeypatch: pytest.MonkeyPatch
+def seed_paper_market_state(
+    engine: Engine, market: str, close_at: datetime, ready_at: datetime
 ) -> None:
-    close_at = datetime(2025, 11, 10, 22, 35, tzinfo=UTC)
-    ready_at = close_at + timedelta(seconds=3)
-    execution_at = close_at + timedelta(seconds=4)
     for interval, minutes in (("1m", 1), ("5m", 5), ("15m", 15), ("1h", 60)):
         step = timedelta(minutes=minutes)
         cutoff = close_at.replace(minute=close_at.minute // minutes * minutes)
-        stream = StreamStore(outbox_database, "spot", interval)
+        stream = StreamStore(engine, market, interval)
         stream.persist(
             [
                 observed(cutoff - index * step, step, "websocket")
@@ -1077,7 +1081,7 @@ def test_paper_market_state_obeys_decision_cutoff_and_preserves_evidence(
             ]
         )
 
-    with outbox_database.begin() as connection:
+    with engine.begin() as connection:
         connection.execute(
             OBSERVATION.update().values(
                 available_at=close_at + timedelta(seconds=1),
@@ -1092,6 +1096,15 @@ def test_paper_market_state_obeys_decision_cutoff_and_preserves_evidence(
             )
             .values(available_at=ready_at, received_at=ready_at)
         )
+
+
+def test_paper_market_state_obeys_decision_cutoff_and_preserves_evidence(
+    outbox_database: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    close_at = datetime(2025, 11, 10, 22, 35, tzinfo=UTC)
+    ready_at = close_at + timedelta(seconds=3)
+    execution_at = close_at + timedelta(seconds=4)
+    seed_paper_market_state(outbox_database, "spot", close_at, ready_at)
 
     ledger = PaperLedger(
         outbox_database,
@@ -1387,3 +1400,129 @@ def test_futures_blocks_live_and_insufficient_collateral(
         and report.fills == 0
         and report.stored == FuturesBalance(Decimal(99))
     )
+
+
+def test_futures_market_state_cutoff_and_reconciliation(
+    outbox_database: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    close_at = datetime(2025, 11, 10, 22, 35, tzinfo=UTC)
+    ready_at = close_at + timedelta(seconds=3)
+    now = close_at + timedelta(seconds=4)
+    seed_paper_market_state(outbox_database, "futures-um", close_at, ready_at)
+    ledger = PaperFuturesLedger(
+        outbox_database,
+        ControlPolicy("paper-test", frozenset({"actor-test"}), paused=False),
+        RiskLimits(Decimal("200"), Decimal("0.02"), timedelta(seconds=5)),
+    )
+    opening = FuturesBalance(Decimal("1000"))
+    ledger.open_account(opening.cash)
+    intent = TradingIntent(
+        "futures-state-open",
+        "futures-state-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "SELL",
+        Decimal("0.01"),
+        close_at + timedelta(seconds=2),
+        close_at + timedelta(seconds=30),
+    )
+
+    with pytest.raises(ValueError, match="5m:"):
+        submit_futures_market_intent(
+            ledger, intent, close_at=close_at, now=now, reduce_only=False
+        )
+    with pytest.raises(ValueError, match="close_at <= as_of"):
+        submit_futures_market_intent(
+            ledger,
+            intent,
+            close_at=close_at + timedelta(minutes=5),
+            now=now,
+            reduce_only=False,
+        )
+    intent = replace(intent, issued_at=ready_at)
+    with pytest.raises(ValueError, match="risk: invalid_or_stale_quote"):
+        submit_futures_market_intent(
+            ledger,
+            intent,
+            close_at=close_at,
+            now=close_at + timedelta(seconds=6),
+            reduce_only=False,
+        )
+    report = ledger.reconcile()
+    assert report.consistent and report.fills == 0 and report.stored == opening
+
+    opened = submit_futures_market_intent(
+        ledger, intent, close_at=close_at, now=now, reduce_only=False
+    )
+    assert opened.price == Decimal("2.5")
+    assert opened.after == FuturesBalance(
+        Decimal("999.975"), Decimal("-0.01"), Decimal("2.5"), Decimal("0.025")
+    )
+    closed = submit_futures_market_intent(
+        ledger,
+        replace(intent, intent_id="futures-state-close", side="BUY"),
+        close_at=close_at,
+        now=now,
+        reduce_only=True,
+    )
+    assert closed.price == Decimal("2.5") and closed.after == opening
+    with outbox_database.connect() as connection:
+        rows = connection.execute(
+            text(
+                "SELECT market_state, quote_reference "
+                "FROM trade_system.paper_futures_fill"
+            )
+        ).all()
+    assert len(rows) == 2
+    for evidence, reference in rows:
+        assert isinstance(evidence, dict)
+        assert evidence["market"] == "futures-um"
+        assert evidence["close_at"] == close_at.isoformat()
+        assert evidence["as_of"] == ready_at.isoformat()
+        assert set(evidence["intervals"]) == {"1m", "5m", "15m", "1h"}
+        assert (
+            sum(len(window["lineage"]) for window in evidence["intervals"].values())
+            == 84
+        )
+        assert reference == market_state_reference(evidence)
+
+    def forbidden_read(*args: object, **kwargs: object) -> None:
+        pytest.fail("Market State was read before Control or during replay.")
+
+    monkeypatch.setattr("apps.market_data.paper.read_state", forbidden_read)
+    restarted = PaperFuturesLedger(outbox_database, ledger.control, ledger.limits)
+    assert (
+        submit_futures_market_intent(
+            restarted, intent, close_at=close_at, now=now, reduce_only=False
+        )
+        == opened
+    )
+    with pytest.raises(ValueError, match="conflicting_intent_id"):
+        submit_futures_market_intent(
+            restarted,
+            intent,
+            close_at=close_at - timedelta(minutes=5),
+            now=now,
+            reduce_only=False,
+        )
+    with pytest.raises(ValueError, match="control: paper_required"):
+        submit_futures_market_intent(
+            restarted,
+            replace(intent, environment_id="LIVE"),
+            close_at=close_at,
+            now=now,
+            reduce_only=False,
+        )
+    report = restarted.reconcile()
+    assert report.consistent and report.fills == 2 and report.stored == opening
+    with outbox_database.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE trade_system.paper_futures_fill SET market_state = NULL "
+                "WHERE intent_id = :intent_id"
+            ),
+            {"intent_id": intent.intent_id},
+        )
+    assert restarted.reconcile().first_divergent_fill == intent.intent_id

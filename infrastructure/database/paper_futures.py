@@ -1,5 +1,6 @@
 """Persist and reconcile synthetic USDⓈ-M PAPER fills."""
 
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, DecimalException
@@ -9,7 +10,7 @@ from sqlalchemy import bindparam, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Connection, Engine, RowMapping
 
-from infrastructure.database.paper_ledger import require_paper
+from infrastructure.database.paper_ledger import market_state_reference, require_paper
 from trade_system.control.paper import ControlPolicy, Side, TradingIntent, authorize
 from trade_system.risk.execution_costs import ExecutionCosts
 from trade_system.risk.futures import (
@@ -113,6 +114,19 @@ class PaperFuturesLedger:
         *,
         reduce_only: bool,
     ) -> FuturesFill:
+        return self.submit_with_quote_provider(
+            intent, now, lambda: (quote, None), reduce_only=reduce_only
+        )
+
+    def submit_with_quote_provider(
+        self,
+        intent: TradingIntent,
+        now: datetime,
+        quote_provider: Callable[[], tuple[SyntheticQuote, dict[str, object] | None]],
+        *,
+        reduce_only: bool,
+        pricing_close_at: str | None = None,
+    ) -> FuturesFill:
         require_paper()
         authorize(intent, self.control, now)
         identity = {
@@ -125,6 +139,8 @@ class PaperFuturesLedger:
             "expires_at": intent.expires_at.astimezone(UTC).isoformat(),
             "reduce_only": reduce_only,
         }
+        if pricing_close_at is not None:
+            identity["pricing_close_at"] = pricing_close_at
         keys = {"account": intent.account_id, "intent_id": intent.intent_id}
         with self.engine.begin() as connection:
             account = locked_account(connection, intent.account_id)
@@ -148,6 +164,13 @@ class PaperFuturesLedger:
                     raise ValueError("control: conflicting_intent_id")
                 return decode_fill(previous["fill"])
 
+            quote, market_state = quote_provider()
+            if (pricing_close_at is None) != (market_state is None) or (
+                market_state is not None
+                and quote.reference != market_state_reference(market_state)
+            ):
+                raise ValueError("market_state: invalid_quote_evidence")
+
             try:
                 fill = assess_futures(
                     intent,
@@ -164,12 +187,15 @@ class PaperFuturesLedger:
                 text("""
                 INSERT INTO trade_system.paper_futures_fill
                 (account_id, intent_id, intent, quantity, reference_price, fee_bps,
-                 slippage_bps, quote_reference, filled_at, fill)
+                 slippage_bps, quote_reference, filled_at, fill, market_state)
                 VALUES (:account, :intent_id, :intent, :quantity, :reference_price,
                         :fee_bps,
-                        :slippage_bps, :quote_reference, :filled_at, :fill)
+                        :slippage_bps, :quote_reference, :filled_at, :fill,
+                        :market_state)
                 """).bindparams(
-                    bindparam("intent", type_=JSONB), bindparam("fill", type_=JSONB)
+                    bindparam("intent", type_=JSONB),
+                    bindparam("fill", type_=JSONB),
+                    bindparam("market_state", type_=JSONB(none_as_null=True)),
                 ),
                 {
                     **keys,
@@ -181,6 +207,7 @@ class PaperFuturesLedger:
                     "quote_reference": quote.reference,
                     "filled_at": now.astimezone(UTC),
                     "fill": fill_json(fill),
+                    "market_state": market_state,
                 },
             )
             connection.execute(
@@ -203,7 +230,7 @@ class PaperFuturesLedger:
                 connection.execute(
                     text("""
                 SELECT intent_id, intent, quantity, reference_price,
-                       fee_bps, slippage_bps, fill
+                       fee_bps, slippage_bps, fill, quote_reference, market_state
                 FROM trade_system.paper_futures_fill
                 WHERE account_id = :account ORDER BY sequence_id
                 """),
@@ -215,6 +242,16 @@ class PaperFuturesLedger:
             divergent: str | None = None
             for row in rows:
                 intent = row["intent"]
+                market_state = row["market_state"]
+                if divergent is None and (
+                    ("pricing_close_at" in intent) != (market_state is not None)
+                    or (
+                        market_state is not None
+                        and market_state_reference(market_state)
+                        != row["quote_reference"]
+                    )
+                ):
+                    divergent = row["intent_id"]
                 try:
                     recomputed = apply_fill(
                         expected,
