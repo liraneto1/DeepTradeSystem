@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from decimal import Decimal, DecimalException, Inexact, localcontext
 from hashlib import sha256
@@ -14,6 +14,7 @@ from sqlalchemy.engine import Connection, Engine, RowMapping
 from infrastructure.security.config import ConfigurationError, runtime_environment
 from trade_system.control.paper import ControlPolicy, TradingIntent, authorize
 from trade_system.execution.paper import PaperFill
+from trade_system.risk.execution_costs import ExecutionCosts, execution_price_and_fee
 from trade_system.risk.paper import PaperBalance, RiskLimits, SyntheticQuote, assess
 
 LOCK_ACCOUNT = text("""
@@ -22,14 +23,16 @@ FROM trade_system.paper_account WHERE account_id = :account FOR UPDATE
 """)
 FILL_FIELDS = """
 intent_id, correlation_id, quote_reference, filled_at, price, quantity, notional,
-cash_after, quantity_after
+cash_after, quantity_after, reference_price, fee, fee_bps, slippage_bps
 """
 INSERT_FILL = text("""
 INSERT INTO trade_system.paper_fill
 (account_id, intent_id, intent, side, correlation_id, quote_reference, filled_at,
- price, quantity, notional, cash_after, quantity_after, market_state)
+ price, quantity, notional, cash_after, quantity_after, market_state,
+ reference_price, fee, fee_bps, slippage_bps)
 VALUES (:account, :intent_id, :intent, :side, :correlation, :quote, :at,
-        :price, :quantity, :notional, :cash_after, :quantity_after, :market_state)
+        :price, :quantity, :notional, :cash_after, :quantity_after, :market_state,
+        :reference_price, :fee, :fee_bps, :slippage_bps)
 """).bindparams(
     bindparam("intent", type_=JSONB),
     bindparam("market_state", type_=JSONB(none_as_null=True)),
@@ -77,16 +80,26 @@ def fill_from_row(row: RowMapping) -> PaperFill:
         row["quantity"],
         row["notional"],
         PaperBalance(row["cash_after"], row["quantity_after"]),
+        row["reference_price"],
+        row["fee"],
+        row["fee_bps"],
+        row["slippage_bps"],
     )
 
 
 class PaperLedger:
     def __init__(
-        self, engine: Engine, control: ControlPolicy, limits: RiskLimits
+        self,
+        engine: Engine,
+        control: ControlPolicy,
+        limits: RiskLimits,
+        *,
+        costs: ExecutionCosts = ExecutionCosts(),
     ) -> None:
         self.engine = engine
         self.control = control
         self.limits = limits
+        self.costs = costs
 
     def open_account(self, opening: PaperBalance) -> None:
         require_paper()
@@ -166,7 +179,17 @@ class PaperLedger:
                 raise ValueError("market_state: reference_mismatch")
             balance = PaperBalance(row["cash"], row["quantity"])
             try:
-                notional, after = assess(intent, quote, balance, self.limits, now)
+                fill_price, fee = execution_price_and_fee(
+                    intent.side, quote.price, intent.quantity, self.costs
+                )
+                notional, after = assess(
+                    intent,
+                    replace(quote, price=fill_price),
+                    balance,
+                    self.limits,
+                    now,
+                    fee=fee,
+                )
             except DecimalException as error:
                 raise ValueError("risk: arithmetic_out_of_range") from error
             filled_at = now.astimezone(UTC)
@@ -180,7 +203,11 @@ class PaperLedger:
                     "correlation": intent.correlation_id,
                     "quote": quote.reference,
                     "at": filled_at,
-                    "price": quote.price,
+                    "price": fill_price,
+                    "reference_price": quote.price,
+                    "fee": fee,
+                    "fee_bps": self.costs.fee_bps,
+                    "slippage_bps": self.costs.slippage_bps,
                     "quantity": intent.quantity,
                     "notional": notional,
                     "cash_after": after.cash,
@@ -205,10 +232,14 @@ class PaperLedger:
                 intent.correlation_id,
                 quote.reference,
                 filled_at,
-                quote.price,
+                fill_price,
                 intent.quantity,
                 notional,
                 after,
+                quote.price,
+                fee,
+                self.costs.fee_bps,
+                self.costs.slippage_bps,
             )
 
     def reconcile(self) -> Reconciliation:
@@ -235,13 +266,19 @@ class PaperLedger:
             divergent: str | None = None
             for row in fills:
                 fill = fill_from_row(row)
-                notional = fill.price * fill.quantity
+                price, fee = execution_price_and_fee(
+                    row["side"],
+                    row["reference_price"],
+                    fill.quantity,
+                    ExecutionCosts(fill.fee_bps, fill.slippage_bps),
+                )
+                notional = price * fill.quantity
                 quantity: Decimal = (
                     fill.quantity if row["side"] == "BUY" else -fill.quantity
                 )
                 cash_delta = -notional if row["side"] == "BUY" else notional
                 expected = PaperBalance(
-                    expected.cash + cash_delta, expected.quantity + quantity
+                    expected.cash + cash_delta - fee, expected.quantity + quantity
                 )
                 market_state = row["market_state"]
                 expects_state = "pricing_close_at" in row["intent"]
@@ -251,6 +288,8 @@ class PaperLedger:
                 )
                 if divergent is None and (
                     evidence_mismatch
+                    or fill.price != price
+                    or fill.fee != fee
                     or fill.notional != notional
                     or fill.balance_after != expected
                 ):

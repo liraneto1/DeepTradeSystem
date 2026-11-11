@@ -34,6 +34,8 @@ def assess(
     balance: PaperBalance,
     limits: RiskLimits,
     now: datetime,
+    *,
+    fee: Decimal = Decimal(0),
 ) -> tuple[Decimal, PaperBalance]:
     positive = (
         intent.quantity,
@@ -60,12 +62,14 @@ def assess(
         context.prec = 50
         context.traps[Inexact] = True
         notional = intent.quantity * quote.price
+        if not fee.is_finite() or not 0 <= fee <= notional:
+            raise ValueError("risk: invalid_fee")
         if notional > limits.max_order_notional:
             raise ValueError("risk: order_limit")
 
         if intent.side == "BUY":
             after = PaperBalance(
-                balance.cash - notional, balance.quantity + intent.quantity
+                balance.cash - notional - fee, balance.quantity + intent.quantity
             )
             if after.cash < 0:
                 raise ValueError("risk: insufficient_cash")
@@ -73,7 +77,7 @@ def assess(
                 raise ValueError("risk: position_limit")
         else:
             after = PaperBalance(
-                balance.cash + notional, balance.quantity - intent.quantity
+                balance.cash + notional - fee, balance.quantity - intent.quantity
             )
             if after.quantity < 0:
                 raise ValueError("risk: insufficient_position")

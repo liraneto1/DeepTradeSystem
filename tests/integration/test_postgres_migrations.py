@@ -51,6 +51,7 @@ from infrastructure.security.config import ConfigurationError
 from trade_system.control.paper import ControlPolicy, TradingIntent
 from trade_system.market_data.binance_archive import collect_day
 from trade_system.market_data.binance_stream import Observation
+from trade_system.risk.execution_costs import ExecutionCosts
 from trade_system.risk.paper import PaperBalance, RiskLimits, SyntheticQuote
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -99,8 +100,13 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0009"
+            == "0010"
         )
+
+    command.downgrade(config, "0009")
+    with engine.connect() as connection:
+        columns = inspect(connection).get_columns("paper_fill", schema="trade_system")
+        assert "fee" not in {column["name"] for column in columns}
 
     command.downgrade(config, "0008")
     with engine.connect() as connection:
@@ -946,6 +952,7 @@ from sqlalchemy import create_engine
 from infrastructure.database.config import local_database_url
 from infrastructure.database.paper_ledger import PaperLedger, market_state_reference
 from trade_system.control.paper import ControlPolicy, TradingIntent
+from trade_system.risk.execution_costs import ExecutionCosts
 from trade_system.risk.paper import RiskLimits, SyntheticQuote
 
 now = datetime(2025, 11, 10, tzinfo=UTC)
@@ -1161,3 +1168,88 @@ def test_paper_market_state_obeys_decision_cutoff_and_preserves_evidence(
             text("UPDATE trade_system.paper_fill SET market_state = NULL")
         )
     assert restarted.reconcile().first_divergent_fill == intent.intent_id
+
+
+def test_paper_costed_fills_replay_and_reconcile(outbox_database: Engine) -> None:
+    baseline = paper_ledger(outbox_database)
+    costs = ExecutionCosts(fee_bps=Decimal(10), slippage_bps=Decimal(100))
+    ledger = PaperLedger(
+        outbox_database, baseline.control, baseline.limits, costs=costs
+    )
+    ledger.open_account(PaperBalance(Decimal(1000), Decimal(0)))
+    now = datetime(2025, 11, 10, tzinfo=UTC)
+    buy = TradingIntent(
+        "costed-buy",
+        "cost-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "BUY",
+        Decimal("0.01"),
+        now,
+        now + timedelta(seconds=5),
+    )
+    quote = SyntheticQuote("cost-quote", "BTCUSDT", Decimal(10000), now)
+    bought = ledger.submit(buy, quote, now)
+    assert bought.reference_price == Decimal(10000)
+    assert bought.price == Decimal(10100)
+    assert bought.notional == Decimal(101)
+    assert bought.fee == Decimal("0.101")
+    assert bought.balance_after == PaperBalance(Decimal("898.899"), Decimal("0.01"))
+
+    restarted = PaperLedger(outbox_database, ledger.control, ledger.limits)
+    assert restarted.submit(buy, quote, now) == bought
+
+    sold = ledger.submit(replace(buy, intent_id="costed-sell", side="SELL"), quote, now)
+    assert sold.price == Decimal(9900)
+    assert sold.notional == Decimal(99)
+    assert sold.fee == Decimal("0.099")
+    report = restarted.reconcile()
+    assert report.consistent and report.fills == 2
+    assert report.expected == PaperBalance(Decimal("997.800"), Decimal(0))
+
+    with outbox_database.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE trade_system.paper_fill SET fee = fee + 0.001 "
+                "WHERE intent_id = 'costed-buy'"
+            )
+        )
+    assert restarted.reconcile().first_divergent_fill == "costed-buy"
+
+
+def test_paper_risk_uses_slipped_notional_and_fee(outbox_database: Engine) -> None:
+    baseline = paper_ledger(outbox_database)
+    costs = ExecutionCosts(fee_bps=Decimal(10), slippage_bps=Decimal(100))
+    ledger = PaperLedger(
+        outbox_database, baseline.control, baseline.limits, costs=costs
+    )
+    opening = PaperBalance(Decimal("101.05"), Decimal(0))
+    ledger.open_account(opening)
+    now = datetime(2025, 11, 10, tzinfo=UTC)
+    intent = TradingIntent(
+        "costed-buy",
+        "cost-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "BUY",
+        Decimal("0.01"),
+        now,
+        now + timedelta(seconds=5),
+    )
+    quote = SyntheticQuote("cost-quote", "BTCUSDT", Decimal(10000), now)
+    limited = PaperLedger(
+        outbox_database,
+        ledger.control,
+        replace(ledger.limits, max_order_notional=Decimal("100.50")),
+        costs=costs,
+    )
+    with pytest.raises(ValueError, match="risk: order_limit"):
+        limited.submit(intent, quote, now)
+    with pytest.raises(ValueError, match="risk: insufficient_cash"):
+        ledger.submit(intent, quote, now)
+    report = ledger.reconcile()
+    assert report.consistent and report.fills == 0 and report.stored == opening

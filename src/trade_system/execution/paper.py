@@ -19,6 +19,10 @@ class PaperFill:
     quantity: Decimal
     notional: Decimal
     balance_after: PaperBalance
+    reference_price: Decimal | None = None
+    fee: Decimal = Decimal(0)
+    fee_bps: Decimal = Decimal(0)
+    slippage_bps: Decimal = Decimal(0)
 
 
 class PaperSimulator:
