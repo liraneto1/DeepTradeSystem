@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-11-11T19:28:45.701971+00:00",
+  "level": "INFO",
+  "component": "apps.api.main",
+  "event": "diagnostic_request",
+  "correlation_id": "corr_evidence_i00",
+  "route": "health",
+  "status_code": 200,
+  "trace_id": "0a83c1b1a6b156e08ae4aa6b254e0e3b",
+  "span_id": "72ab3454765ff2a5"
+}

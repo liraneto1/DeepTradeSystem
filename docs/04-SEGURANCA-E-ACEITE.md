@@ -14,3 +14,5 @@ G0 Engineering Ready; G1 Strategy Validated; G2 PAPER Qualified; G3 Operationall
 
 ## Evidence Bundle
 Identidade de release, commit, digest de build, ambiente, versões de contrato, resultados reais de testes, políticas, logs relevantes sanitizados, riscos, aprovação humana e hashes de integridade. Não inventar evidências ou status verde.
+
+Consulte o [Evidence Bundle I00 RC1](evidence/releases/i00-rc1/README.md) para revisar o candidato e verificar sua integridade.

@@ -1,0 +1,61 @@
+{
+  "commit": "8d1467dd4087bcb6bb37fd4cc880de6d42b661e6",
+  "local": {
+    "platform": "Windows x64",
+    "python": "3.12.12",
+    "uv": "0.9.26",
+    "pytest": "9.2.0",
+    "checks": {
+      "uv sync --locked": "passed",
+      "ruff check src infrastructure apps tests": "passed",
+      "ruff format --check src infrastructure apps tests": {
+        "status": "passed",
+        "files": 44
+      },
+      "mypy": {
+        "status": "passed",
+        "files": 44
+      },
+      "pytest": {
+        "passed": 69,
+        "skipped": 16,
+        "failures": 0,
+        "errors": 0,
+        "seconds": 13.7
+      },
+      "uv build --no-sources": "passed",
+      "repeat_build_hashes": "match",
+      "diagnostic_health_http_status": 200
+    }
+  },
+  "github_actions": {
+    "run_id": 43086847472,
+    "job_id": 130753352524,
+    "run_url": "https://github.com/liraneto1/DeepTradeSystem/actions/runs/43086847472",
+    "conclusion": "success",
+    "platform": "ubuntu-latest",
+    "checks": {
+      "uv sync --locked": "passed",
+      "ruff check": "passed",
+      "ruff format --check": {
+        "status": "passed",
+        "files": 44
+      },
+      "mypy": {
+        "status": "passed",
+        "files": 44
+      },
+      "pytest": {
+        "passed": 69,
+        "skipped": 16,
+        "seconds": 3.88
+      },
+      "build": "passed",
+      "postgresql_integration": {
+        "major_version": 17,
+        "passed": 16,
+        "seconds": 4.24
+      }
+    }
+  }
+}

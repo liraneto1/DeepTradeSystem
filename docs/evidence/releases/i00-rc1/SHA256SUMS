@@ -1,0 +1,8 @@
+a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9  docs/evidence/releases/i00-rc1/.gitattributes
+90fafc7de841c0dcb4ad71c781cbc72cbebfe0c501622f498a292e223f02e0ae  docs/evidence/releases/i00-rc1/README.md
+1e4c625a18967e0c9f6399ac893898d7fa19154f5c1a648b8e83257967deea2f  docs/evidence/releases/i00-rc1/manifest.json
+9465385f5e6b5f0de5f84e1a637accdd254af998e21fc04fb5a3b6587ff896dc  docs/evidence/releases/i00-rc1/test-results.json
+325922ed1d748f66861f2d3eb738e093b11d8f88133471f231e36d0ba971eb61  docs/evidence/releases/i00-rc1/diagnostic-log.json
+35dae0368144faf7b8eac2c91c245790b51cbc31d0bed022823876d6d4db8450  dist/evidence/i00-rc1/deep-trade-system-i00-rc1-source.zip
+ccf6989352af321f1863de2ca99a0873f7a712cf5a9dfae29439fcec9d0beba8  dist/evidence/i00-rc1/deep_trade_system-0.1.0.tar.gz
+b27137ebe978da1d77f4953468786574f1ceae85738fc2d78ec841a815453cab  dist/evidence/i00-rc1/deep_trade_system-0.1.0-py3-none-any.whl

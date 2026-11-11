@@ -1,0 +1,113 @@
+{
+  "manifest_version": 1,
+  "candidate": "i00-rc1",
+  "status": "pending_review",
+  "package_version": "0.1.0",
+  "review_date": "2026-11-11",
+  "source": {
+    "repository": "https://github.com/liraneto1/DeepTradeSystem",
+    "branch": "codex/i00-bootstrap",
+    "commit": "8d1467dd4087bcb6bb37fd4cc880de6d42b661e6",
+    "source_date_epoch": 1794425040
+  },
+  "baselines": [
+    "TS-ARCH-GLOBAL-V1.0",
+    "TS-ENG-I00-V1.0"
+  ],
+  "technical_adrs": {
+    "from": "TS-ADR-089",
+    "through": "TS-ADR-098",
+    "reference": "../../../05-ADRS-TECNICAS.md"
+  },
+  "contracts": {
+    "command_envelope": "1.0.0",
+    "event_envelope": "1.0.0",
+    "diagnostic_response_schema": "1.0.0",
+    "reference": "../../../03-CONTRATOS.md"
+  },
+  "database": {
+    "major_version": 17,
+    "migration_head": "0005"
+  },
+  "configuration": {
+    "scope": "local_development_and_test",
+    "allowed_environments": [
+      "TRAINING",
+      "PAPER"
+    ],
+    "live_enabled": false,
+    "postgres_bind": "127.0.0.1",
+    "default_postgres_port": 55432,
+    "postgres_password_source": "local environment or ignored .env file",
+    "external_telemetry_export": false
+  },
+  "build": {
+    "host": "Windows x64",
+    "python": "3.12.12",
+    "uv": "0.9.26",
+    "backend": "hatchling 1.28.0",
+    "command": "uv build --no-sources",
+    "matching_rebuild_in_same_environment": true,
+    "artifact_directory": "dist/evidence/i00-rc1",
+    "artifacts": [
+      {
+        "file": "deep-trade-system-i00-rc1-source.zip",
+        "kind": "git_source_archive",
+        "bytes": 2473324,
+        "sha256": "35dae0368144faf7b8eac2c91c245790b51cbc31d0bed022823876d6d4db8450"
+      },
+      {
+        "file": "deep_trade_system-0.1.0.tar.gz",
+        "kind": "python_source_distribution",
+        "bytes": 2436925,
+        "sha256": "ccf6989352af321f1863de2ca99a0873f7a712cf5a9dfae29439fcec9d0beba8"
+      },
+      {
+        "file": "deep_trade_system-0.1.0-py3-none-any.whl",
+        "kind": "python_wheel",
+        "bytes": 5010,
+        "sha256": "b27137ebe978da1d77f4953468786574f1ceae85738fc2d78ec841a815453cab"
+      }
+    ]
+  },
+  "evidence": {
+    "test_results": "test-results.json",
+    "sanitized_diagnostic_log": "diagnostic-log.json",
+    "integrity": "SHA256SUMS",
+    "traceability": "../../../backlog/registro-mestre-i00.md"
+  },
+  "review": {
+    "source": "conversation",
+    "transition_to_I00_03_authorized": true,
+    "explicit_package_approvals": [
+      "I00-03",
+      "I00-04",
+      "I00-05",
+      "I00-06",
+      "I00-07",
+      "I00-08",
+      "I00-09",
+      "I00-10",
+      "I00-12",
+      "I00-13"
+    ],
+    "bundle_acceptance": "pending_human_decision",
+    "gates": {
+      "G0": "pending_human_decision",
+      "G1": "not_assessed",
+      "G2": "not_assessed",
+      "G3": "not_assessed",
+      "G4": "not_assessed",
+      "G5": "not_assessed"
+    }
+  },
+  "open_review_items": [
+    "DOC-01",
+    "DOC-02",
+    "DOC-03",
+    "DOC-04",
+    "DOC-05",
+    "DOC-06",
+    "DOC-07"
+  ]
+}
