@@ -20,8 +20,18 @@ jobs:
           enable-cache: false
       - run: uv python install
       - run: uv sync --locked
-      - run: uv run --no-sync ruff check src tests
-      - run: uv run --no-sync ruff format --check src tests
+      - run: uv run --no-sync ruff check src infrastructure tests
+      - run: uv run --no-sync ruff format --check src infrastructure tests
       - run: uv run --no-sync mypy
       - run: uv run --no-sync pytest
       - run: uv build --no-sources
+      - name: Test PostgreSQL migrations
+        shell: bash
+        run: |
+          export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::$POSTGRES_PASSWORD"
+          export RUN_POSTGRES_TESTS=1
+          compose=(docker compose -p deeptrade-ci -f deploy/compose/postgres.yml)
+          trap '"${compose[@]}" down --volumes' EXIT
+          "${compose[@]}" up -d --wait --wait-timeout 60
+          uv run --no-sync pytest tests/integration/test_postgres_migrations.py

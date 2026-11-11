@@ -28,8 +28,8 @@ Com o [uv 0.9.26](https://github.com/astral-sh/uv/releases/tag/0.9.26) disponív
 ```sh
 uv python install
 uv sync --locked
-uv run --no-sync ruff check src tests
-uv run --no-sync ruff format --check src tests
+uv run --no-sync ruff check src infrastructure tests
+uv run --no-sync ruff format --check src infrastructure tests
 uv run --no-sync mypy
 uv run --no-sync pytest
 uv build --no-sources
@@ -41,3 +41,7 @@ esse conjunto de verificações.
 
 Consulte [as evidências do bootstrap](docs/evidence/I00-bootstrap.md) para acompanhar
 o aceite de I00-01, I00-02 e I00-11.
+
+## Banco de desenvolvimento
+
+Veja [PostgreSQL 17 e migrations no VS Code](docs/runbooks/postgresql-local.md).
