@@ -36,6 +36,7 @@ from apps.market_data.continuous import ingest
 from infrastructure.database.config import local_database_url
 from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
 from infrastructure.database.market_stream import OBSERVATION, StreamStore
+from infrastructure.database.paper_ledger import PaperLedger
 from infrastructure.events.consumer import PROCESSED_EVENT, consume_once
 from infrastructure.events.diagnostic_projection import (
     DIAGNOSTIC_COUNT,
@@ -44,8 +45,11 @@ from infrastructure.events.diagnostic_projection import (
 from infrastructure.events.dispatcher import MAX_ATTEMPTS, dispatch_once
 from infrastructure.events.local_delivery import DELIVERY, LocalPublisher
 from infrastructure.events.outbox import OUTBOX, append_event
+from infrastructure.security.config import ConfigurationError
+from trade_system.control.paper import ControlPolicy, TradingIntent
 from trade_system.market_data.binance_archive import collect_day
 from trade_system.market_data.binance_stream import Observation
+from trade_system.risk.paper import PaperBalance, RiskLimits, SyntheticQuote
 
 ROOT = Path(__file__).resolve().parents[2]
 pytestmark = pytest.mark.skipif(
@@ -93,8 +97,14 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0007"
+            == "0008"
         )
+
+    command.downgrade(config, "0007")
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        assert not inspector.has_table("paper_fill", schema="trade_system")
+        assert not inspector.has_table("paper_account", schema="trade_system")
 
     command.downgrade(config, "0006")
     with engine.connect() as connection:
@@ -901,4 +911,121 @@ def test_archive_reconciles_with_existing_stream_candle(
         assert (
             connection.execute(select(OBSERVATION.c.source_kind)).scalar_one()
             == "websocket"
+        )
+
+
+def paper_ledger(engine: Engine) -> PaperLedger:
+    return PaperLedger(
+        engine,
+        ControlPolicy("paper-test", frozenset({"actor-test"}), paused=False),
+        RiskLimits(Decimal("200"), Decimal("0.02"), timedelta(seconds=2)),
+    )
+
+
+def test_paper_fill_survives_process_restart_and_reconciles(
+    outbox_database: Engine,
+) -> None:
+    ledger = paper_ledger(outbox_database)
+    ledger.open_account(PaperBalance(Decimal("1000"), Decimal(0)))
+    script = """
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from sqlalchemy import create_engine
+from infrastructure.database.config import local_database_url
+from infrastructure.database.paper_ledger import PaperLedger
+from trade_system.control.paper import ControlPolicy, TradingIntent
+from trade_system.risk.paper import RiskLimits, SyntheticQuote
+
+now = datetime(2025, 11, 10, tzinfo=UTC)
+engine = create_engine(local_database_url(), hide_parameters=True)
+try:
+    ledger = PaperLedger(
+        engine, ControlPolicy("paper-test", frozenset({"actor-test"}), paused=False),
+        RiskLimits(Decimal("200"), Decimal("0.02"), timedelta(seconds=2)),
+    )
+    intent = TradingIntent(
+        "paper-intent", "paper-correlation", "paper-test", "actor-test",
+        "PAPER", "BTCUSDT", "BUY", Decimal("0.01"), now, now + timedelta(seconds=5),
+    )
+    quote = SyntheticQuote("synthetic-quote", "BTCUSDT", Decimal("10000.12345678"), now)
+    fill = ledger.submit(intent, quote, now)
+    print(fill.intent_id, fill.correlation_id, fill.notional, fill.balance_after.cash)
+finally:
+    engine.dispose()
+"""
+    outputs = [
+        subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        ).stdout.strip()
+        for _ in range(2)
+    ]
+    assert (
+        outputs == ["paper-intent paper-correlation 100.0012345678 899.9987654322"] * 2
+    )
+    reconciliation = ledger.reconcile()
+    assert reconciliation.consistent
+    assert reconciliation.fills == 1
+    assert reconciliation.expected == PaperBalance(
+        Decimal("899.9987654322"), Decimal("0.01")
+    )
+    with outbox_database.begin() as connection:
+        connection.execute(
+            text("UPDATE trade_system.paper_fill SET cash_after = cash_after + 1")
+        )
+        connection.execute(
+            text("UPDATE trade_system.paper_account SET cash = cash + 1")
+        )
+    report = ledger.reconcile()
+    assert not report.consistent
+    assert report.first_divergent_fill == "paper-intent"
+    assert report.stored.cash - report.expected.cash == Decimal(1)
+
+
+def test_paper_fill_and_balance_roll_back_together(outbox_database: Engine) -> None:
+    ledger = paper_ledger(outbox_database)
+    opening = PaperBalance(Decimal(1000), Decimal(0))
+    ledger.open_account(opening)
+    with outbox_database.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE trade_system.paper_account ADD CHECK (cash >= 1000)")
+        )
+
+    now = datetime(2025, 11, 10, tzinfo=UTC)
+    intent = TradingIntent(
+        "paper-intent",
+        "paper-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "BUY",
+        Decimal("0.01"),
+        now,
+        now + timedelta(seconds=5),
+    )
+    quote = SyntheticQuote("synthetic-quote", "BTCUSDT", Decimal(10000), now)
+    with pytest.raises(IntegrityError):
+        ledger.submit(intent, quote, now)
+    report = ledger.reconcile()
+    assert report.consistent and report.fills == 0 and report.stored == opening
+
+
+def test_paper_ledger_blocks_live(
+    outbox_database: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ledger = paper_ledger(outbox_database)
+    monkeypatch.setenv("TRADE_SYSTEM_ENVIRONMENT", "LIVE")
+    with pytest.raises(ConfigurationError):
+        ledger.open_account(PaperBalance(Decimal(1000), Decimal(0)))
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(
+                text("SELECT count(*) FROM trade_system.paper_account")
+            ).scalar_one()
+            == 0
         )
