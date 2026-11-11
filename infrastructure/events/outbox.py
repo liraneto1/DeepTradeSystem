@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 
-from sqlalchemy import Column, DateTime, MetaData, Table, Text
+from sqlalchemy import Column, DateTime, Integer, MetaData, Table, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Connection
 
@@ -12,6 +12,10 @@ OUTBOX = Table(
     Column("event_id", Text(), primary_key=True),
     Column("envelope", JSONB(), nullable=False),
     Column("enqueued_at", DateTime(timezone=True), nullable=False),
+    Column("attempts", Integer(), nullable=False),
+    Column("available_at", DateTime(timezone=True), nullable=False),
+    Column("published_at", DateTime(timezone=True)),
+    Column("failed_at", DateTime(timezone=True)),
     schema="trade_system",
 )
 

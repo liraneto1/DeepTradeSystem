@@ -20,12 +20,12 @@ jobs:
           enable-cache: false
       - run: uv python install
       - run: uv sync --locked
-      - run: uv run --no-sync ruff check src infrastructure tests
-      - run: uv run --no-sync ruff format --check src infrastructure tests
+      - run: uv run --no-sync ruff check src infrastructure apps tests
+      - run: uv run --no-sync ruff format --check src infrastructure apps tests
       - run: uv run --no-sync mypy
       - run: uv run --no-sync pytest
       - run: uv build --no-sources
-      - name: Test PostgreSQL migrations and outbox
+      - name: Test PostgreSQL migrations, outbox and dispatcher
         shell: bash
         run: |
           export POSTGRES_PASSWORD="$(openssl rand -hex 24)"

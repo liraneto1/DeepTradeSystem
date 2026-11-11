@@ -1,6 +1,7 @@
 import json
+import logging
 import os
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Table,
     Text,
     create_engine,
+    func,
     inspect,
     select,
     text,
@@ -20,6 +22,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 
 from infrastructure.database.config import local_database_url
+from infrastructure.events.dispatcher import MAX_ATTEMPTS, dispatch_once
+from infrastructure.events.local_delivery import DELIVERY, LocalPublisher
 from infrastructure.events.outbox import OUTBOX, append_event
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,8 +72,17 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0002"
+            == "0003"
         )
+
+    command.downgrade(config, "0002")
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        assert not inspector.has_table("event_delivery", schema="trade_system")
+        assert {
+            column["name"]
+            for column in inspector.get_columns("outbox", schema="trade_system")
+        } == {"event_id", "envelope", "enqueued_at"}
 
     command.downgrade(config, "0001")
     with engine.connect() as connection:
@@ -171,3 +184,97 @@ def test_duplicate_event_rolls_back_new_state(
             reader.execute(select(TEST_STATE.c.state_id)).scalar_one_or_none() is None
         )
         assert reader.execute(select(OUTBOX.c.envelope)).scalar_one() == event
+
+
+def test_dispatcher_orders_pending_versions_and_skips_locked_rows(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    next_version = {**event, "event_id": "evt_next", "aggregate_version": 2}
+    other_aggregate = {**event, "event_id": "evt_other", "aggregate_id": "other"}
+    publish = LocalPublisher(outbox_database)
+    with outbox_database.begin() as connection:
+        append_event(connection, next_version)
+        append_event(connection, event)
+        append_event(connection, other_aggregate)
+
+    def publish_with_concurrent_worker(envelope: Mapping[str, object]) -> None:
+        assert envelope == event
+        assert dispatch_once(outbox_database, publish)
+        assert not dispatch_once(outbox_database, publish)
+        publish(envelope)
+
+    assert dispatch_once(outbox_database, publish_with_concurrent_worker)
+    assert dispatch_once(outbox_database, publish)
+    assert not dispatch_once(outbox_database, publish)
+    with outbox_database.connect() as connection:
+        assert connection.scalars(
+            select(DELIVERY.c.envelope).order_by(DELIVERY.c.delivery_id)
+        ).all() == [other_aggregate, event, next_version]
+
+
+def test_dispatcher_retries_then_retains_failed_event(
+    outbox_database: Engine, event: dict[str, object], caplog: pytest.LogCaptureFixture
+) -> None:
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+        append_event(
+            connection, {**event, "event_id": "evt_next", "aggregate_version": 2}
+        )
+
+    def unavailable(_: Mapping[str, object]) -> None:
+        raise RuntimeError("private publisher error")
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        assert dispatch_once(outbox_database, unavailable)
+        assert not dispatch_once(outbox_database, unavailable)
+        with outbox_database.begin() as connection:
+            row = connection.execute(
+                select(
+                    OUTBOX.c.attempts,
+                    OUTBOX.c.failed_at,
+                    OUTBOX.c.available_at > func.now(),
+                ).where(OUTBOX.c.event_id == event["event_id"])
+            ).one()
+            assert row.attempts == attempt
+            if attempt < MAX_ATTEMPTS:
+                assert row.failed_at is None
+                assert row[2]
+                connection.execute(
+                    OUTBOX.update()
+                    .where(OUTBOX.c.event_id == event["event_id"])
+                    .values(available_at=func.now())
+                )
+            else:
+                assert row.failed_at is not None
+
+    logs = [
+        json.loads(record.getMessage())
+        for record in caplog.records
+        if record.name == "infrastructure.events.dispatcher"
+    ]
+    assert [record["retry_delay_seconds"] for record in logs[:-1]] == [1, 2, 4, 8]
+    assert logs[-1]["event"] == "outbox_failed"
+    assert logs[-1]["correlation_id"] == event["correlation_id"]
+    assert "private publisher error" not in caplog.text
+
+
+def test_dispatcher_republishes_after_interruption(
+    outbox_database: Engine, event: dict[str, object], caplog: pytest.LogCaptureFixture
+) -> None:
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+    publish = LocalPublisher(outbox_database)
+
+    def interrupted(envelope: Mapping[str, object]) -> None:
+        publish(envelope)
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        dispatch_once(outbox_database, interrupted)
+
+    with caplog.at_level(logging.INFO, logger="infrastructure.events.dispatcher"):
+        assert dispatch_once(outbox_database, publish)
+    assert "outbox_published" in caplog.text
+    assert not dispatch_once(outbox_database, publish)
+    with outbox_database.connect() as connection:
+        assert connection.scalars(select(DELIVERY.c.envelope)).all() == [event, event]

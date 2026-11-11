@@ -33,4 +33,4 @@ Após uma falha injetada antes do commit, ambos ficam ausentes. A suíte
 também verifica a reversão da migration e a rejeição de um ID duplicado.
 
 O downgrade de `0002` remove a tabela e os eventos nela armazenados.
-O dispatcher e o acompanhamento de publicação serão tratados em I00-06.
+Veja o [guia do dispatcher](dispatcher-outbox.md) para publicar os eventos localmente.
