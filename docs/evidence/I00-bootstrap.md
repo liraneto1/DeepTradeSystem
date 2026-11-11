@@ -36,3 +36,11 @@ A execução em Linux e o status do GitHub Actions ainda precisam ser verificado
 Os hashes identificam os artefatos deste build local. O aceite integral de I00 e
 a decisão sobre G0 seguem pendentes. Contratos, PostgreSQL e Outbox aguardam
 aprovação antes da implementação.
+
+## Primeira execução do GitHub Actions
+
+A [execução do commit de bootstrap](https://github.com/liraneto1/DeepTradeSystem/actions/runs/43068400012)
+instalou Python e as dependências do lockfile e passou no lint. A checagem de
+formatação percorreu a raiz e encontrou o `Teste.py` do commit anterior ao
+bootstrap. O README e o workflow passaram a verificar `src` e `tests`, os
+diretórios Python entregues neste pacote.

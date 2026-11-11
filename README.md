@@ -28,8 +28,8 @@ Com o [uv 0.9.26](https://github.com/astral-sh/uv/releases/tag/0.9.26) disponív
 ```sh
 uv python install
 uv sync --locked
-uv run --no-sync ruff check .
-uv run --no-sync ruff format --check .
+uv run --no-sync ruff check src tests
+uv run --no-sync ruff format --check src tests
 uv run --no-sync mypy
 uv run --no-sync pytest
 uv build --no-sources
