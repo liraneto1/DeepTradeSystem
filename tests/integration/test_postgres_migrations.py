@@ -5,7 +5,8 @@ import socket
 import subprocess
 import sys
 from collections.abc import Iterator, Mapping
-from datetime import UTC, date, datetime
+from contextlib import contextmanager
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from hashlib import sha256
 from io import BytesIO
@@ -31,8 +32,10 @@ from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import IntegrityError
 
 from apps.api.main import app
+from apps.market_data.continuous import ingest
 from infrastructure.database.config import local_database_url
 from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
+from infrastructure.database.market_stream import OBSERVATION, StreamStore
 from infrastructure.events.consumer import PROCESSED_EVENT, consume_once
 from infrastructure.events.diagnostic_projection import (
     DIAGNOSTIC_COUNT,
@@ -42,6 +45,7 @@ from infrastructure.events.dispatcher import MAX_ATTEMPTS, dispatch_once
 from infrastructure.events.local_delivery import DELIVERY, LocalPublisher
 from infrastructure.events.outbox import OUTBOX, append_event
 from trade_system.market_data.binance_archive import collect_day
+from trade_system.market_data.binance_stream import Observation
 
 ROOT = Path(__file__).resolve().parents[2]
 pytestmark = pytest.mark.skipif(
@@ -89,7 +93,13 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0006"
+            == "0007"
+        )
+
+    command.downgrade(config, "0006")
+    with engine.connect() as connection:
+        assert not inspect(connection).has_table(
+            "market_candle_observation", schema="trade_system"
         )
 
     command.downgrade(config, "0005")
@@ -766,4 +776,129 @@ def test_market_history_rolls_back_window_on_source_revision(
         assert (
             connection.execute(select(func.count()).select_from(CANDLE)).scalar_one()
             == 24
+        )
+
+
+def observed(opened: datetime, step: timedelta, kind: str) -> Observation:
+    values = tuple(
+        Decimal(value) for value in ("2.00000001", "3", "1", "2.5", "5", "10", "4", "8")
+    )
+    return Observation(
+        opened,
+        opened + step,
+        values,
+        3,
+        kind,
+        "https://example.invalid",
+        opened + step,
+        {"fixture": True},
+    )
+
+
+@pytest.mark.parametrize("market", ["spot", "futures-um"])
+def test_stream_reconnect_recovers_postgres_gap_and_resumes(
+    outbox_database: Engine, market: str
+) -> None:
+    start = datetime(2025, 11, 10, tzinfo=UTC)
+    step = timedelta(minutes=5)
+    clock = start + step
+    sleeps: list[float] = []
+    store = StreamStore(outbox_database, market, "5m")
+
+    class Feed:
+        def __init__(self) -> None:
+            self.step = step
+            self.connections = 0
+
+        @contextmanager
+        def stream(self) -> Iterator[Iterator[Observation | None]]:
+            self.connections += 1
+
+            def messages() -> Iterator[Observation | None]:
+                yield None
+                if self.connections == 1:
+                    yield observed(start + step, step, "websocket")
+                    raise ConnectionError("synthetic disconnect")
+                yield observed(start + 3 * step, step, "websocket")
+                yield observed(start + 4 * step, step, "websocket")
+                raise KeyboardInterrupt
+
+            yield messages()
+
+        def backfill(self, first: datetime, end: datetime) -> list[Observation]:
+            count = (end - first) // step
+            if self.connections == 2:
+                count -= 1
+            return [observed(first + i * step, step, "rest") for i in range(count)]
+
+    def advance(seconds: float) -> None:
+        nonlocal clock
+        sleeps.append(seconds)
+        if len(sleeps) == 1:
+            clock = start + 4 * step
+        else:
+            assert store.latest() == start + step
+
+    feed = Feed()
+    with pytest.raises(KeyboardInterrupt):
+        ingest(feed, store, now=lambda: clock, sleep=advance)
+    assert sleeps == [1, 2]
+    assert feed.connections == 3
+
+    class RestartedFeed(Feed):
+        @contextmanager
+        def stream(self) -> Iterator[Iterator[Observation | None]]:
+            yield iter([observed(start + 6 * step, step, "websocket")])
+
+    ingest(
+        RestartedFeed(),
+        StreamStore(outbox_database, market, "5m"),
+        once=True,
+        now=lambda: start + 6 * step,
+    )
+    with outbox_database.connect() as connection:
+        rows = connection.execute(
+            select(OBSERVATION.c.open_time_utc, OBSERVATION.c.source_kind).order_by(
+                OBSERVATION.c.open_time_utc
+            )
+        ).all()
+        assert [row.open_time_utc for row in rows] == [
+            start + i * step for i in range(7)
+        ]
+        assert [row.source_kind for row in rows] == [
+            "rest",
+            "websocket",
+            "rest",
+            "rest",
+            "websocket",
+            "rest",
+            "websocket",
+        ]
+        assert (
+            connection.execute(select(func.count()).select_from(CANDLE)).scalar_one()
+            == 7
+        )
+
+
+def test_archive_reconciles_with_existing_stream_candle(
+    outbox_database: Engine, tmp_path: Path
+) -> None:
+    start = datetime(2025, 11, 10, tzinfo=UTC)
+    first = observed(start, timedelta(hours=1), "websocket")
+    store = StreamStore(outbox_database, "spot", "1h")
+    store.persist([first])
+    snapshot = history_snapshot(tmp_path, start.date(), "spot")
+    assert persist_history(outbox_database, [snapshot]) == (23, 0)
+    assert persist_history(outbox_database, [snapshot]) == (0, 1)
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(select(func.count()).select_from(CANDLE)).scalar_one()
+            == 24
+        )
+        assert (
+            connection.execute(select(SOURCE.c.archive_sha256)).scalar_one() is not None
+        )
+        assert (
+            connection.execute(select(OBSERVATION.c.source_kind)).scalar_one()
+            == "websocket"
         )

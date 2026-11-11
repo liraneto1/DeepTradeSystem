@@ -23,7 +23,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.dialects.postgresql import JSONB, insert
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
 
 from trade_system.market_data.binance_archive import MARKETS, SYMBOL, normalize_archive
 from trade_system.market_data.klines import INTERVAL_MINUTES
@@ -47,8 +47,8 @@ SOURCE = Table(
     Column("symbol", Text(), primary_key=True),
     Column("interval", Text(), primary_key=True),
     Column("day_utc", Date(), primary_key=True),
-    Column("archive_sha256", Text(), nullable=False),
-    Column("csv_sha256", Text(), nullable=False),
+    Column("archive_sha256", Text()),
+    Column("csv_sha256", Text()),
     Column("manifest", JSONB(), nullable=False),
     schema=SCHEMA,
 )
@@ -112,6 +112,31 @@ def read_snapshot(path: Path) -> Snapshot:
     )
 
 
+def store_candles(connection: Connection, rows: list[dict[str, object]]) -> int:
+    """Insert candles or verify that existing values match without overwriting them."""
+    statement = (
+        insert(CANDLE)
+        .on_conflict_do_nothing(index_elements=list(CANDLE.primary_key.columns))
+        .returning(CANDLE.c.open_time_utc)
+    )
+    inserted: list[object] = list(connection.execute(statement, rows).scalars())
+    if len(inserted) == len(rows):
+        return len(inserted)
+
+    first = rows[0]
+    existing = connection.execute(
+        select(CANDLE)
+        .filter_by(
+            market=first["market"], symbol=first["symbol"], interval=first["interval"]
+        )
+        .where(CANDLE.c.open_time_utc.in_([row["open_time_utc"] for row in rows]))
+    ).mappings()
+    stored = {row["open_time_utc"]: dict(row) for row in existing}
+    if any(stored.get(row["open_time_utc"]) != row for row in rows):
+        raise ValueError("Stored candle differs from the incoming source.")
+    return len(inserted)
+
+
 def persist_history(engine: Engine, manifests: Sequence[Path]) -> tuple[int, int]:
     """Return inserted candles and skipped identical days."""
     snapshots = [read_snapshot(path) for path in manifests]
@@ -150,16 +175,26 @@ def persist_history(engine: Engine, manifests: Sequence[Path]) -> tuple[int, int
             )
             if connection.execute(source).scalar_one_or_none() is None:
                 existing = connection.execute(
-                    select(SOURCE.c.archive_sha256, SOURCE.c.csv_sha256).filter_by(
-                        **key
-                    )
+                    select(SOURCE.c.archive_sha256, SOURCE.c.csv_sha256)
+                    .filter_by(**key)
+                    .with_for_update()
                 ).one()
-                if existing != (item.archive_hash, item.csv_hash):
+                if existing == (item.archive_hash, item.csv_hash):
+                    skipped += 1
+                    continue
+                if existing != (None, None):
                     raise ValueError(f"Source changed for {item.market} on {item.day}.")
-                skipped += 1
-                continue
+                connection.execute(
+                    SOURCE.update()
+                    .filter_by(**key)
+                    .values(
+                        archive_sha256=item.archive_hash,
+                        csv_sha256=item.csv_hash,
+                        manifest=item.manifest,
+                    )
+                )
 
-            rows = [
+            rows: list[dict[str, object]] = [
                 {
                     **key,
                     "open_time_utc": datetime.fromisoformat(row["open_time_utc"]),
@@ -171,6 +206,5 @@ def persist_history(engine: Engine, manifests: Sequence[Path]) -> tuple[int, int
                 }
                 for row in csv.DictReader(StringIO(item.csv_text))
             ]
-            connection.execute(CANDLE.insert(), rows)
-            inserted += len(rows)
+            inserted += store_candles(connection, rows)
     return inserted, skipped

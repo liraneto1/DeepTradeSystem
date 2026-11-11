@@ -68,4 +68,4 @@ ORDER BY market;
 O [registro de evidências](../evidence/I01-persistencia-btcusdt.md) descreve
 a carga de validação e o dump local. O comando usa HTTPS público e a
 política local aceita TRAINING e PAPER. LIVE permanece indisponível.
-Ingestão contínua e recuperação automática de lacunas seguem em I01.
+Veja o [guia de ingestão contínua](ingestao-continua-btcusdt.md) para acompanhar os mercados e recuperar lacunas via REST.
