@@ -17,26 +17,30 @@ MAX_ATTEMPTS = 5
 
 Publisher = Callable[[Mapping[str, object]], None]
 
-earlier = OUTBOX.alias("earlier")
-earlier_pending = (
-    select(earlier.c.event_id)
+predecessor = OUTBOX.alias("predecessor")
+version = cast(OUTBOX.c.envelope["aggregate_version"].astext, Numeric)
+predecessor_version = cast(predecessor.c.envelope["aggregate_version"].astext, Numeric)
+same_aggregate = (
+    select(predecessor.c.event_id)
     .where(
-        earlier.c.published_at.is_(None),
-        earlier.c.envelope["environment_id"].astext
+        predecessor.c.envelope["environment_id"].astext
         == OUTBOX.c.envelope["environment_id"].astext,
-        earlier.c.envelope["account_id"].astext.is_not_distinct_from(
+        predecessor.c.envelope["account_id"].astext.is_not_distinct_from(
             OUTBOX.c.envelope["account_id"].astext
         ),
-        earlier.c.envelope["aggregate_type"].astext
+        predecessor.c.envelope["aggregate_type"].astext
         == OUTBOX.c.envelope["aggregate_type"].astext,
-        earlier.c.envelope["aggregate_id"].astext
+        predecessor.c.envelope["aggregate_id"].astext
         == OUTBOX.c.envelope["aggregate_id"].astext,
-        cast(earlier.c.envelope["aggregate_version"].astext, Numeric)
-        < cast(OUTBOX.c.envelope["aggregate_version"].astext, Numeric),
     )
     .correlate(OUTBOX)
-    .exists()
 )
+earlier_pending = same_aggregate.where(
+    predecessor_version < version, predecessor.c.published_at.is_(None)
+).exists()
+previous_published = same_aggregate.where(
+    predecessor_version == version - 1, predecessor.c.published_at.is_not(None)
+).exists()
 NEXT_EVENT = (
     select(OUTBOX.c.event_id, OUTBOX.c.envelope, OUTBOX.c.attempts)
     .where(
@@ -44,6 +48,7 @@ NEXT_EVENT = (
         OUTBOX.c.failed_at.is_(None),
         OUTBOX.c.available_at <= func.now(),
         ~earlier_pending,
+        (version == 1) | previous_published,
     )
     .order_by(OUTBOX.c.available_at, OUTBOX.c.enqueued_at, OUTBOX.c.event_id)
     .limit(1)

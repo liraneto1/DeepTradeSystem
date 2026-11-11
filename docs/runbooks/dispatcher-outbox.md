@@ -25,7 +25,9 @@ para demonstrar a publicação e as falhas.
 - O dispatcher bloqueia a linha enquanto publica. Outro processo pula a
   linha bloqueada e pode trabalhar em um agregado diferente. Um predecessor
   ainda pendente, inclusive um evento retido, bloqueia versões posteriores
-  já enfileiradas para o mesmo ambiente, conta e agregado.
+  já enfileiradas para o mesmo ambiente, conta e agregado. Uma versão maior
+  que 1 só é elegível após a publicação da versão imediatamente anterior.
+  O dispatcher mantém outros agregados elegíveis enquanto espera.
 - A fila confirma a publicação em uma transação própria. Se o processo
   parar entre essa confirmação e a atualização da Outbox, a próxima
   execução pode gravar outra entrega do mesmo `event_id`. A deduplicação

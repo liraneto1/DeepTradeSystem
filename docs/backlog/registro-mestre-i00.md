@@ -23,7 +23,7 @@ Os testes citados pelo nome estão na [suíte PostgreSQL](../../tests/integratio
 | I00-10 | Logs JSON, spans locais e correlação | AC09 | 096 | [Testes da API](../../tests/unit/test_diagnostic_api.py) e `test_correlation_traces_api_dispatcher_and_consumer` | Verificado · [evidência](../evidence/I00-10-telemetria.md) · [commit](https://github.com/liraneto1/DeepTradeSystem/commit/6504245) · [CI](https://github.com/liraneto1/DeepTradeSystem/actions/runs/43083964878) |
 | I00-11 | CI de qualidade | AC01, AC02 | 095 | [Workflow](../../.github/workflows/ci.yml) | Verificado · [evidência](../evidence/I00-bootstrap.md) · [commit](https://github.com/liraneto1/DeepTradeSystem/commit/9ebfbdf) · [CI](https://github.com/liraneto1/DeepTradeSystem/actions/runs/43068600483) |
 | I00-12 | Registro mestre e lacunas rastreáveis | AC11 | T09, decisão da baseline técnica | Cobertura de IDs e verificação de referências | Entregue para revisão · [evidência](../evidence/I00-12-rastreabilidade.md) |
-| I00-13 | Falhas e recuperação | AC07, AC08 | 093, 094 | Suíte de resiliência planejada | Pendente · os testes existentes de falha, retry e replay dão cobertura parcial |
+| I00-13 | Falhas e recuperação | AC07, AC08 | 093, 094 | `test_out_of_order_arrival_waits_for_missing_version`, `test_dispatcher_retry_recovers_after_publisher_unavailability` e `test_workers_restart_after_database_connection_failure` | Entregue para revisão · [evidência](../evidence/I00-13-resiliencia.md) |
 | I00-14 | Evidence Bundle verificável | AC11, AC12 | T09, decisão da baseline técnica | Manifesto, hashes, release e decisão humana | Pendente · existem evidências por pacote |
 
 Para I00-01 e I00-02, o CI vinculado é o primeiro verde após a correção de
@@ -40,8 +40,8 @@ da entrega. A aprovação operacional dos gates exige decisão humana.
 | I00-AC04 | Subida e reversão das migrations verificadas em PostgreSQL 17. | A evidência é de instância descartável no CI. |
 | I00-AC05 | Estado e Outbox confirmados ou revertidos juntos em I00-05. | A evidência usa estado sintético. |
 | I00-AC06 | Replay produz um único efeito após reiniciar o consumidor em I00-07. | A garantia observada vale para efeitos na mesma transação PostgreSQL. |
-| I00-AC07 | Dispatcher preserva a ordem entre versões já pendentes do mesmo agregado em I00-06. | Chegada tardia de uma versão anterior e política de reordenação ou bloqueio seguem em DOC-04. |
-| I00-AC08 | Rollback, retry e recuperação após interrupção cobertos em I00-05 a I00-07. | A campanha consolidada de falhas e recuperação é I00-13. |
+| I00-AC07 | Dispatcher preserva a ordem entre versões já pendentes do mesmo agregado em I00-06. | I00-13 valida o bloqueio até a chegada da versão anterior. Versões conflitantes e lacunas permanentes seguem em DOC-04. |
+| I00-AC08 | Rollback, retry e recuperação após interrupção cobertos em I00-05 a I00-07. | I00-13 amplia a cobertura com retomada após indisponibilidade e reinício de processos. |
 | I00-AC09 | Diagnóstico, logs JSON e correlação entre componentes em I00-08 e I00-10. | Métricas de backlog e atraso e sua evidência seguem em DOC-05. |
 | I00-AC10 | Configuração inválida bloqueada, segregação lógica e LIVE rejeitado em I00-09. | A evidência se refere a TRAINING e PAPER em desenvolvimento local. |
 | I00-AC11 | Pacotes, decisões, testes e evidências de I00 ligados nesta matriz. | A matriz global de ADRs, componentes, pendências, épicos e histórias segue em DOC-03. |
@@ -54,7 +54,7 @@ da entrega. A aprovação operacional dos gates exige decisão humana.
 | DOC-01 | Aberta | Reconciliar P01–P47 com os originais D01–D04 do acervo local e registrar fonte por ID. A [visão inicial](../architecture/visao-inicial.md) aponta exemplos localizados. |
 | DOC-02 | Aberta | Confirmar a classificação de P18. O domínio D02 identifica o tema de degradação e retreinamento. A classificação M3 segue provisória. |
 | DOC-03 | Parcial | I00 está mapeado. Completar a relação global entre ADR, componente, pendência, épico, história, contrato, teste e evidência. Recuperar as fontes integrais das ADRs 001–088 e validar P01–P106 antes de publicar o vínculo global. |
-| DOC-04 | Aberta | Em I00-13, caracterizar a chegada tardia e os cenários de indisponibilidade e reinício. Registrar o comportamento observado e submeter a política de ordenação à revisão se necessário. |
+| DOC-04 | Parcial | I00-13 valida a chegada tardia, retry e reinício. Definir reconciliação de versões conflitantes ou de lacunas que nunca recebem a versão anterior. |
 | DOC-05 | Aberta | Definir e validar as métricas de backlog e atraso de Outbox previstas em T06. Registrar fonte, unidade e cenário de observação. |
 | DOC-06 | Aberta | Registrar a avaliação de compatibilidade e segurança das dependências de release, owners nominais, capacidade e decisões pendentes sobre produção. |
 | DOC-07 | Aberta | Consolidar o Evidence Bundle em I00-14. Registrar critérios quantitativos e decisões humanas sobre os gates quando aprovados. |

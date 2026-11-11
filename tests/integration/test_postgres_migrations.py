@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import socket
 import subprocess
 import sys
 from collections.abc import Iterator, Mapping
@@ -509,3 +510,144 @@ def test_correlation_traces_api_dispatcher_and_consumer(
         assert record["event_id"] == event["event_id"]
         assert record["causation_id"] == event["causation_id"]
     assert "synthetic-private-payload" not in caplog.text
+
+
+def test_out_of_order_arrival_waits_for_missing_version(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    later = {**event, "event_id": "evt_later", "aggregate_version": 2}
+    unrelated = {**event, "event_id": "evt_unrelated", "aggregate_id": "unrelated"}
+    publish = LocalPublisher(outbox_database)
+    with outbox_database.begin() as connection:
+        append_event(connection, later)
+        append_event(connection, unrelated)
+
+    assert dispatch_once(outbox_database, publish)
+    assert not dispatch_once(outbox_database, publish)
+    with outbox_database.connect() as connection:
+        assert connection.scalars(select(DELIVERY.c.envelope)).all() == [unrelated]
+        waiting = connection.execute(
+            select(OUTBOX.c.attempts, OUTBOX.c.published_at).where(
+                OUTBOX.c.event_id == later["event_id"]
+            )
+        ).one()
+        assert waiting.attempts == 0
+        assert waiting.published_at is None
+
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+
+    assert dispatch_once(outbox_database, publish)
+    assert dispatch_once(outbox_database, publish)
+    assert not dispatch_once(outbox_database, publish)
+    with outbox_database.connect() as connection:
+        assert connection.scalars(
+            select(DELIVERY.c.envelope).order_by(DELIVERY.c.delivery_id)
+        ).all() == [unrelated, event, later]
+
+
+def test_dispatcher_retry_recovers_after_publisher_unavailability(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+
+    def unavailable(_: Mapping[str, object]) -> None:
+        raise ConnectionError("synthetic publisher outage")
+
+    assert dispatch_once(outbox_database, unavailable)
+    publish = LocalPublisher(outbox_database)
+    assert not dispatch_once(outbox_database, publish)
+
+    with outbox_database.begin() as connection:
+        assert (
+            connection.execute(select(DELIVERY.c.delivery_id)).scalar_one_or_none()
+            is None
+        )
+        scheduled = connection.execute(
+            select(OUTBOX.c.attempts, OUTBOX.c.available_at > func.now())
+        ).one()
+        assert scheduled == (1, True)
+        # Advance the pending retry deterministically without sleeping.
+        connection.execute(OUTBOX.update().values(available_at=func.now()))
+
+    assert dispatch_once(outbox_database, publish)
+    assert not dispatch_once(outbox_database, publish)
+    with outbox_database.connect() as connection:
+        assert connection.scalars(select(DELIVERY.c.envelope)).all() == [event]
+        recovered = connection.execute(
+            select(OUTBOX.c.attempts, OUTBOX.c.published_at, OUTBOX.c.failed_at)
+        ).one()
+        assert recovered.attempts == 2
+        assert recovered.published_at is not None
+        assert recovered.failed_at is None
+
+
+def test_workers_restart_after_database_connection_failure(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+
+    def run_worker(
+        module: str, env: dict[str, str] | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, "-m", module, "--once"],
+            cwd=ROOT,
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+
+    with socket.socket() as reserved_port:
+        reserved_port.bind(("127.0.0.1", 0))
+        unreachable = {
+            **os.environ,
+            "POSTGRES_PORT": str(reserved_port.getsockname()[1]),
+        }
+
+        dispatcher = run_worker("apps.event_dispatcher", unreachable)
+        assert dispatcher.returncode == 1
+        assert json.loads(dispatcher.stderr)["event"] == "worker_failed"
+        with outbox_database.connect() as connection:
+            assert connection.execute(select(OUTBOX.c.attempts)).scalar_one() == 0
+            assert (
+                connection.execute(select(DELIVERY.c.delivery_id)).scalar_one_or_none()
+                is None
+            )
+
+        dispatcher = run_worker("apps.event_dispatcher")
+        assert dispatcher.returncode == 0
+        assert json.loads(dispatcher.stderr)["event"] == "outbox_published"
+
+        consumer = run_worker("apps.event_consumer", unreachable)
+        assert consumer.returncode == 1
+        assert json.loads(consumer.stderr)["event"] == "worker_failed"
+        with outbox_database.connect() as connection:
+            assert (
+                connection.execute(select(DELIVERY.c.consumed_at)).scalar_one() is None
+            )
+            assert (
+                connection.execute(
+                    select(PROCESSED_EVENT.c.event_id)
+                ).scalar_one_or_none()
+                is None
+            )
+
+    consumer = run_worker("apps.event_consumer")
+    assert consumer.returncode == 0
+    assert json.loads(consumer.stderr)["event"] == "delivery_consumed"
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(select(DELIVERY.c.consumed_at)).scalar_one() is not None
+        )
+        assert (
+            connection.execute(select(DIAGNOSTIC_COUNT.c.event_count)).scalar_one() == 1
+        )
+        assert (
+            connection.execute(select(PROCESSED_EVENT.c.event_id)).scalar_one()
+            == event["event_id"]
+        )
