@@ -6,6 +6,7 @@ import subprocess
 import sys
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from hashlib import sha256
@@ -33,10 +34,11 @@ from sqlalchemy.exc import IntegrityError
 
 from apps.api.main import app
 from apps.market_data.continuous import ingest
+from apps.market_data.paper import submit_market_intent
 from infrastructure.database.config import local_database_url
 from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
 from infrastructure.database.market_stream import OBSERVATION, StreamStore
-from infrastructure.database.paper_ledger import PaperLedger
+from infrastructure.database.paper_ledger import PaperLedger, market_state_reference
 from infrastructure.events.consumer import PROCESSED_EVENT, consume_once
 from infrastructure.events.diagnostic_projection import (
     DIAGNOSTIC_COUNT,
@@ -97,8 +99,17 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0008"
+            == "0009"
         )
+
+    command.downgrade(config, "0008")
+    with engine.connect() as connection:
+        assert "market_state" not in {
+            column["name"]
+            for column in inspect(connection).get_columns(
+                "paper_fill", schema="trade_system"
+            )
+        }
 
     command.downgrade(config, "0007")
     with engine.connect() as connection:
@@ -928,11 +939,12 @@ def test_paper_fill_survives_process_restart_and_reconciles(
     ledger = paper_ledger(outbox_database)
     ledger.open_account(PaperBalance(Decimal("1000"), Decimal(0)))
     script = """
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from sqlalchemy import create_engine
 from infrastructure.database.config import local_database_url
-from infrastructure.database.paper_ledger import PaperLedger
+from infrastructure.database.paper_ledger import PaperLedger, market_state_reference
 from trade_system.control.paper import ControlPolicy, TradingIntent
 from trade_system.risk.paper import RiskLimits, SyntheticQuote
 
@@ -1029,3 +1041,123 @@ def test_paper_ledger_blocks_live(
             ).scalar_one()
             == 0
         )
+
+
+def test_paper_market_state_obeys_decision_cutoff_and_preserves_evidence(
+    outbox_database: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    close_at = datetime(2025, 11, 10, 22, 35, tzinfo=UTC)
+    ready_at = close_at + timedelta(seconds=3)
+    execution_at = close_at + timedelta(seconds=4)
+    for interval, minutes in (("1m", 1), ("5m", 5), ("15m", 15), ("1h", 60)):
+        step = timedelta(minutes=minutes)
+        cutoff = close_at.replace(minute=close_at.minute // minutes * minutes)
+        stream = StreamStore(outbox_database, "spot", interval)
+        stream.persist(
+            [
+                observed(cutoff - index * step, step, "websocket")
+                for index in range(21, 0, -1)
+            ]
+        )
+
+    with outbox_database.begin() as connection:
+        connection.execute(
+            OBSERVATION.update().values(
+                available_at=close_at + timedelta(seconds=1),
+                received_at=close_at + timedelta(seconds=1),
+            )
+        )
+        connection.execute(
+            OBSERVATION.update()
+            .where(
+                OBSERVATION.c.interval == "5m",
+                OBSERVATION.c.open_time_utc == close_at - timedelta(minutes=5),
+            )
+            .values(available_at=ready_at, received_at=ready_at)
+        )
+
+    ledger = PaperLedger(
+        outbox_database,
+        ControlPolicy("paper-test", frozenset({"actor-test"}), paused=False),
+        RiskLimits(Decimal("200"), Decimal("0.02"), timedelta(seconds=5)),
+    )
+    opening = PaperBalance(Decimal("1000"), Decimal(0))
+    ledger.open_account(opening)
+    intent = TradingIntent(
+        "market-intent",
+        "market-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "BUY",
+        Decimal("0.01"),
+        close_at + timedelta(seconds=2),
+        close_at + timedelta(seconds=30),
+    )
+
+    with pytest.raises(ValueError, match="5m:"):
+        submit_market_intent(ledger, intent, close_at=close_at, now=execution_at)
+    with pytest.raises(ValueError, match="close_at <= as_of"):
+        submit_market_intent(
+            ledger, intent, close_at=close_at + timedelta(minutes=5), now=execution_at
+        )
+    assert ledger.reconcile().stored == opening and ledger.reconcile().fills == 0
+
+    intent = replace(intent, issued_at=execution_at)
+    with pytest.raises(ValueError, match="risk: invalid_or_stale_quote"):
+        submit_market_intent(
+            ledger, intent, close_at=close_at, now=close_at + timedelta(seconds=6)
+        )
+    fill = submit_market_intent(ledger, intent, close_at=close_at, now=execution_at)
+    assert fill.price == Decimal("2.5") and fill.notional == Decimal("0.025")
+    assert fill.balance_after == PaperBalance(Decimal("999.975"), Decimal("0.01"))
+    with outbox_database.connect() as connection:
+        evidence: dict[str, object] = connection.execute(
+            text("SELECT market_state FROM trade_system.paper_fill")
+        ).scalar_one()
+        assert evidence["close_at"] == close_at.isoformat()
+        assert evidence["as_of"] == execution_at.isoformat()
+        intervals = evidence["intervals"]
+        assert isinstance(intervals, dict)
+        assert sum(len(window["lineage"]) for window in intervals.values()) == 84
+        assert fill.quote_reference == market_state_reference(evidence)
+
+    def forbidden_read(*args: object, **kwargs: object) -> None:
+        pytest.fail("Market State was read before Control or during replay.")
+
+    monkeypatch.setattr("apps.market_data.paper.read_state", forbidden_read)
+    restarted = PaperLedger(outbox_database, ledger.control, ledger.limits)
+    assert (
+        submit_market_intent(restarted, intent, close_at=close_at, now=execution_at)
+        == fill
+    )
+    with pytest.raises(ValueError, match="conflicting_intent_id"):
+        submit_market_intent(
+            restarted,
+            intent,
+            close_at=close_at - timedelta(minutes=5),
+            now=execution_at,
+        )
+    with pytest.raises(ValueError, match="control: paper_required"):
+        submit_market_intent(
+            restarted,
+            replace(intent, environment_id="LIVE"),
+            close_at=close_at,
+            now=execution_at,
+        )
+    assert restarted.reconcile().consistent and restarted.reconcile().fills == 1
+    with outbox_database.begin() as connection:
+        connection.execute(
+            text(
+                """UPDATE trade_system.paper_fill
+               SET market_state = market_state
+               || '{"schema_version":"tampered"}'::jsonb"""
+            )
+        )
+    assert restarted.reconcile().first_divergent_fill == intent.intent_id
+    with outbox_database.begin() as connection:
+        connection.execute(
+            text("UPDATE trade_system.paper_fill SET market_state = NULL")
+        )
+    assert restarted.reconcile().first_divergent_fill == intent.intent_id
