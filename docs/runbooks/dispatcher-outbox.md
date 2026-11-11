@@ -29,7 +29,7 @@ para demonstrar a publicação e as falhas.
 - A fila confirma a publicação em uma transação própria. Se o processo
   parar entre essa confirmação e a atualização da Outbox, a próxima
   execução pode gravar outra entrega do mesmo `event_id`. A deduplicação
-  persistente será implementada em I00-07.
+  persistente é feita pelo [consumidor idempotente](consumidor-idempotente.md).
 - Os logs JSON registram resultado, ambiente, identificadores de
   correlação e causalidade, número da tentativa e atraso agendado. Em caso
   de falha, registram a classe do erro. O conteúdo do evento fica no banco.

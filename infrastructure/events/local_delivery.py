@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 
-from sqlalchemy import BigInteger, Column, MetaData, Table
+from sqlalchemy import BigInteger, Column, DateTime, MetaData, Table
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Engine
 
@@ -11,6 +11,7 @@ DELIVERY = Table(
     MetaData(),
     Column("delivery_id", BigInteger(), primary_key=True),
     Column("envelope", JSONB(), nullable=False),
+    Column("consumed_at", DateTime(timezone=True)),
     schema="trade_system",
 )
 

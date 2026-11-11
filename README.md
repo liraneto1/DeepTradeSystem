@@ -45,3 +45,5 @@ o aceite de I00-01, I00-02 e I00-11.
 ## Banco de desenvolvimento
 
 Veja [PostgreSQL 17 e migrations no VS Code](docs/runbooks/postgresql-local.md) e [Outbox transacional](docs/runbooks/outbox-transacional.md).
+Veja também [Dispatcher da Outbox](docs/runbooks/dispatcher-outbox.md) e
+[Consumidor idempotente](docs/runbooks/consumidor-idempotente.md).

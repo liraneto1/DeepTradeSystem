@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import subprocess
+import sys
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 
@@ -18,10 +20,15 @@ from sqlalchemy import (
     select,
     text,
 )
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import IntegrityError
 
 from infrastructure.database.config import local_database_url
+from infrastructure.events.consumer import PROCESSED_EVENT, consume_once
+from infrastructure.events.diagnostic_projection import (
+    DIAGNOSTIC_COUNT,
+    apply_diagnostic_event,
+)
 from infrastructure.events.dispatcher import MAX_ATTEMPTS, dispatch_once
 from infrastructure.events.local_delivery import DELIVERY, LocalPublisher
 from infrastructure.events.outbox import OUTBOX, append_event
@@ -72,8 +79,19 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0003"
+            == "0004"
         )
+
+    command.downgrade(config, "0003")
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        assert inspector.has_table("event_delivery", schema="trade_system")
+        assert "consumed_at" not in {
+            column["name"]
+            for column in inspector.get_columns("event_delivery", schema="trade_system")
+        }
+        assert not inspector.has_table("processed_event", schema="trade_system")
+        assert not inspector.has_table("diagnostic_event_count", schema="trade_system")
 
     command.downgrade(config, "0002")
     with engine.connect() as connection:
@@ -278,3 +296,80 @@ def test_dispatcher_republishes_after_interruption(
     assert not dispatch_once(outbox_database, publish)
     with outbox_database.connect() as connection:
         assert connection.scalars(select(DELIVERY.c.envelope)).all() == [event, event]
+
+
+def test_duplicate_deliveries_apply_one_effect_across_restarts(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    publish = LocalPublisher(outbox_database)
+    publish(event)
+    publish(event)
+
+    for outcome in ("delivery_consumed", "delivery_duplicate"):
+        result = subprocess.run(
+            [sys.executable, "-m", "apps.event_consumer", "--once"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        assert json.loads(result.stderr)["event"] == outcome
+
+    assert not consume_once(outbox_database, apply_diagnostic_event)
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(select(DIAGNOSTIC_COUNT.c.event_count)).scalar_one() == 1
+        )
+        assert (
+            connection.execute(select(PROCESSED_EVENT.c.event_id)).scalar_one()
+            == event["event_id"]
+        )
+        acknowledgements: list[object] = list(
+            connection.scalars(select(DELIVERY.c.consumed_at))
+        )
+        assert len(acknowledgements) == 2
+        assert all(timestamp is not None for timestamp in acknowledgements)
+
+
+def test_consumer_rolls_back_effect_and_deduplication(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    publish = LocalPublisher(outbox_database)
+    publish(event)
+
+    def fail_after_effect(
+        connection: Connection, envelope: Mapping[str, object]
+    ) -> None:
+        apply_diagnostic_event(connection, envelope)
+        raise RuntimeError("simulated failure after effect")
+
+    with pytest.raises(RuntimeError, match="simulated failure after effect"):
+        consume_once(outbox_database, fail_after_effect)
+
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(
+                select(DIAGNOSTIC_COUNT.c.event_count)
+            ).scalar_one_or_none()
+            is None
+        )
+        assert (
+            connection.execute(select(PROCESSED_EVENT.c.event_id)).scalar_one_or_none()
+            is None
+        )
+        assert connection.execute(select(DELIVERY.c.consumed_at)).scalar_one() is None
+
+    assert consume_once(outbox_database, apply_diagnostic_event)
+    assert not consume_once(outbox_database, apply_diagnostic_event)
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(select(DIAGNOSTIC_COUNT.c.event_count)).scalar_one() == 1
+        )
+        assert (
+            connection.execute(select(PROCESSED_EVENT.c.event_id)).scalar_one()
+            == event["event_id"]
+        )
+        assert (
+            connection.execute(select(DELIVERY.c.consumed_at)).scalar_one() is not None
+        )
