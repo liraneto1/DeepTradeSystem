@@ -4,6 +4,8 @@ No terminal PowerShell do VS Code, na raiz do repositório:
 
 ```powershell
 uv sync --locked
+$env:TRADE_SYSTEM_ENVIRONMENT = "PAPER"
+$env:LIVE_ENABLED = "false"
 uv run --no-sync uvicorn apps.api.main:app --host 127.0.0.1 --port 8000
 ```
 

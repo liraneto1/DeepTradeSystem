@@ -52,3 +52,7 @@ Veja também [Dispatcher da Outbox](docs/runbooks/dispatcher-outbox.md) e
 
 Veja o [guia da API no VS Code](docs/runbooks/api-diagnostico.md) para iniciar
 o serviço local e consultar saúde, prontidão e informações do sistema.
+
+## Isolamento e segredos
+
+Veja o [guia de configuração local](docs/runbooks/isolamento-e-segredos.md).

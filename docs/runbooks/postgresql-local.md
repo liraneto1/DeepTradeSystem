@@ -12,6 +12,8 @@ raiz do projeto e execute:
 
 ```powershell
 uv sync --locked
+$env:TRADE_SYSTEM_ENVIRONMENT = "PAPER"
+$env:LIVE_ENABLED = "false"
 $env:POSTGRES_PASSWORD = [guid]::NewGuid().ToString("N")
 docker compose -f deploy/compose/postgres.yml up -d --wait
 ```
@@ -23,7 +25,9 @@ local `.env` ignorado pelo Git e execute o Alembic com
 `uv run --env-file .env alembic`.
 
 Se o OneDrive bloquear hardlinks ou a atualização da `.venv`, configure
-um ambiente virtual fora do OneDrive nesta sessão e repita `uv sync --locked`.
+um ambiente virtual fora do OneDrive nesta sessão e repita `uv sync --locked
+$env:TRADE_SYSTEM_ENVIRONMENT = "PAPER"
+$env:LIVE_ENABLED = "false"`.
 
 ```powershell
 $env:UV_LINK_MODE = "copy"

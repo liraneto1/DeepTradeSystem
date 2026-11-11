@@ -81,7 +81,17 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0004"
+            == "0005"
+        )
+
+    command.downgrade(config, "0004")
+    with engine.connect() as connection:
+        constraints = inspect(connection).get_check_constraints(
+            "event_delivery", schema="trade_system"
+        )
+        assert all(
+            check["name"] != "event_delivery_environment_allowed"
+            for check in constraints
         )
 
     command.downgrade(config, "0003")
@@ -403,3 +413,61 @@ def test_api_readiness_requires_current_migrations(
             assert stale.json()["checks"] == {"database": "ok", "migrations": "pending"}
         finally:
             command.downgrade(config, "base")
+
+
+def test_workers_process_only_their_environment(
+    outbox_database: Engine, event: dict[str, object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    training = {**event, "event_id": "evt_training", "environment_id": "TRAINING"}
+    publish = LocalPublisher(outbox_database)
+
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+        with pytest.raises(ValueError, match="environment"):
+            append_event(connection, training)
+    with pytest.raises(ValueError, match="environment"):
+        publish(training)
+
+    with monkeypatch.context() as training_policy:
+        training_policy.setenv("TRADE_SYSTEM_ENVIRONMENT", "TRAINING")
+        with outbox_database.begin() as connection:
+            append_event(connection, training)
+        assert dispatch_once(outbox_database, publish)
+        assert not dispatch_once(outbox_database, publish)
+
+    assert dispatch_once(outbox_database, publish)
+    assert not dispatch_once(outbox_database, publish)
+    assert consume_once(outbox_database, apply_diagnostic_event)
+    assert not consume_once(outbox_database, apply_diagnostic_event)
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(select(PROCESSED_EVENT.c.event_id)).scalar_one()
+            == event["event_id"]
+        )
+        assert (
+            connection.execute(select(DIAGNOSTIC_COUNT.c.environment_id)).scalar_one()
+            == "PAPER"
+        )
+
+    monkeypatch.setenv("TRADE_SYSTEM_ENVIRONMENT", "TRAINING")
+    assert consume_once(outbox_database, apply_diagnostic_event)
+    assert not consume_once(outbox_database, apply_diagnostic_event)
+    with outbox_database.connect() as connection:
+        counts = connection.execute(
+            select(
+                DIAGNOSTIC_COUNT.c.environment_id, DIAGNOSTIC_COUNT.c.event_count
+            ).order_by(DIAGNOSTIC_COUNT.c.environment_id)
+        ).all()
+        assert counts == [("PAPER", 1), ("TRAINING", 1)]
+
+
+def test_postgres_rejects_live_events(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    live = {**event, "environment_id": "LIVE"}
+    with pytest.raises(IntegrityError), outbox_database.begin() as connection:
+        connection.execute(
+            OUTBOX.insert().values(event_id=live["event_id"], envelope=live)
+        )
+    with pytest.raises(IntegrityError), outbox_database.begin() as connection:
+        connection.execute(DELIVERY.insert().values(envelope=live))

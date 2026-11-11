@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection, Engine
 
 from infrastructure.events.local_delivery import DELIVERY
+from infrastructure.security.config import runtime_environment
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +34,12 @@ NEXT_DELIVERY = (
 
 def consume_once(engine: Engine, handle_event: EventHandler) -> bool:
     """Acknowledge one delivery and apply its database effect at most once."""
+    environment = runtime_environment()
+    query = NEXT_DELIVERY.where(
+        DELIVERY.c.envelope["environment_id"].astext == environment
+    )
     with engine.begin() as connection:
-        row = connection.execute(NEXT_DELIVERY).one_or_none()
+        row = connection.execute(query).one_or_none()
         if row is None:
             return False
 

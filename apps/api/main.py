@@ -1,5 +1,7 @@
 """Read-only endpoints for the local diagnostic API."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from importlib.metadata import version
 from typing import Literal
 
@@ -11,6 +13,13 @@ from infrastructure.database.readiness import (
     MigrationState,
     check_database,
 )
+from infrastructure.security.config import runtime_environment
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    runtime_environment()
+    yield
 
 
 class HealthResponse(BaseModel):
@@ -40,6 +49,7 @@ APP_VERSION = version("deep-trade-system")
 app = FastAPI(
     title="Trade System Diagnostic API",
     version=APP_VERSION,
+    lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
 )

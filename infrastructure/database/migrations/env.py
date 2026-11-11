@@ -12,7 +12,7 @@ if context.is_offline_mode():
     with context.begin_transaction():
         context.run_migrations()
 else:
-    engine = create_engine(url, poolclass=pool.NullPool)
+    engine = create_engine(url, poolclass=pool.NullPool, hide_parameters=True)
     try:
         with engine.connect() as connection:
             context.configure(connection=connection, version_table_schema="public")

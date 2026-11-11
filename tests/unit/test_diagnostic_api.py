@@ -5,11 +5,18 @@ import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.main import app
+from infrastructure.security.config import ConfigurationError
+
+
+@pytest.fixture(autouse=True)
+def valid_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRADE_SYSTEM_ENVIRONMENT", "PAPER")
+    monkeypatch.setenv("LIVE_ENABLED", "false")
 
 
 def test_health_and_info_work_without_database(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
-    monkeypatch.setenv("LIVE_ENABLED", "true")
+    monkeypatch.delenv("POSTGRES_PORT", raising=False)
 
     with TestClient(app) as client:
         health = client.get("/health")
@@ -57,3 +64,23 @@ def test_openapi_declares_diagnostic_endpoints() -> None:
     paths = response.json()["paths"]
     assert set(paths) == {"/health", "/readiness", "/info"}
     assert set(paths["/readiness"]["get"]["responses"]) == {"200", "503"}
+
+
+@pytest.mark.parametrize(
+    ("variable", "value"),
+    [
+        ("LIVE_ENABLED", "true"),
+        ("TRADE_SYSTEM_ENVIRONMENT", "LIVE"),
+        ("LIVE_ENABLED", None),
+    ],
+)
+def test_api_blocks_invalid_runtime(
+    monkeypatch: pytest.MonkeyPatch, variable: str, value: str | None
+) -> None:
+    if value is None:
+        monkeypatch.delenv(variable)
+    else:
+        monkeypatch.setenv(variable, value)
+
+    with pytest.raises(ConfigurationError, match=variable), TestClient(app):
+        pytest.fail("The API started with invalid configuration.")

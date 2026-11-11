@@ -6,6 +6,8 @@ from sqlalchemy import Column, DateTime, Integer, MetaData, Table, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Connection
 
+from infrastructure.security.config import require_event_environment
+
 OUTBOX = Table(
     "outbox",
     MetaData(),
@@ -22,6 +24,7 @@ OUTBOX = Table(
 
 def append_event(connection: Connection, envelope: Mapping[str, object]) -> None:
     """Insert a validated EventEnvelope v1 using the state write's transaction."""
+    require_event_environment(envelope.get("environment_id"))
     if not connection.in_transaction():
         raise RuntimeError(
             "An active database transaction is required to append an event."

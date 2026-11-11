@@ -19,7 +19,9 @@ def main() -> None:
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    engine = create_engine(local_database_url(), connect_args={"connect_timeout": 5})
+    engine = create_engine(
+        local_database_url(), connect_args={"connect_timeout": 5}, hide_parameters=True
+    )
     publish = LocalPublisher(engine)
     try:
         if args.once:

@@ -30,6 +30,7 @@ jobs:
         run: |
           export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
           echo "::add-mask::$POSTGRES_PASSWORD"
+          export TRADE_SYSTEM_ENVIRONMENT=PAPER LIVE_ENABLED=false
           export RUN_POSTGRES_TESTS=1
           compose=(docker compose -p deeptrade-ci -f deploy/compose/postgres.yml)
           trap '"${compose[@]}" down --volumes' EXIT

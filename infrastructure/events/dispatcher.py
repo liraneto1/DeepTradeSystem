@@ -10,6 +10,7 @@ from sqlalchemy import Numeric, cast, func, select
 from sqlalchemy.engine import Engine
 
 from infrastructure.events.outbox import OUTBOX
+from infrastructure.security.config import runtime_environment
 
 logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 5
@@ -52,8 +53,10 @@ NEXT_EVENT = (
 
 def dispatch_once(engine: Engine, publish: Publisher) -> bool:
     """Attempt one event using a publisher that confirms durable acceptance."""
+    environment = runtime_environment()
+    query = NEXT_EVENT.where(OUTBOX.c.envelope["environment_id"].astext == environment)
     with engine.begin() as connection:
-        row = connection.execute(NEXT_EVENT).one_or_none()
+        row = connection.execute(query).one_or_none()
         if row is None:
             return False
 

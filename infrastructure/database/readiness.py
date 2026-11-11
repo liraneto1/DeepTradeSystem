@@ -12,6 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import NullPool
 
 from infrastructure.database.config import local_database_url
+from infrastructure.security.config import ConfigurationError
 
 DatabaseState = Literal["ok", "unavailable"]
 MigrationState = Literal["current", "pending", "unknown"]
@@ -22,7 +23,7 @@ ALEMBIC_CONFIG = Path(__file__).resolve().parents[2] / "alembic.ini"
 def check_database() -> tuple[DatabaseState, MigrationState]:
     try:
         url = local_database_url()
-    except (RuntimeError, ValueError):
+    except ConfigurationError:
         return "unavailable", "unknown"
 
     engine = create_engine(
