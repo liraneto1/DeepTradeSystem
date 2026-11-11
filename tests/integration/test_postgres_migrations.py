@@ -34,6 +34,7 @@ from sqlalchemy.exc import IntegrityError
 
 from apps.api.main import app
 from apps.market_data.continuous import ingest
+from apps.market_data.funding import collect_funding
 from apps.market_data.paper import submit_futures_market_intent, submit_market_intent
 from infrastructure.database.config import local_database_url
 from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
@@ -1622,5 +1623,122 @@ def test_futures_funding_cutoff_replay_and_reconciliation(
         assert not report.consistent and report.first_divergent_funding_at == funding_at
     finally:
         # The disposable fixture downgrades to base; discard its funding entries first.
+        with outbox_database.begin() as connection:
+            connection.execute(text("DELETE FROM trade_system.paper_futures_funding"))
+
+
+def test_funding_collector_resumes_after_partial_run(outbox_database: Engine) -> None:
+    baseline = paper_ledger(outbox_database)
+    ledger = PaperFuturesLedger(outbox_database, baseline.control, baseline.limits)
+    ledger.open_account(Decimal(1000))
+    opened_at = datetime(2025, 11, 10, 15, 59, 59, tzinfo=UTC)
+    first_at = opened_at + timedelta(seconds=1)
+    second_at = first_at + timedelta(hours=8)
+    received = second_at + timedelta(seconds=1)
+    start = int(first_at.timestamp() * 1000)
+    next_start = int(second_at.timestamp() * 1000)
+    end = int(received.timestamp() * 1000)
+    intent = TradingIntent(
+        "collected-funding-open",
+        "funding-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "BUY",
+        Decimal("0.01"),
+        opened_at,
+        opened_at + timedelta(minutes=1),
+    )
+    ledger.submit(
+        intent,
+        SyntheticQuote("fixture", "BTCUSDT", Decimal(10000), opened_at),
+        opened_at,
+        reduce_only=False,
+    )
+    first = FundingObservation(
+        first_at, received, Decimal(20000), Decimal("0.0001"), "fixture:first"
+    )
+    second = replace(first, funding_at=second_at, reference="fixture:second")
+
+    def interrupted(lower: int, upper: int) -> list[FundingObservation]:
+        assert upper == end
+        if lower == start:
+            return [first]
+        assert lower == start + 1
+        raise ConnectionError("fixture: response interrupted")
+
+    def recovered(lower: int, upper: int) -> list[FundingObservation]:
+        assert upper == end
+        if lower == start + 1:
+            return [second]
+        assert lower == next_start + 1
+        return []
+
+    try:
+        with pytest.raises(ValueError, match="observation_outside_window"):
+            collect_funding(
+                outbox_database,
+                intent.account_id,
+                start=first_at,
+                fetch=lambda _a, _b: [
+                    first,
+                    replace(
+                        second,
+                        funding_at=received + timedelta(seconds=1),
+                        available_at=received + timedelta(seconds=1),
+                    ),
+                ],
+                now=iter((received, received + timedelta(seconds=1))).__next__,
+            )
+        with pytest.raises(ValueError, match="funding: invalid_cutoff"):
+            collect_funding(
+                outbox_database,
+                intent.account_id,
+                start=first_at,
+                fetch=lambda _a, _b: [
+                    replace(first, available_at=received + timedelta(seconds=1))
+                ],
+                now=lambda: received,
+            )
+        assert ledger.reconcile().funding_entries == 0
+        with pytest.raises(ConnectionError, match="response interrupted"):
+            collect_funding(
+                outbox_database,
+                intent.account_id,
+                start=first_at,
+                fetch=interrupted,
+                now=lambda: received,
+            )
+        assert ledger.reconcile().funding_entries == 1
+
+        restarted_engine = create_engine(outbox_database.url)
+        try:
+            assert (
+                collect_funding(
+                    restarted_engine,
+                    intent.account_id,
+                    start=first_at,
+                    fetch=recovered,
+                    now=lambda: received,
+                )
+                == 1
+            )
+            assert (
+                collect_funding(
+                    restarted_engine,
+                    intent.account_id,
+                    start=first_at,
+                    fetch=recovered,
+                    now=lambda: received,
+                )
+                == 0
+            )
+        finally:
+            restarted_engine.dispose()
+        report = ledger.reconcile()
+        assert report.consistent and report.funding_entries == 2
+        assert report.stored.cash == Decimal("899.96")
+    finally:
         with outbox_database.begin() as connection:
             connection.execute(text("DELETE FROM trade_system.paper_futures_funding"))

@@ -87,6 +87,91 @@ def funding_observation(row: RowMapping) -> FundingObservation:
     )
 
 
+def latest_funding_at(engine: Engine, account_id: str) -> datetime | None:
+    require_paper()
+    with engine.connect() as connection:
+        locked_account(connection, account_id)
+        result: datetime | None = connection.execute(
+            text("""
+            SELECT max(funding_at) FROM trade_system.paper_futures_funding
+            WHERE account_id = :account
+            """),
+            {"account": account_id},
+        ).scalar_one()
+        return result
+
+
+def apply_funding(
+    engine: Engine, account_id: str, observation: FundingObservation, *, as_of: datetime
+) -> FundingSettlement:
+    require_paper()
+    observation.validate(as_of)
+    keys = {"account": account_id, "funding_at": observation.funding_at}
+    with engine.begin() as connection:
+        account = locked_account(connection, account_id)
+        previous = (
+            connection.execute(
+                text("""
+            SELECT * FROM trade_system.paper_futures_funding
+            WHERE account_id = :account AND funding_at = :funding_at
+            """),
+                keys,
+            )
+            .mappings()
+            .one_or_none()
+        )
+        if previous is not None:
+            if observation != funding_observation(previous):
+                raise ValueError("funding: conflicting_observation")
+            if as_of < previous["applied_at"]:
+                raise ValueError("funding: invalid_cutoff")
+            return FundingSettlement(
+                previous["cash_delta"], decode_balance(previous["balance_after"])
+            )
+
+        out_of_order: bool = connection.execute(
+            text("""
+            SELECT EXISTS (
+                SELECT 1 FROM trade_system.paper_futures_fill
+                WHERE account_id = :account AND filled_at >= :funding_at
+                UNION ALL
+                SELECT 1 FROM trade_system.paper_futures_funding
+                WHERE account_id = :account
+                  AND (funding_at > :funding_at OR applied_at > :as_of)
+            )
+            """),
+            {**keys, "as_of": as_of},
+        ).scalar_one()
+        if out_of_order:
+            raise ValueError("funding: out_of_order")
+
+        try:
+            settlement = settle_funding(decode_balance(account["balance"]), observation)
+        except DecimalException as error:
+            raise ValueError("funding: arithmetic_out_of_range") from error
+        connection.execute(
+            text("""
+            INSERT INTO trade_system.paper_futures_funding
+            (account_id, funding_at, available_at, applied_at, mark_price, rate,
+             reference, cash_delta, balance_after)
+            VALUES (:account, :funding_at, :available_at, :applied_at, :mark_price,
+                    :rate, :reference, :cash_delta, :balance_after)
+            """).bindparams(bindparam("balance_after", type_=JSONB)),
+            {
+                **keys,
+                "available_at": observation.available_at,
+                "applied_at": as_of,
+                "mark_price": observation.mark_price,
+                "rate": observation.rate,
+                "reference": observation.reference,
+                "cash_delta": settlement.cash_delta,
+                "balance_after": balance_json(settlement.after),
+            },
+        )
+        update_balance(connection, account_id, settlement.after)
+        return settlement
+
+
 @dataclass(frozen=True)
 class FuturesReconciliation:
     fills: int
@@ -257,75 +342,9 @@ class PaperFuturesLedger:
     def apply_funding(
         self, observation: FundingObservation, *, as_of: datetime
     ) -> FundingSettlement:
-        require_paper()
-        observation.validate(as_of)
-        account_id = self.control.account_id
-        keys = {"account": account_id, "funding_at": observation.funding_at}
-        with self.engine.begin() as connection:
-            account = locked_account(connection, account_id)
-            previous = (
-                connection.execute(
-                    text("""
-                SELECT * FROM trade_system.paper_futures_funding
-                WHERE account_id = :account AND funding_at = :funding_at
-                """),
-                    keys,
-                )
-                .mappings()
-                .one_or_none()
-            )
-            if previous is not None:
-                if observation != funding_observation(previous):
-                    raise ValueError("funding: conflicting_observation")
-                if as_of < previous["applied_at"]:
-                    raise ValueError("funding: invalid_cutoff")
-                return FundingSettlement(
-                    previous["cash_delta"], decode_balance(previous["balance_after"])
-                )
-
-            out_of_order: bool = connection.execute(
-                text("""
-                SELECT EXISTS (
-                    SELECT 1 FROM trade_system.paper_futures_fill
-                    WHERE account_id = :account AND filled_at >= :funding_at
-                    UNION ALL
-                    SELECT 1 FROM trade_system.paper_futures_funding
-                    WHERE account_id = :account
-                      AND (funding_at > :funding_at OR applied_at > :as_of)
-                )
-                """),
-                {**keys, "as_of": as_of},
-            ).scalar_one()
-            if out_of_order:
-                raise ValueError("funding: out_of_order")
-
-            try:
-                settlement = settle_funding(
-                    decode_balance(account["balance"]), observation
-                )
-            except DecimalException as error:
-                raise ValueError("funding: arithmetic_out_of_range") from error
-            connection.execute(
-                text("""
-                INSERT INTO trade_system.paper_futures_funding
-                (account_id, funding_at, available_at, applied_at, mark_price, rate,
-                 reference, cash_delta, balance_after)
-                VALUES (:account, :funding_at, :available_at, :applied_at, :mark_price,
-                        :rate, :reference, :cash_delta, :balance_after)
-                """).bindparams(bindparam("balance_after", type_=JSONB)),
-                {
-                    **keys,
-                    "available_at": observation.available_at,
-                    "applied_at": as_of,
-                    "mark_price": observation.mark_price,
-                    "rate": observation.rate,
-                    "reference": observation.reference,
-                    "cash_delta": settlement.cash_delta,
-                    "balance_after": balance_json(settlement.after),
-                },
-            )
-            update_balance(connection, account_id, settlement.after)
-            return settlement
+        return apply_funding(
+            self.engine, self.control.account_id, observation, as_of=as_of
+        )
 
     def reconcile(self) -> FuturesReconciliation:
         require_paper()

@@ -52,13 +52,13 @@ e G0 segue aberto.
 
 A revisão `0013` registra funding de BTCUSDT em USDⓈ-M Futures.
 A simulação recebe horário do evento, horário em que os dados ficaram
-disponíveis, taxa, preço de marcação e referência da observação. Os dados
-são fornecidos pelo chamador. A taxa é uma fração, de modo que
+disponíveis, taxa, preço de marcação e referência da observação. A taxa
+é uma fração, de modo que
 `Decimal("0.0001")` representa 0,01%. A documentação da corretora
 descreve os campos de referência.
 [Histórico de funding USDⓈ-M](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Get-Funding-Rate-History)
 
-Com uma conta PAPER já aberta e a migração aplicada, use:
+Para simular uma observação manualmente com uma conta PAPER já aberta:
 
 ```python
 from datetime import UTC, datetime
@@ -90,3 +90,32 @@ Reenviar a mesma observação para a conta e o mesmo horário devolve o
 lançamento gravado. Mudar a observação nessa chave gera conflito.
 A reconciliação reproduz funding e fills na ordem registrada. A
 reversão de `0013` exige que a tabela de funding esteja vazia.
+
+
+### Coleta automática
+
+Com a revisão `0013` aplicada, uma conta Futures PAPER aberta e a
+[configuração local PAPER](paper-livro-razao.md), execute no terminal
+do VS Code. Substitua o ID e o horário pelos da sua simulação.
+
+```powershell
+uv run --no-sync python -m apps.market_data.funding --account paper-test --start 2026-11-10T16:00:00+00:00
+```
+
+O processo consulta o histórico público de funding de BTCUSDT a cada
+60 segundos. Use `--once` para executar uma única coleta. O horário
+inicial é inclusivo e exige fuso horário. Em cada execução, a coleta
+começa após o último funding gravado para a conta, respeitando o
+horário inicial. Respostas vazias mantêm o cursor. Um bloqueio no
+PostgreSQL limita a execução a um coletor por conta.
+
+O fim de cada janela é fixado antes da consulta. A disponibilidade
+dos dados é registrada quando o processo recebe a resposta, inclusive
+em consultas históricas. O coletor aplica as observações em ordem.
+Falhas de rede, HTTP 429 e erros de servidor são tentados novamente no
+modo contínuo. Cada lançamento confirmado sobrevive ao reinício.
+
+Durante a recuperação, processe o funding antes de retomar os fills.
+Se houver fill já registrado no instante do funding ou posterior,
+o coletor encerra com erro de ordenação e a conta requer revisão.
+A coleta usa somente o endpoint público de histórico.
