@@ -24,3 +24,5 @@
 4. **Quarta PR:** I00-08 a I00-10, I00-12 a I00-14.
 
 Não presumir prazo ou capacidade de equipe. Cada PR deve declarar critérios atendidos e pendências.
+
+Acompanhe o estado de cada pacote no [registro mestre de I00](backlog/registro-mestre-i00.md).

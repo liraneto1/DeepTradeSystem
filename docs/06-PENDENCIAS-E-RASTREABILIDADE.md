@@ -1,5 +1,7 @@
 # 06 — Pendências e rastreabilidade
 
+Consulte o [registro mestre de I00](backlog/registro-mestre-i00.md) para acompanhar os pacotes, critérios, testes e lacunas.
+
 ## Pendências documentais
 - DOC-01: reconciliar descrições originais P01–P47.
 - DOC-02: confirmar escopo e classificação de P18 (M3 provisório).
