@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:deep-trade-system:contracts:event-envelope:1.0.0",
+  "title": "EventEnvelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "correlation_id",
+    "causation_id",
+    "aggregate_type",
+    "aggregate_id",
+    "aggregate_version",
+    "environment_id",
+    "event_time",
+    "recorded_at",
+    "producer",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "event_type": {
+      "$ref": "#/$defs/identifier"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "causation_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "aggregate_type": {
+      "$ref": "#/$defs/identifier"
+    },
+    "aggregate_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "aggregate_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "environment_id": {
+      "enum": [
+        "TRAINING",
+        "PAPER"
+      ]
+    },
+    "account_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "event_time": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "recorded_at": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "producer": {
+      "$ref": "#/$defs/identifier"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|\\+00:00)$"
+    }
+  }
+}

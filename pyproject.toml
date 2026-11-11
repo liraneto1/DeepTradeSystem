@@ -13,9 +13,11 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "hypothesis>=6.140,<7",
+    "jsonschema[format-nongpl]>=4.26,<5",
     "mypy>=1.19,<2",
     "pytest>=9,<10",
     "ruff>=0.14,<1",
+    "types-jsonschema>=4.26,<5",
 ]
 
 [tool.uv]

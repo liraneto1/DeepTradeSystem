@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:deep-trade-system:contracts:command-envelope:1.0.0",
+  "title": "CommandEnvelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command_id",
+    "command_type",
+    "schema_version",
+    "idempotency_key",
+    "correlation_id",
+    "environment_id",
+    "account_id",
+    "issued_at",
+    "expires_at",
+    "actor",
+    "payload"
+  ],
+  "properties": {
+    "command_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "command_type": {
+      "$ref": "#/$defs/identifier"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "idempotency_key": {
+      "$ref": "#/$defs/identifier"
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "environment_id": {
+      "enum": [
+        "TRAINING",
+        "PAPER"
+      ]
+    },
+    "account_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "issued_at": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "expires_at": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/identifier"
+        },
+        "id": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    },
+    "authorization_ref": {
+      "$ref": "#/$defs/identifier"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|\\+00:00)$"
+    }
+  }
+}

@@ -19,5 +19,28 @@ Campos: `event_id`, `event_type`, `schema_version`, `correlation_id`, `causation
 - UNKNOWN em execução financeira futura implica reconciliação antes de qualquer reenvio.
 - No I00, usar somente eventos sintéticos e nunca endpoints reais de ordens.
 
-## Exemplo de contrato
-Ver `contracts/examples/command-envelope.example.json` e `event-envelope.example.json`.
+## Schemas e exemplos do I00-03
+
+| Envelope | Schema JSON 2020-12 | Exemplo sintético |
+|---|---|---|
+| Comando | [CommandEnvelope v1](../contracts/jsonschema/command-envelope.v1.schema.json) | [Comando de diagnóstico](../contracts/examples/command-envelope.example.json) |
+| Evento | [EventEnvelope v1](../contracts/jsonschema/event-envelope.v1.schema.json) | [Evento de diagnóstico](../contracts/examples/event-envelope.example.json) |
+
+O schema define os campos obrigatórios e aceita a versão `1.0.0`. Identificadores
+são strings com ao menos um caractere diferente de espaço em branco. Os ambientes
+aceitos são `TRAINING` e `PAPER`. Datas usam RFC 3339 em UTC com sufixo `Z`
+ou `+00:00`. Ative a verificação de formato no validador JSON Schema para
+conferir o calendário e o horário.
+
+`authorization_ref` no comando e `account_id` no evento podem ser omitidos.
+Quando presentes, seguem o mesmo formato dos demais identificadores.
+`aggregate_version` começa em 1. Cada tipo de mensagem poderá definir seu
+próprio schema de `payload`. Tipos com valores monetários ou quantidades
+deverão declará-los como strings decimais.
+
+A validade temporal do comando, a autorização do ator, a unicidade dos IDs e
+a progressão da versão do agregado dependem de relógio, contexto ou estado
+persistido. Os schemas validam a forma de cada mensagem individual.
+
+Para reproduzir os testes no terminal do VS Code, execute
+`uv sync --locked` e `uv run --no-sync pytest tests/contracts`.
