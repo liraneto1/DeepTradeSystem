@@ -25,7 +25,7 @@ jobs:
       - run: uv run --no-sync mypy
       - run: uv run --no-sync pytest
       - run: uv build --no-sources
-      - name: Test PostgreSQL migrations and event processing
+      - name: Test PostgreSQL migrations, events and API readiness
         shell: bash
         run: |
           export POSTGRES_PASSWORD="$(openssl rand -hex 24)"

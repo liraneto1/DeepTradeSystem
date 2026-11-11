@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import (
     Column,
     MetaData,
@@ -23,6 +24,7 @@ from sqlalchemy import (
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import IntegrityError
 
+from apps.api.main import app
 from infrastructure.database.config import local_database_url
 from infrastructure.events.consumer import PROCESSED_EVENT, consume_once
 from infrastructure.events.diagnostic_projection import (
@@ -373,3 +375,31 @@ def test_consumer_rolls_back_effect_and_deduplication(
         assert (
             connection.execute(select(DELIVERY.c.consumed_at)).scalar_one() is not None
         )
+
+
+def test_api_readiness_requires_current_migrations(
+    postgres: tuple[Config, Engine],
+) -> None:
+    config, _ = postgres
+    with TestClient(app) as client:
+        pending = client.get("/readiness")
+        assert pending.status_code == 503
+        assert pending.json()["checks"] == {"database": "ok", "migrations": "pending"}
+        assert client.get("/health").status_code == 200
+
+        command.upgrade(config, "head")
+        try:
+            ready = client.get("/readiness")
+            assert ready.status_code == 200
+            assert ready.json() == {
+                "schema_version": "1.0.0",
+                "status": "ready",
+                "checks": {"database": "ok", "migrations": "current"},
+            }
+
+            command.downgrade(config, "0003")
+            stale = client.get("/readiness")
+            assert stale.status_code == 503
+            assert stale.json()["checks"] == {"database": "ok", "migrations": "pending"}
+        finally:
+            command.downgrade(config, "base")
