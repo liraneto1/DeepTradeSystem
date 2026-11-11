@@ -5,13 +5,18 @@ import json
 from datetime import UTC, datetime
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 
 from infrastructure.database.config import local_database_url
 from infrastructure.security.config import ConfigurationError
 from trade_system.features.candles import WINDOW, Candle
 from trade_system.market_data.binance_archive import MARKETS
-from trade_system.market_state.snapshot import build_state
+from trade_system.market_state.snapshot import (
+    build_multi_state,
+    build_state,
+    closing_times,
+)
 
 WINDOW_QUERY = text("""
 WITH candidates AS (
@@ -27,7 +32,7 @@ WITH candidates AS (
     JOIN trade_system.market_history_source s USING (market, symbol, interval, day_utc)
     LEFT JOIN trade_system.market_candle_observation o
       USING (market, symbol, interval, open_time_utc)
-    WHERE c.market = :market AND c.symbol = 'BTCUSDT' AND c.interval = '5m'
+    WHERE c.market = :market AND c.symbol = 'BTCUSDT' AND c.interval = :interval
       AND c.close_time_exclusive_utc <= :close_at
 )
 SELECT *, LEAST(archive_at, observation_at) AS available_at
@@ -45,27 +50,27 @@ def utc_time(value: str) -> datetime:
     return parsed.astimezone(UTC)
 
 
-def read_state(market: str, close_at: datetime, as_of: datetime) -> dict[str, object]:
-    engine = create_engine(
-        local_database_url(), hide_parameters=True, connect_args={"connect_timeout": 5}
+def read_window(
+    connection: Connection,
+    market: str,
+    interval: str,
+    close_at: datetime,
+    as_of: datetime,
+) -> list[Candle]:
+    rows = (
+        connection.execute(
+            WINDOW_QUERY,
+            {
+                "market": market,
+                "interval": interval,
+                "close_at": close_at,
+                "as_of": as_of,
+                "window": WINDOW,
+            },
+        )
+        .mappings()
+        .all()
     )
-    try:
-        with engine.connect() as connection:
-            rows = (
-                connection.execute(
-                    WINDOW_QUERY,
-                    {
-                        "market": market,
-                        "close_at": close_at,
-                        "as_of": as_of,
-                        "window": WINDOW,
-                    },
-                )
-                .mappings()
-                .all()
-            )
-    finally:
-        engine.dispose()
 
     candles = []
     for row in reversed(rows):
@@ -91,7 +96,30 @@ def read_state(market: str, close_at: datetime, as_of: datetime) -> dict[str, ob
                 source,
             )
         )
-    return build_state(candles, market=market, close_at=close_at, as_of=as_of)
+    return candles
+
+
+def read_state(
+    market: str, close_at: datetime, as_of: datetime, *, multi_interval: bool = False
+) -> dict[str, object]:
+    cutoffs = closing_times(close_at, as_of) if multi_interval else {"5m": close_at}
+    engine = create_engine(
+        local_database_url(),
+        hide_parameters=True,
+        connect_args={"connect_timeout": 5},
+        isolation_level="REPEATABLE READ",
+    )
+    try:
+        with engine.connect() as connection:
+            windows = {
+                interval: read_window(connection, market, interval, cutoff, as_of)
+                for interval, cutoff in cutoffs.items()
+            }
+    finally:
+        engine.dispose()
+    if multi_interval:
+        return build_multi_state(windows, market=market, close_at=close_at, as_of=as_of)
+    return build_state(windows["5m"], market=market, close_at=close_at, as_of=as_of)
 
 
 def main() -> None:
@@ -99,11 +127,17 @@ def main() -> None:
     parser.add_argument("--market", required=True, choices=MARKETS)
     parser.add_argument("--close-at", required=True, type=utc_time)
     parser.add_argument("--as-of", type=utc_time)
+    parser.add_argument("--multi-interval", action="store_true")
     args = parser.parse_args()
     try:
         print(
             json.dumps(
-                read_state(args.market, args.close_at, args.as_of or datetime.now(UTC)),
+                read_state(
+                    args.market,
+                    args.close_at,
+                    args.as_of or datetime.now(UTC),
+                    multi_interval=args.multi_interval,
+                ),
                 indent=2,
             )
         )

@@ -24,5 +24,22 @@ O padrão de `--as-of` é o instante da consulta. Um arquivo histórico
 carregado depois do evento fica indisponível em uma simulação cujo
 `--as-of` anteceda a coleta. Lacunas e janelas incompletas bloqueiam o estado.
 
-O recorte é diagnóstico. Contexto de outros intervalos e features
-adicionais seguem em I02. LIVE permanece indisponível.
+## Consultar quatro intervalos
+
+Carregue candles nativos de `1m`, `5m`, `15m` e `1h` para o mercado
+escolhido. Use o [guia de carga](historico-btcusdt.md) e altere
+`--interval` para cada granularidade. Depois execute:
+
+```powershell
+uv run --no-sync python -m apps.market_data.state --market spot --close-at 2025-11-10T22:35:00Z --multi-interval
+```
+
+A saída `2.0.0` usa o fechamento de 5m como referência. Cada contexto
+termina no último fechamento do seu intervalo até esse instante.
+Às 22:35 UTC, os cortes são 22:35 para 1m e 5m, 22:30 para 15m e
+22:00 para 1h. As quatro janelas são lidas no mesmo snapshot do
+PostgreSQL, com 21 candles consecutivos e uma referência de origem
+por candle. Se uma janela falhar, o comando bloqueia o estado inteiro.
+
+O formato de 5m `1.0.0` continua disponível pelo comando inicial.
+O recorte é diagnóstico. LIVE permanece indisponível.

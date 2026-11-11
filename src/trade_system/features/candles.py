@@ -22,14 +22,16 @@ class Candle:
     source: dict[str, str]
 
 
-def calculate(candles: Sequence[Candle]) -> dict[str, str | None]:
+def calculate(
+    candles: Sequence[Candle], *, step: timedelta = STEP
+) -> dict[str, str | None]:
     if len(candles) != WINDOW:
         raise ValueError("Market State requires 21 available closed candles.")
     for index, candle in enumerate(candles):
-        if candle.closed_at - candle.opened_at != STEP or (
+        if candle.closed_at - candle.opened_at != step or (
             index > 0 and candles[index - 1].closed_at != candle.opened_at
         ):
-            raise ValueError("Market State requires a contiguous five-minute window.")
+            raise ValueError("Market State requires a contiguous candle window.")
 
     last = candles[-1]
     with localcontext() as context:
