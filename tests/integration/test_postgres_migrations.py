@@ -471,3 +471,41 @@ def test_postgres_rejects_live_events(
         )
     with pytest.raises(IntegrityError), outbox_database.begin() as connection:
         connection.execute(DELIVERY.insert().values(envelope=live))
+
+
+def test_correlation_traces_api_dispatcher_and_consumer(
+    outbox_database: Engine, event: dict[str, object], caplog: pytest.LogCaptureFixture
+) -> None:
+    event = {**event, "payload": {"token": "synthetic-private-payload"}}
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+
+    with caplog.at_level(logging.INFO), TestClient(app) as client:
+        response = client.get("/health", headers={"X-Correlation-ID": "corr_example"})
+        assert dispatch_once(outbox_database, LocalPublisher(outbox_database))
+        assert consume_once(outbox_database, apply_diagnostic_event)
+    assert response.headers["X-Correlation-ID"] == event["correlation_id"]
+    components = {
+        "apps.api.main",
+        "infrastructure.events.dispatcher",
+        "infrastructure.events.consumer",
+    }
+    records = [
+        json.loads(record.getMessage())
+        for record in caplog.records
+        if record.name in components
+    ]
+    assert [record["event"] for record in records] == [
+        "diagnostic_request",
+        "outbox_published",
+        "delivery_consumed",
+    ]
+    for record in records:
+        assert record["correlation_id"] == event["correlation_id"]
+        assert len(record["trace_id"]) == 32
+        assert len(record["span_id"]) == 16
+        assert record["timestamp"].endswith("+00:00")
+    for record in records[1:]:
+        assert record["event_id"] == event["event_id"]
+        assert record["causation_id"] == event["causation_id"]
+    assert "synthetic-private-payload" not in caplog.text

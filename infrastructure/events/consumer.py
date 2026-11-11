@@ -1,6 +1,5 @@
 """Consume local deliveries with transactional deduplication."""
 
-import json
 import logging
 import typing
 from collections.abc import Callable, Mapping
@@ -11,6 +10,7 @@ from sqlalchemy.engine import Connection, Engine
 
 from infrastructure.events.local_delivery import DELIVERY
 from infrastructure.security.config import runtime_environment
+from infrastructure.telemetry import log_event, tracer
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,9 @@ NEXT_DELIVERY = (
 )
 
 
+@tracer.start_as_current_span(
+    "delivery.consume", record_exception=False, set_status_on_exception=False
+)
 def consume_once(engine: Engine, handle_event: EventHandler) -> bool:
     """Acknowledge one delivery and apply its database effect at most once."""
     environment = runtime_environment()
@@ -55,8 +58,25 @@ def consume_once(engine: Engine, handle_event: EventHandler) -> bool:
             .returning(PROCESSED_EVENT.c.event_id)
         ).scalar_one_or_none()
 
+        details = {
+            "delivery_id": delivery_id,
+            "event_id": event_id,
+            "correlation_id": envelope.get("correlation_id"),
+            "causation_id": envelope.get("causation_id"),
+            "environment_id": environment,
+        }
         if inserted is not None:
-            handle_event(connection, envelope)
+            try:
+                handle_event(connection, envelope)
+            except Exception as error:
+                log_event(
+                    logger,
+                    "delivery_failed",
+                    level=logging.ERROR,
+                    error_type=type(error).__name__,
+                    **details,
+                )
+                raise
 
         connection.execute(
             DELIVERY.update()
@@ -64,18 +84,6 @@ def consume_once(engine: Engine, handle_event: EventHandler) -> bool:
             .values(consumed_at=func.clock_timestamp())
         )
 
-    logger.info(
-        "%s",
-        json.dumps(
-            {
-                "event": "delivery_consumed"
-                if inserted is not None
-                else "delivery_duplicate",
-                "delivery_id": delivery_id,
-                "event_id": event_id,
-                "correlation_id": envelope.get("correlation_id"),
-                "environment_id": envelope.get("environment_id"),
-            }
-        ),
-    )
+    outcome = "delivery_consumed" if inserted is not None else "delivery_duplicate"
+    log_event(logger, outcome, level=logging.INFO, **details)
     return True

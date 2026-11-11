@@ -56,3 +56,7 @@ o serviço local e consultar saúde, prontidão e informações do sistema.
 ## Isolamento e segredos
 
 Veja o [guia de configuração local](docs/runbooks/isolamento-e-segredos.md).
+
+## Telemetria local
+
+Veja o [guia de telemetria no VS Code](docs/runbooks/telemetria-local.md).

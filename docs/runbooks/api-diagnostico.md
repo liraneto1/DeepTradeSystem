@@ -6,7 +6,7 @@ No terminal PowerShell do VS Code, na raiz do repositório:
 uv sync --locked
 $env:TRADE_SYSTEM_ENVIRONMENT = "PAPER"
 $env:LIVE_ENABLED = "false"
-uv run --no-sync uvicorn apps.api.main:app --host 127.0.0.1 --port 8000
+uv run --no-sync python -m apps.api
 ```
 
 Em outro terminal, consulte a API:

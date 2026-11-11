@@ -1,3 +1,5 @@
+import json
+import logging
 import socket
 from importlib.metadata import version
 
@@ -84,3 +86,64 @@ def test_api_blocks_invalid_runtime(
 
     with pytest.raises(ConfigurationError, match=variable), TestClient(app):
         pytest.fail("The API started with invalid configuration.")
+
+
+def test_request_log_correlates_and_omits_secrets(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    secret = "synthetic-secret-for-log-test"
+    monkeypatch.setenv("POSTGRES_PASSWORD", secret)
+    with (
+        TestClient(app) as client,
+        caplog.at_level(logging.INFO, logger="apps.api.main"),
+    ):
+        accepted = client.get(
+            f"/health?token={secret}",
+            headers={
+                "X-Correlation-ID": "corr_example",
+                "Authorization": f"Bearer {secret}",
+            },
+        )
+        replaced = client.get("/health", headers={"X-Correlation-ID": secret})
+        generated = client.get("/health")
+    assert accepted.headers["X-Correlation-ID"] == "corr_example"
+    assert replaced.headers["X-Correlation-ID"] != secret
+    assert len(generated.headers["X-Correlation-ID"]) == 32
+    records = [
+        json.loads(record.getMessage())
+        for record in caplog.records
+        if record.name == "apps.api.main"
+    ]
+    assert [record["correlation_id"] for record in records] == [
+        accepted.headers["X-Correlation-ID"],
+        replaced.headers["X-Correlation-ID"],
+        generated.headers["X-Correlation-ID"],
+    ]
+    assert records[0]["route"] == "health"
+    assert records[0]["status_code"] == 200
+    assert len(records[0]["trace_id"]) == 32
+    assert len(records[0]["span_id"]) == 16
+    assert secret not in caplog.text
+    assert "Authorization" not in caplog.text
+    assert "token=" not in caplog.text
+
+
+def test_api_failure_logs_type_without_exception_message(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    def fail() -> None:
+        raise RuntimeError("synthetic private exception detail")
+
+    monkeypatch.setattr("apps.api.main.check_database", fail)
+    with TestClient(app) as client:
+        response = client.get(
+            "/readiness", headers={"X-Correlation-ID": "corr_failure"}
+        )
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Internal server error"}
+    assert response.headers["X-Correlation-ID"] == "corr_failure"
+    record = json.loads(caplog.records[-1].getMessage())
+    assert record["event"] == "diagnostic_failed"
+    assert record["error_type"] == "RuntimeError"
+    assert record["correlation_id"] == "corr_failure"
+    assert "synthetic private exception detail" not in caplog.text

@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from infrastructure.database.config import local_database_url
 from infrastructure.events.consumer import consume_once
 from infrastructure.events.diagnostic_projection import apply_diagnostic_event
+from infrastructure.telemetry import run_worker
 
 
 def main() -> None:
@@ -18,7 +19,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
     engine = create_engine(
         local_database_url(), connect_args={"connect_timeout": 5}, hide_parameters=True
     )
@@ -37,4 +37,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_worker(main, logging.getLogger("apps.event_consumer"))

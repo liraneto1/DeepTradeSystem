@@ -1,6 +1,5 @@
 """Publish one committed outbox event per transaction."""
 
-import json
 import logging
 import typing
 from collections.abc import Callable, Mapping
@@ -11,6 +10,7 @@ from sqlalchemy.engine import Engine
 
 from infrastructure.events.outbox import OUTBOX
 from infrastructure.security.config import runtime_environment
+from infrastructure.telemetry import log_event, tracer
 
 logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 5
@@ -51,6 +51,9 @@ NEXT_EVENT = (
 )
 
 
+@tracer.start_as_current_span(
+    "outbox.dispatch", record_exception=False, set_status_on_exception=False
+)
 def dispatch_once(engine: Engine, publish: Publisher) -> bool:
     """Attempt one event using a publisher that confirms durable acceptance."""
     environment = runtime_environment()
@@ -97,7 +100,6 @@ def dispatch_once(engine: Engine, publish: Publisher) -> bool:
 
         connection.execute(update)
 
-    details["event"] = outcome
     level = logging.INFO if outcome == "outbox_published" else logging.WARNING
-    logger.log(level, "%s", json.dumps(details))
+    log_event(logger, outcome, level=level, **details)
     return True
