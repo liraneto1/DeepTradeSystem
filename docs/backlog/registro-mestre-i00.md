@@ -24,7 +24,7 @@ Os testes citados pelo nome estão na [suíte PostgreSQL](../../tests/integratio
 | I00-11 | CI de qualidade | AC01, AC02 | 095 | [Workflow](../../.github/workflows/ci.yml) | Verificado · [evidência](../evidence/I00-bootstrap.md) · [commit](https://github.com/liraneto1/DeepTradeSystem/commit/9ebfbdf) · [CI](https://github.com/liraneto1/DeepTradeSystem/actions/runs/43068600483) |
 | I00-12 | Registro mestre e lacunas rastreáveis | AC11 | T09, decisão da baseline técnica | Cobertura de IDs e verificação de referências | Entregue para revisão · [evidência](../evidence/I00-12-rastreabilidade.md) |
 | I00-13 | Falhas e recuperação | AC07, AC08 | 093, 094 | `test_out_of_order_arrival_waits_for_missing_version`, `test_dispatcher_retry_recovers_after_publisher_unavailability` e `test_workers_restart_after_database_connection_failure` | Entregue para revisão · [evidência](../evidence/I00-13-resiliencia.md) |
-| I00-14 | Evidence Bundle verificável | AC11, AC12 | T09, decisão da baseline técnica | Manifesto, hashes, release e decisão humana | Entregue para revisão · [Evidence Bundle I00 RC1](../evidence/releases/i00-rc1/README.md) |
+| I00-14 | Evidence Bundle verificável | AC11, AC12 | T09, decisão da baseline técnica | Manifesto, hashes, release e decisão humana | Bundle aprovado · [Evidence Bundle I00 RC1](../evidence/releases/i00-rc1/README.md) · [Revisão de G0](../evidence/revisao-g0-i00-rc1.md) |
 
 Para I00-01 e I00-02, o CI vinculado é o primeiro verde após a correção de
 I00-11. Para os demais pacotes verificados, os links apontam à execução
@@ -45,7 +45,7 @@ da entrega. A aprovação operacional dos gates exige decisão humana.
 | I00-AC09 | Diagnóstico, logs JSON e correlação entre componentes em I00-08 e I00-10. | Métricas de backlog e atraso e sua evidência seguem em DOC-05. |
 | I00-AC10 | Configuração inválida bloqueada, segregação lógica e LIVE rejeitado em I00-09. | A evidência se refere a TRAINING e PAPER em desenvolvimento local. |
 | I00-AC11 | Pacotes, decisões, testes e evidências de I00 ligados nesta matriz. | A matriz global de ADRs, componentes, pendências, épicos e histórias segue em DOC-03. |
-| I00-AC12 | Registros por pacote e hashes locais do bootstrap disponíveis. | O Evidence Bundle I00 RC1 consolida manifesto, resultados e integridade. O aceite humano está pendente. |
+| I00-AC12 | Registros por pacote e hashes locais do bootstrap disponíveis. | O Evidence Bundle I00 RC1 consolida manifesto, resultados e integridade. O usuário aprovou o bundle. G0 segue aberto. |
 
 ## Lacunas e encaminhamentos
 
@@ -57,7 +57,7 @@ da entrega. A aprovação operacional dos gates exige decisão humana.
 | DOC-04 | Parcial | I00-13 valida a chegada tardia, retry e reinício. Definir reconciliação de versões conflitantes ou de lacunas que nunca recebem a versão anterior. |
 | DOC-05 | Aberta | Definir e validar as métricas de backlog e atraso de Outbox previstas em T06. Registrar fonte, unidade e cenário de observação. |
 | DOC-06 | Aberta | Registrar a avaliação de compatibilidade e segurança das dependências de release, owners nominais, capacidade e decisões pendentes sobre produção. |
-| DOC-07 | Aberta | Revisar o Evidence Bundle I00 RC1. Registrar critérios quantitativos e decisões humanas sobre os gates quando aprovados. |
+| DOC-07 | Aberta | Bundle I00 RC1 aprovado. Registrar critérios quantitativos aplicáveis e a decisão sobre G0 após revisão das evidências do gate. |
 
 Os [riscos residuais da baseline](../06-PENDENCIAS-E-RASTREABILIDADE.md)
 mantêm seus identificadores. As referências Word versionadas são
