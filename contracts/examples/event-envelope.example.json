@@ -1,0 +1,17 @@
+{
+  "event_id": "evt_example",
+  "event_type": "diagnostics.synthetic.created",
+  "schema_version": "1.0.0",
+  "correlation_id": "corr_example",
+  "causation_id": "cmd_example",
+  "aggregate_type": "diagnostic",
+  "aggregate_id": "diag_example",
+  "aggregate_version": 1,
+  "environment_id": "PAPER",
+  "event_time": "2026-11-11T13:00:00Z",
+  "recorded_at": "2026-11-11T13:00:00.120Z",
+  "producer": "test-harness",
+  "payload": {
+    "message": "synthetic-only"
+  }
+}
