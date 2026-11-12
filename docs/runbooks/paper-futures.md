@@ -165,3 +165,31 @@ anterior a um lançamento relevante da conta. Um replay dentro do
 corte válido devolve a liquidação persistida. Funding, fills e
 liquidações são reconciliados na ordem do livro. A reversão de
 `0014` exige uma tabela de liquidações vazia.
+
+
+### Coleta automática do preço de marcação
+
+Com a revisão `0014` aplicada e uma conta Futures PAPER aberta,
+execute no terminal do VS Code. Use os parâmetros da sua simulação.
+
+```powershell
+uv run --no-sync python -m apps.market_data.liquidation --account paper-test --maintenance-rate 0.25 --max-age-seconds 10
+```
+
+O coletor consulta o preço público de marcação de BTCUSDT a cada
+cinco segundos. Use `--once` para avaliar uma amostra e sair.
+A taxa de manutenção e a idade máxima são parâmetros obrigatórios.
+O horário da corretora identifica a marcação e o recebimento local
+define sua disponibilidade.
+[Endpoint público de marcação USDⓈ-M](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Mark-Price)
+
+A liquidação e o saldo usam a transação existente no PostgreSQL.
+Quando o endpoint repete uma marcação que já liquidou a posição, o
+coletor preserva o primeiro horário de recebimento e não grava outro
+lançamento. Um preço diferente na mesma chave gera conflito.
+O modo contínuo descarta marcações fora do corte e tenta novamente
+em falhas transitórias de rede e HTTP.
+
+A consulta avalia amostras atuais. Preços entre consultas ou durante
+uma interrupção ficam fora da avaliação. Antes de retomar os processos
+da conta após uma interrupção, aplique o funding pendente em ordem.

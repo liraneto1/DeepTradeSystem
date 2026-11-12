@@ -117,6 +117,10 @@ def settle_funding(
     return FundingSettlement(delta, replace(balance, cash=cash))
 
 
+class LiquidationCutoffError(ValueError):
+    """The mark cannot be used at the requested point in time."""
+
+
 @dataclass(frozen=True)
 class LiquidationMark:
     observed_at: datetime
@@ -134,7 +138,7 @@ class LiquidationMark:
             or not timedelta(0) < max_age
             or as_of - self.observed_at > max_age
         ):
-            raise ValueError("liquidation: invalid_cutoff")
+            raise LiquidationCutoffError("liquidation: invalid_cutoff")
         if not self.price.is_finite() or self.price <= 0 or not self.reference.strip():
             raise ValueError("liquidation: invalid_mark")
 

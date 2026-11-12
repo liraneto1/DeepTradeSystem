@@ -35,6 +35,7 @@ from sqlalchemy.exc import IntegrityError
 from apps.api.main import app
 from apps.market_data.continuous import ingest
 from apps.market_data.funding import collect_funding
+from apps.market_data.liquidation import poll_mark
 from apps.market_data.paper import submit_futures_market_intent, submit_market_intent
 from infrastructure.database.config import local_database_url
 from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
@@ -1860,3 +1861,100 @@ def test_futures_liquidation_margin_cutoff_and_reconciliation(
                 text("DELETE FROM trade_system.paper_futures_liquidation")
             )
             connection.execute(text("DELETE FROM trade_system.paper_futures_funding"))
+
+
+def test_liquidation_worker_reobserves_mark_after_restart(
+    outbox_database: Engine,
+) -> None:
+    baseline = paper_ledger(outbox_database)
+    ledger = PaperFuturesLedger(outbox_database, baseline.control, baseline.limits)
+    ledger.open_account(Decimal(1000))
+    opened_at = datetime(2025, 11, 10, 16, 0, tzinfo=UTC)
+    observed_at = opened_at + timedelta(seconds=1)
+    received_at = observed_at + timedelta(seconds=1)
+    replay_at = received_at + timedelta(milliseconds=100)
+    intent = TradingIntent(
+        "mark-worker-open",
+        "mark-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "SELL",
+        Decimal("0.01"),
+        opened_at,
+        opened_at + timedelta(minutes=1),
+    )
+    ledger.submit(
+        intent,
+        SyntheticQuote("fixture", "BTCUSDT", Decimal(10000), opened_at),
+        opened_at,
+        reduce_only=False,
+    )
+    mark = LiquidationMark(observed_at, received_at, Decimal(16000), "fixture:mark")
+    rate = Decimal("0.25")
+    max_age = timedelta(seconds=5)
+
+    try:
+        for cutoff in (opened_at, observed_at, observed_at + timedelta(seconds=6)):
+            with pytest.raises(ValueError, match="liquidation: invalid_cutoff"):
+                poll_mark(
+                    outbox_database,
+                    intent.account_id,
+                    maintenance_rate=rate,
+                    max_age=max_age,
+                    fetch=lambda: mark,
+                    now=lambda: cutoff,
+                )
+        assert ledger.reconcile().liquidations == 0
+        assert poll_mark(
+            outbox_database,
+            intent.account_id,
+            maintenance_rate=rate,
+            max_age=max_age,
+            fetch=lambda: mark,
+            now=lambda: received_at,
+        )
+        restarted = create_engine(outbox_database.url)
+        try:
+            assert not poll_mark(
+                restarted,
+                intent.account_id,
+                maintenance_rate=rate,
+                max_age=max_age,
+                fetch=lambda: replace(mark, available_at=replay_at),
+                now=lambda: replay_at,
+            )
+            with pytest.raises(
+                ValueError, match="liquidation: conflicting_observation"
+            ):
+                poll_mark(
+                    restarted,
+                    intent.account_id,
+                    maintenance_rate=rate,
+                    max_age=max_age,
+                    now=lambda: replay_at,
+                    fetch=lambda: replace(
+                        mark, price=Decimal(16001), available_at=replay_at
+                    ),
+                )
+        finally:
+            restarted.dispose()
+        report = ledger.reconcile()
+        assert report.consistent and report.liquidations == 1
+        assert report.stored == FuturesBalance(Decimal(940), realized_pnl=Decimal(-60))
+        with outbox_database.connect() as connection:
+            assert (
+                connection.execute(
+                    text(
+                        "SELECT available_at "
+                        "FROM trade_system.paper_futures_liquidation"
+                    )
+                ).scalar_one()
+                == received_at
+            )
+    finally:
+        with outbox_database.begin() as connection:
+            connection.execute(
+                text("DELETE FROM trade_system.paper_futures_liquidation")
+            )

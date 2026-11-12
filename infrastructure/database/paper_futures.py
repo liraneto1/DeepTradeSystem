@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, DecimalException
 from typing import cast
 
@@ -18,6 +18,7 @@ from trade_system.risk.futures import (
     FundingSettlement,
     FuturesBalance,
     FuturesFill,
+    LiquidationCutoffError,
     LiquidationMark,
     LiquidationSettlement,
     apply_fill,
@@ -191,6 +192,104 @@ def decode_liquidation(row: RowMapping) -> LiquidationSettlement:
         row["released_margin"],
         decode_balance(row["balance_after"]),
     )
+
+
+def evaluate_liquidation(
+    engine: Engine,
+    account_id: str,
+    mark: LiquidationMark,
+    *,
+    maintenance_rate: Decimal,
+    as_of: datetime,
+    max_age: timedelta,
+    recollected: bool = False,
+) -> LiquidationSettlement | None:
+    require_paper()
+    mark.validate(as_of, max_age)
+    keys = {"account": account_id, "observed_at": mark.observed_at}
+    with engine.begin() as connection:
+        account = locked_account(connection, account_id)
+        previous = (
+            connection.execute(
+                text("""
+            SELECT * FROM trade_system.paper_futures_liquidation
+            WHERE account_id = :account AND observed_at = :observed_at
+            """),
+                keys,
+            )
+            .mappings()
+            .one_or_none()
+        )
+        if previous is not None:
+            original = liquidation_mark(previous)
+            same_mark = (
+                mark.price == original.price and mark.reference == original.reference
+                if recollected
+                else mark == original
+            )
+            if (
+                not same_mark
+                or not maintenance_rate.is_finite()
+                or maintenance_rate != previous["maintenance_rate"]
+                or max_age != previous["max_age"]
+            ):
+                raise ValueError("liquidation: conflicting_observation")
+            if as_of < previous["applied_at"]:
+                raise ValueError("liquidation: invalid_cutoff")
+            return None if recollected else decode_liquidation(previous)
+
+        out_of_order: bool = connection.execute(
+            text("""
+            SELECT EXISTS (
+                SELECT 1 FROM trade_system.paper_futures_fill
+                WHERE account_id = :account AND filled_at > :observed_at
+                UNION ALL
+                SELECT 1 FROM trade_system.paper_futures_funding
+                WHERE account_id = :account AND applied_at > :observed_at
+                UNION ALL
+                SELECT 1 FROM trade_system.paper_futures_liquidation
+                WHERE account_id = :account AND applied_at > :observed_at
+            )
+            """),
+            keys,
+        ).scalar_one()
+        if out_of_order:
+            raise LiquidationCutoffError("liquidation: out_of_order")
+        try:
+            settlement = settle_liquidation(
+                decode_balance(account["balance"]), mark, maintenance_rate
+            )
+        except DecimalException as error:
+            raise ValueError("liquidation: arithmetic_out_of_range") from error
+        if settlement is None:
+            return None
+
+        connection.execute(
+            text("""
+            INSERT INTO trade_system.paper_futures_liquidation
+            (account_id, observed_at, available_at, applied_at, mark_price,
+             reference, maintenance_rate, max_age, isolated_equity,
+             maintenance_margin, released_margin, balance_after)
+            VALUES (:account, :observed_at, :available_at, :applied_at, :mark_price,
+                    :reference, :maintenance_rate, :max_age, :isolated_equity,
+                    :maintenance_margin, :released_margin, :balance_after)
+            """).bindparams(bindparam("balance_after", type_=JSONB)),
+            {
+                **keys,
+                "available_at": mark.available_at,
+                "applied_at": as_of,
+                "mark_price": mark.price,
+                "reference": mark.reference,
+                "maintenance_rate": maintenance_rate,
+                "max_age": max_age,
+                "isolated_equity": settlement.isolated_equity,
+                "maintenance_margin": settlement.maintenance_margin,
+                "released_margin": settlement.released_margin,
+                "balance_after": balance_json(settlement.after),
+            },
+        )
+        update_balance(connection, account_id, settlement.after)
+        return settlement
 
 
 @dataclass(frozen=True)
@@ -383,88 +482,14 @@ class PaperFuturesLedger:
     def liquidate_if_needed(
         self, mark: LiquidationMark, *, maintenance_rate: Decimal, as_of: datetime
     ) -> LiquidationSettlement | None:
-        require_paper()
-        account_id = self.control.account_id
-        max_age = self.limits.max_quote_age
-        mark.validate(as_of, max_age)
-        keys = {"account": account_id, "observed_at": mark.observed_at}
-        with self.engine.begin() as connection:
-            account = locked_account(connection, account_id)
-            previous = (
-                connection.execute(
-                    text("""
-                SELECT * FROM trade_system.paper_futures_liquidation
-                WHERE account_id = :account AND observed_at = :observed_at
-                """),
-                    keys,
-                )
-                .mappings()
-                .one_or_none()
-            )
-            if previous is not None:
-                if (
-                    mark != liquidation_mark(previous)
-                    or not maintenance_rate.is_finite()
-                    or maintenance_rate != previous["maintenance_rate"]
-                    or max_age != previous["max_age"]
-                ):
-                    raise ValueError("liquidation: conflicting_observation")
-                if as_of < previous["applied_at"]:
-                    raise ValueError("liquidation: invalid_cutoff")
-                return decode_liquidation(previous)
-
-            out_of_order: bool = connection.execute(
-                text("""
-                SELECT EXISTS (
-                    SELECT 1 FROM trade_system.paper_futures_fill
-                    WHERE account_id = :account AND filled_at > :observed_at
-                    UNION ALL
-                    SELECT 1 FROM trade_system.paper_futures_funding
-                    WHERE account_id = :account AND applied_at > :observed_at
-                    UNION ALL
-                    SELECT 1 FROM trade_system.paper_futures_liquidation
-                    WHERE account_id = :account AND applied_at > :observed_at
-                )
-                """),
-                keys,
-            ).scalar_one()
-            if out_of_order:
-                raise ValueError("liquidation: out_of_order")
-            try:
-                settlement = settle_liquidation(
-                    decode_balance(account["balance"]), mark, maintenance_rate
-                )
-            except DecimalException as error:
-                raise ValueError("liquidation: arithmetic_out_of_range") from error
-            if settlement is None:
-                return None
-
-            connection.execute(
-                text("""
-                INSERT INTO trade_system.paper_futures_liquidation
-                (account_id, observed_at, available_at, applied_at, mark_price,
-                 reference, maintenance_rate, max_age, isolated_equity,
-                 maintenance_margin, released_margin, balance_after)
-                VALUES (:account, :observed_at, :available_at, :applied_at, :mark_price,
-                        :reference, :maintenance_rate, :max_age, :isolated_equity,
-                        :maintenance_margin, :released_margin, :balance_after)
-                """).bindparams(bindparam("balance_after", type_=JSONB)),
-                {
-                    **keys,
-                    "available_at": mark.available_at,
-                    "applied_at": as_of,
-                    "mark_price": mark.price,
-                    "reference": mark.reference,
-                    "maintenance_rate": maintenance_rate,
-                    "max_age": max_age,
-                    "isolated_equity": settlement.isolated_equity,
-                    "maintenance_margin": settlement.maintenance_margin,
-                    "released_margin": settlement.released_margin,
-                    "balance_after": balance_json(settlement.after),
-                },
-            )
-            update_balance(connection, account_id, settlement.after)
-            return settlement
+        return evaluate_liquidation(
+            self.engine,
+            self.control.account_id,
+            mark,
+            maintenance_rate=maintenance_rate,
+            as_of=as_of,
+            max_age=self.limits.max_quote_age,
+        )
 
     def reconcile(self) -> FuturesReconciliation:
         require_paper()
