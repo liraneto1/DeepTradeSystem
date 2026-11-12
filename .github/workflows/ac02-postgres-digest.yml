@@ -1,0 +1,66 @@
+name: AC02 PostgreSQL by digest
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CANDIDATE_SHA: d561026f27fa3920699af41aeea6e1a60bcf89a6
+      POSTGRES_IMAGE: docker.io/library/postgres@sha256:6f7593c161689b6b02c78668b314af7da8811b592c5519108c57a49d0b6ad788
+      TRADE_SYSTEM_ENVIRONMENT: PAPER
+      LIVE_ENABLED: "false"
+      RUN_POSTGRES_TESTS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+      - name: Verify candidate and install locked dependencies
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          uv python install
+          uv sync --locked
+      - name: Run PostgreSQL integration with the audited image
+        shell: bash
+        run: |
+          set -euo pipefail
+          export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::$POSTGRES_PASSWORD"
+          export POSTGRES_PORT=55432
+
+          override="$RUNNER_TEMP/ac02-postgres.yml"
+          printf 'services:\n  postgres:\n    image: "%s"\n' "$POSTGRES_IMAGE" > "$override"
+          compose=(
+            docker compose -p "deeptrade-ac02-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            -f deploy/compose/postgres.yml -f "$override"
+          )
+          trap '"${compose[@]}" down --volumes' EXIT
+
+          test "$("${compose[@]}" config --images)" = "$POSTGRES_IMAGE"
+          docker pull --platform linux/amd64 "$POSTGRES_IMAGE"
+          expected_image_id="$(docker image inspect --format '{{.Id}}' "$POSTGRES_IMAGE")"
+          test "$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$POSTGRES_IMAGE")" = linux/amd64
+          "${compose[@]}" up --detach --pull never --wait --wait-timeout 60
+          container_id="$("${compose[@]}" ps --quiet postgres)"
+          test "$(docker inspect --format '{{.Image}}' "$container_id")" = "$expected_image_id"
+
+          {
+            printf 'Candidate: %s\n' "$CANDIDATE_SHA"
+            printf 'PostgreSQL image: %s\n' "$POSTGRES_IMAGE"
+            printf 'Container image ID: %s\n' "$expected_image_id"
+            printf 'Platform: linux/amd64\n'
+            sha256sum uv.lock
+            "${compose[@]}" exec -T postgres postgres --version
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          uv run --no-sync pytest tests/integration
