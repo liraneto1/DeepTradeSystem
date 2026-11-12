@@ -36,6 +36,7 @@ from apps.api.main import app
 from apps.market_data.continuous import ingest
 from apps.market_data.funding import collect_funding
 from apps.market_data.liquidation import poll_mark
+from apps.market_data.liquidation_replay import ReplayResult, replay_liquidation
 from apps.market_data.paper import submit_futures_market_intent, submit_market_intent
 from infrastructure.database.config import local_database_url
 from infrastructure.database.market_history import CANDLE, SOURCE, persist_history
@@ -2036,3 +2037,94 @@ def test_mark_history_recovers_from_first_missing_minute(
         assert read_mark_history(restarted, start, second, as_of=now) == [candle(start)]
     finally:
         restarted.dispose()
+
+
+def test_liquidation_replay_respects_both_clocks_and_preserves_ledger(
+    outbox_database: Engine,
+) -> None:
+    baseline = paper_ledger(outbox_database)
+    ledger = PaperFuturesLedger(outbox_database, baseline.control, baseline.limits)
+    ledger.open_account(Decimal(1000))
+    start = datetime(2025, 11, 10, 16, 0, tzinfo=UTC)
+    second = start + timedelta(minutes=1)
+    end = second + timedelta(minutes=1)
+    received = end + timedelta(minutes=3)
+    intent = TradingIntent(
+        "replay-open",
+        "replay-correlation",
+        "paper-test",
+        "actor-test",
+        "PAPER",
+        "BTCUSDT",
+        "SELL",
+        Decimal("0.01"),
+        start,
+        received + timedelta(minutes=1),
+    )
+    quote = SyntheticQuote("fixture", "BTCUSDT", Decimal(10000), start)
+    ledger.submit(intent, quote, start, reduce_only=False)
+    ledger.submit(
+        replace(intent, intent_id="replay-close", side="BUY"),
+        replace(quote, observed_at=received),
+        received,
+        reduce_only=True,
+    )
+
+    candles = [
+        MarkCandle(
+            start,
+            second,
+            received,
+            Decimal(15000),
+            Decimal(17000),
+            Decimal(15000),
+            Decimal(15999),
+            "fixture:mark",
+        ),
+        MarkCandle(
+            second,
+            end,
+            received,
+            Decimal(15999),
+            Decimal(16000),
+            Decimal(15999),
+            Decimal(16000),
+            "fixture:mark",
+        ),
+    ]
+    recover_mark_history(
+        outbox_database,
+        start,
+        fetch=lambda _start, _end: candles,
+        now=iter((end, received)).__next__,
+    )
+    before = ledger.reconcile()
+    assert before.consistent and before.fills == 2
+    assert before.stored == FuturesBalance(Decimal(1000))
+
+    def replay(cutoff: datetime, window_end: datetime) -> ReplayResult:
+        return replay_liquidation(
+            outbox_database,
+            intent.account_id,
+            start=start,
+            end=window_end,
+            as_of=cutoff,
+            maintenance_rate=Decimal("0.25"),
+        )
+
+    assert replay(end, end).candles_evaluated == 0
+    assert replay(received, second).trigger is None
+    with pytest.raises(ValueError, match="invalid_cutoff"):
+        replay(second, end)
+    result = replay(received, end)
+    assert result == replay(received, end)
+    assert result.candles_evaluated == 2
+    assert result.trigger == LiquidationMark(
+        end, received, Decimal(16000), "fixture:mark"
+    )
+    assert result.hypothetical_settlement is not None
+    assert result.hypothetical_settlement.after == FuturesBalance(
+        Decimal(940),
+        realized_pnl=Decimal(-60),
+    )
+    assert ledger.reconcile() == before

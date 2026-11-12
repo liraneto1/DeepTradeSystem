@@ -216,3 +216,24 @@ marcação atual. Uma reexecução preserva o primeiro recebimento.
 A leitura por `read_mark_history(..., as_of=...)` só mostra candles
 recebidos até o corte. O histórico recupera OHLC, sem reconstruir
 a sequência intraminuto nem disparar liquidações retroativas.
+
+### Replay de liquidação
+
+Com o histórico da revisão `0015` recuperado, execute em PAPER:
+
+```powershell
+uv run --no-sync python -m apps.market_data.liquidation_replay --account paper-test --start 2026-11-12T12:00:00+00:00 --end 2026-11-12T12:10:00+00:00 --as-of 2026-11-12T12:20:00+00:00 --maintenance-rate 0.25
+```
+
+Informe horários com fuso e mantenha `start < end <= as-of`. O replay
+seleciona candles inteiramente dentro da janela e recebidos até
+`as-of`. Para cada fechamento, usa o último saldo histórico cujos
+lançamentos já se aplicavam naquele instante. Lançamentos com o mesmo
+horário do fechamento entram na avaliação.
+
+O JSON retorna o número de candles avaliados e o primeiro gatilho,
+com o saldo hipotético. Se não houver gatilho, esses campos são
+`null`. A transação é somente leitura. O replay usa os fechamentos
+disponíveis, ignora máximas e mínimas intraminuto e deixa lacunas
+fora da avaliação. Um resultado sem gatilho só cobre os candles
+efetivamente avaliados.
