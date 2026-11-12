@@ -14,6 +14,10 @@ from sqlalchemy.engine import Engine
 from infrastructure.database.config import local_database_url
 from infrastructure.database.paper_futures import evaluate_liquidation
 from infrastructure.database.paper_ledger import require_paper
+from infrastructure.database.paper_mark_history import (
+    IncompleteMarkHistory,
+    recover_mark_history,
+)
 from infrastructure.telemetry import log_event, run_worker
 from trade_system.market_data.binance_mark import fetch_mark
 from trade_system.risk.futures import LiquidationCutoffError, LiquidationMark
@@ -56,7 +60,13 @@ def main() -> None:
     parser.add_argument(
         "--once", action="store_true", help="Evaluate one mark and exit"
     )
+    parser.add_argument(
+        "--recover-from",
+        type=datetime.fromisoformat,
+        help="Recover closed 1m mark candles starting at this timestamp",
+    )
     args = parser.parse_args()
+    recovery_cursor = args.recover_from
     if not args.maintenance_rate.is_finite() or not 0 < args.maintenance_rate < 1:
         parser.error("--maintenance-rate must be between 0 and 1 (exclusive)")
     if args.max_age_seconds <= 0:
@@ -78,6 +88,17 @@ def main() -> None:
             while True:
                 delay = 5
                 try:
+                    if recovery_cursor is not None:
+                        try:
+                            recovery_cursor = recover_mark_history(
+                                engine, recovery_cursor
+                            )
+                        except IncompleteMarkHistory:
+                            if args.once:
+                                raise
+                            log_event(
+                                logger, "mark_history_pending", level=logging.WARNING
+                            )
                     applied = poll_mark(
                         engine,
                         args.account,

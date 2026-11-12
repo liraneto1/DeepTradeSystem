@@ -190,6 +190,29 @@ lançamento. Um preço diferente na mesma chave gera conflito.
 O modo contínuo descarta marcações fora do corte e tenta novamente
 em falhas transitórias de rede e HTTP.
 
-A consulta avalia amostras atuais. Preços entre consultas ou durante
-uma interrupção ficam fora da avaliação. Antes de retomar os processos
+A avaliação de liquidação usa amostras atuais. Preços entre consultas
+ou durante uma interrupção ficam fora dessa avaliação. Antes de retomar os processos
 da conta após uma interrupção, aplique o funding pendente em ordem.
+
+
+### Recuperação de marcações após interrupção
+
+Aplique a revisão `0015` e informe `--recover-from` ao iniciar o
+coletor. Use o início do primeiro minuto que deseja recuperar, com
+fuso explícito. Mantenha o mesmo início ao reiniciar para que o
+coletor localize a primeira lacuna ainda aberta no PostgreSQL.
+
+```powershell
+uv run --no-sync python -m apps.market_data.liquidation --account paper-test --maintenance-rate 0.25 --max-age-seconds 10 --recover-from 2026-11-12T12:00:00+00:00
+```
+
+O histórico guarda abertura, máxima, mínima e fechamento de BTCUSDT
+em candles fechados de 1 minuto. O minuto em curso fica fora da janela.
+Cada página só é gravada após validar a sequência completa. O modo
+contínuo retenta páginas incompletas e mantém a avaliação da
+marcação atual. Uma reexecução preserva o primeiro recebimento.
+[Endpoint público de candles de marcação](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Mark-Price-Kline-Candlestick-Data)
+
+A leitura por `read_mark_history(..., as_of=...)` só mostra candles
+recebidos até o corte. O histórico recupera OHLC, sem reconstruir
+a sequência intraminuto nem disparar liquidações retroativas.

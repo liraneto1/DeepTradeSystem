@@ -42,6 +42,11 @@ from infrastructure.database.market_history import CANDLE, SOURCE, persist_histo
 from infrastructure.database.market_stream import OBSERVATION, StreamStore
 from infrastructure.database.paper_futures import PaperFuturesLedger
 from infrastructure.database.paper_ledger import PaperLedger, market_state_reference
+from infrastructure.database.paper_mark_history import (
+    IncompleteMarkHistory,
+    read_mark_history,
+    recover_mark_history,
+)
 from infrastructure.events.consumer import PROCESSED_EVENT, consume_once
 from infrastructure.events.diagnostic_projection import (
     DIAGNOSTIC_COUNT,
@@ -53,6 +58,7 @@ from infrastructure.events.outbox import OUTBOX, append_event
 from infrastructure.security.config import ConfigurationError
 from trade_system.control.paper import ControlPolicy, Side, TradingIntent
 from trade_system.market_data.binance_archive import collect_day
+from trade_system.market_data.binance_mark import MarkCandle
 from trade_system.market_data.binance_stream import Observation
 from trade_system.risk.execution_costs import ExecutionCosts
 from trade_system.risk.futures import (
@@ -108,9 +114,14 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0014"
+            == "0015"
         )
 
+    command.downgrade(config, "0014")
+    with engine.connect() as connection:
+        assert not inspect(connection).has_table(
+            "paper_mark_candle", schema="trade_system"
+        )
     command.downgrade(config, "0013")
     with engine.connect() as connection:
         assert not inspect(connection).has_table(
@@ -1958,3 +1969,70 @@ def test_liquidation_worker_reobserves_mark_after_restart(
             connection.execute(
                 text("DELETE FROM trade_system.paper_futures_liquidation")
             )
+
+
+def test_mark_history_recovers_from_first_missing_minute(
+    outbox_database: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("infrastructure.database.paper_mark_history.PAGE_SIZE", 1)
+    start = datetime(2025, 11, 10, 16, 0, tzinfo=UTC)
+    second = start + timedelta(minutes=1)
+    end = second + timedelta(minutes=1)
+    now = end + timedelta(seconds=5)
+
+    def candle(opened: datetime) -> MarkCandle:
+        return MarkCandle(
+            opened,
+            opened + timedelta(minutes=1),
+            now,
+            Decimal(100),
+            Decimal(110),
+            Decimal(90),
+            Decimal(105),
+            "fixture:mark",
+        )
+
+    def interrupted(begin: datetime, stop: datetime) -> list[MarkCandle]:
+        assert stop <= end
+        return [candle(begin)] if begin == start else []
+
+    with pytest.raises(IncompleteMarkHistory):
+        recover_mark_history(
+            outbox_database,
+            start,
+            fetch=interrupted,
+            now=lambda: now,
+        )
+    assert read_mark_history(outbox_database, start, end, as_of=end) == []
+    assert read_mark_history(outbox_database, start, end, as_of=now) == [candle(start)]
+
+    def resumed(begin: datetime, stop: datetime) -> list[MarkCandle]:
+        assert (begin, stop) == (second, end)
+        return [candle(second)]
+
+    restarted = create_engine(outbox_database.url)
+    try:
+        with pytest.raises(ValueError, match="invalid_availability"):
+            recover_mark_history(
+                restarted,
+                start,
+                now=lambda: now,
+                fetch=lambda _a, _b: [
+                    replace(candle(second), available_at=now + timedelta(seconds=1))
+                ],
+            )
+        assert (
+            recover_mark_history(restarted, start, fetch=resumed, now=lambda: now)
+            == end
+        )
+        assert (
+            recover_mark_history(restarted, start, fetch=resumed, now=lambda: now)
+            == end
+        )
+        assert read_mark_history(restarted, start, end, as_of=now) == [
+            candle(start),
+            candle(second),
+        ]
+        assert read_mark_history(restarted, start, second, as_of=now) == [candle(start)]
+    finally:
+        restarted.dispose()
