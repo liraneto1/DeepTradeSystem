@@ -4,7 +4,8 @@ import os
 import socket
 import subprocess
 import sys
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
@@ -12,12 +13,16 @@ from decimal import Decimal
 from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
+from secrets import token_hex
+from threading import Barrier
+from typing import Any
 from zipfile import ZipFile
 
 import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
+from psycopg import sql
 from sqlalchemy import (
     Column,
     MetaData,
@@ -29,8 +34,9 @@ from sqlalchemy import (
     select,
     text,
 )
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy.engine import Connection, Engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from apps.api.main import app
 from apps.market_data.continuous import ingest
@@ -54,8 +60,11 @@ from infrastructure.events.diagnostic_projection import (
     apply_diagnostic_event,
 )
 from infrastructure.events.dispatcher import MAX_ATTEMPTS, dispatch_once
+from infrastructure.events.gap_escalation import remove_published_event
 from infrastructure.events.local_delivery import DELIVERY, LocalPublisher
 from infrastructure.events.outbox import OUTBOX, append_event
+from infrastructure.events.outbox_metrics import collect_outbox_metrics
+from infrastructure.events.quarantine import release_quarantine
 from infrastructure.security.config import ConfigurationError
 from trade_system.control.paper import ControlPolicy, Side, TradingIntent
 from trade_system.market_data.binance_archive import collect_day
@@ -115,7 +124,7 @@ def test_migrations_round_trip(postgres: tuple[Config, Engine]) -> None:
             connection.execute(
                 text("SELECT version_num FROM public.alembic_version")
             ).scalar_one()
-            == "0015"
+            == "0022"
         )
 
     command.downgrade(config, "0014")
@@ -236,12 +245,26 @@ def outbox_database(postgres: tuple[Config, Engine]) -> Iterator[Engine]:
     config, engine = postgres
     command.upgrade(config, "head")
     try:
+        with engine.begin() as connection:
+            connection.execute(
+                text("""
+                GRANT outbox_retention_authorizer, outbox_resume_authorizer
+                TO CURRENT_USER
+                """)
+            )
         TEST_STATE.create(engine)
         try:
             yield engine
         finally:
             TEST_STATE.drop(engine)
     finally:
+        with engine.begin() as connection:
+            connection.execute(
+                text("""
+                REVOKE outbox_retention_authorizer, outbox_resume_authorizer
+                FROM CURRENT_USER
+                """)
+            )
         command.downgrade(config, "base")
 
 
@@ -308,6 +331,62 @@ def test_duplicate_event_rolls_back_new_state(
             reader.execute(select(TEST_STATE.c.state_id)).scalar_one_or_none() is None
         )
         assert reader.execute(select(OUTBOX.c.envelope)).scalar_one() == event
+
+
+def test_concurrent_outbox_version_conflict_survives_rollback(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    barrier = Barrier(2, timeout=10)
+
+    def publish_claim(event_id: str) -> bool:
+        envelope = {**event, "event_id": event_id}
+        envelope.pop("account_id", None)
+        try:
+            with outbox_database.begin() as connection:
+                connection.execute(TEST_STATE.insert().values(state_id=event_id))
+                barrier.wait()
+                append_event(connection, envelope)
+        except IntegrityError:
+            return False
+        return True
+
+    ids = ("evt_concurrent_a", "evt_concurrent_b")
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(publish_claim, ids))
+    assert outcomes.count(True) == 1
+    winner = ids[outcomes.index(True)]
+    loser = ids[outcomes.index(False)]
+
+    with outbox_database.connect() as connection:
+        assert connection.scalars(select(TEST_STATE.c.state_id)).all() == [winner]
+        assert connection.scalars(select(OUTBOX.c.event_id)).all() == [winner]
+        incident = (
+            connection.execute(
+                text("SELECT * FROM trade_system.outbox_version_conflict")
+            )
+            .mappings()
+            .one()
+        )
+        assert incident["event_id"] == loser
+        assert incident["account_id"] is None
+        assert incident["environment_id"] == event["environment_id"]
+        assert incident["aggregate_version"] == event["aggregate_version"]
+        assert incident["aggregate_id"] == event["aggregate_id"]
+        assert incident["correlation_id"] == event["correlation_id"]
+
+    with outbox_database.begin() as connection:
+        append_event(
+            connection,
+            {
+                **event,
+                "event_id": "evt_other_account",
+                "account_id": "different-account",
+            },
+        )
+    delivered: list[object] = []
+    while dispatch_once(outbox_database, lambda row: delivered.append(row["event_id"])):
+        pass
+    assert delivered == ["evt_other_account"]
 
 
 def test_dispatcher_orders_pending_versions_and_skips_locked_rows(
@@ -676,8 +755,36 @@ def test_dispatcher_retry_recovers_after_publisher_unavailability(
         assert recovered.failed_at is None
 
 
+@pytest.fixture
+def dispatcher_login(
+    outbox_database: Engine, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[Engine]:
+    username = "ac07_dispatcher_login"
+    password = token_hex(24)
+    with outbox_database.begin() as connection:
+        statement = sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
+            sql.Identifier(username), sql.Literal(password)
+        )
+        connection.exec_driver_sql(statement.as_string())
+        connection.execute(
+            text("GRANT outbox_dispatcher_worker TO ac07_dispatcher_login")
+        )
+    monkeypatch.setenv("OUTBOX_DISPATCHER_DB_USER", username)
+    monkeypatch.setenv("OUTBOX_DISPATCHER_DB_PASSWORD", password)
+    engine = create_engine(
+        outbox_database.url.set(username=username, password=password),
+        hide_parameters=True,
+    )
+    try:
+        yield engine
+    finally:
+        engine.dispose()
+        with outbox_database.begin() as connection:
+            connection.execute(text("DROP ROLE ac07_dispatcher_login"))
+
+
 def test_workers_restart_after_database_connection_failure(
-    outbox_database: Engine, event: dict[str, object]
+    outbox_database: Engine, dispatcher_login: Engine, event: dict[str, object]
 ) -> None:
     with outbox_database.begin() as connection:
         append_event(connection, event)
@@ -711,6 +818,15 @@ def test_workers_restart_after_database_connection_failure(
                 connection.execute(select(DELIVERY.c.delivery_id)).scalar_one_or_none()
                 is None
             )
+
+        privileged = {
+            **os.environ,
+            "OUTBOX_DISPATCHER_DB_USER": "trade_system",
+            "OUTBOX_DISPATCHER_DB_PASSWORD": os.environ["POSTGRES_PASSWORD"],
+        }
+        rejected = run_worker("apps.event_dispatcher", privileged)
+        assert rejected.returncode == 1
+        assert json.loads(rejected.stderr)["error_type"] == "ConfigurationError"
 
         dispatcher = run_worker("apps.event_dispatcher")
         assert dispatcher.returncode == 0
@@ -2128,3 +2244,682 @@ def test_liquidation_replay_respects_both_clocks_and_preserves_ledger(
         realized_pnl=Decimal(-60),
     )
     assert ledger.reconcile() == before
+
+
+def test_outbox_metrics_snapshot_and_transitions(
+    outbox_database: Engine, event: dict[str, object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    window = timedelta(minutes=5)
+    empty = collect_outbox_metrics(outbox_database, window=window)
+    assert empty["status"] == "ok"
+    assert isinstance(empty["backlog"], dict) and empty["backlog"]["total"] == 0
+    with outbox_database.begin() as connection:
+        for key, aggregate, version in (
+            ("terminal", "retained", 1),
+            ("blocked", "retained", 2),
+            ("retry", "retry", 1),
+            ("eligible", "eligible", 1),
+        ):
+            append_event(
+                connection,
+                {
+                    **event,
+                    "event_id": key,
+                    "aggregate_id": aggregate,
+                    "aggregate_version": version,
+                },
+            )
+        connection.execute(
+            OUTBOX.update().values(
+                enqueued_at=func.now() - timedelta(seconds=30),
+                available_at=func.now() + timedelta(hours=1),
+            )
+        )
+
+    def ready(event_id: str) -> None:
+        with outbox_database.begin() as connection:
+            connection.execute(
+                OUTBOX.update()
+                .where(OUTBOX.c.event_id == event_id)
+                .values(available_at=func.now())
+            )
+
+    def fail(_: Mapping[str, object]) -> None:
+        raise ConnectionError("fixture secret")
+
+    for _ in range(MAX_ATTEMPTS):
+        ready("terminal")
+        assert dispatch_once(outbox_database, fail)
+    ready("retry")
+    assert dispatch_once(outbox_database, fail)
+    ready("eligible")
+    first = collect_outbox_metrics(outbox_database, window=window)
+    backlog = first["backlog"]
+    assert isinstance(backlog, dict)
+    assert backlog["total"] == 4
+    assert {
+        condition: item["count"] for condition, item in backlog["conditions"].items()
+    } == {
+        "retained": 1,
+        "blocked": 1,
+        "waiting": 1,
+        "eligible": 1,
+    }
+    assert backlog["conditions"]["waiting"]["oldest_age_seconds"] >= 30
+    expected = {
+        "attempts": MAX_ATTEMPTS + 1,
+        "retries": MAX_ATTEMPTS,
+        "terminal_failures": 1,
+    }
+    assert first["transitions"] == expected
+    assert (
+        collect_outbox_metrics(outbox_database, window=window)["transitions"]
+        == expected
+    )
+    assert "fixture secret" not in json.dumps(first)
+
+    with monkeypatch.context() as training:
+        training.setenv("TRADE_SYSTEM_ENVIRONMENT", "TRAINING")
+        other = collect_outbox_metrics(outbox_database, window=window)
+        assert isinstance(other["backlog"], dict) and other["backlog"]["total"] == 0
+        assert other["transitions"] == {
+            "attempts": 0,
+            "retries": 0,
+            "terminal_failures": 0,
+        }
+
+    ready("retry")
+    assert dispatch_once(outbox_database, lambda _: None)
+    assert dispatch_once(outbox_database, lambda _: None)
+    restarted = create_engine(outbox_database.url)
+    try:
+        after = collect_outbox_metrics(restarted, window=window)
+    finally:
+        restarted.dispose()
+    assert isinstance(after["backlog"], dict) and after["backlog"]["total"] == 2
+    delay = after["publication_delay"]
+    assert (
+        isinstance(delay, dict) and delay["count"] == 2 and delay["min_seconds"] >= 30
+    )
+    assert after["transitions"] == {**expected, "attempts": MAX_ATTEMPTS + 3}
+    with socket.socket() as unused_port:
+        unused_port.bind(("127.0.0.1", 0))
+        port = unused_port.getsockname()[1]
+        unavailable = create_engine(
+            outbox_database.url.set(port=port), connect_args={"connect_timeout": 1}
+        )
+        try:
+            assert collect_outbox_metrics(unavailable, window=window) == {
+                "status": "unavailable",
+                "environment": "PAPER",
+            }
+        finally:
+            unavailable.dispose()
+
+
+def test_quarantine_survives_restart_and_releases_reconciled_chain(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    publish = LocalPublisher(outbox_database)
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+    assert dispatch_once(outbox_database, publish)
+    with pytest.raises(IntegrityError), outbox_database.begin() as connection:
+        append_event(connection, {**event, "event_id": "evt_conflicting_v1"})
+    with outbox_database.begin() as connection:
+        append_event(
+            connection, {**event, "event_id": "evt_v3", "aggregate_version": 3}
+        )
+        append_event(
+            connection,
+            {**event, "event_id": "evt_independent", "aggregate_id": "independent"},
+        )
+
+    restarted = create_engine(outbox_database.url)
+    try:
+        publisher = LocalPublisher(restarted)
+        assert dispatch_once(restarted, publisher)
+        assert not dispatch_once(restarted, publisher)
+        with pytest.raises(ValueError, match="unreconciled_effect"):
+            release_quarantine(
+                restarted, event, decision_reference="fixture:qa-decision"
+            )
+        assert consume_once(restarted, apply_diagnostic_event)
+        assert consume_once(restarted, apply_diagnostic_event)
+        with pytest.raises(ValueError, match="incomplete_chain"):
+            release_quarantine(
+                restarted, event, decision_reference="fixture:qa-decision"
+            )
+        with restarted.begin() as connection:
+            append_event(
+                connection, {**event, "event_id": "evt_v2", "aggregate_version": 2}
+            )
+        assert not dispatch_once(restarted, publisher)
+    finally:
+        restarted.dispose()
+
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(
+                select(OUTBOX.c.attempts).where(OUTBOX.c.event_id == "evt_v2")
+            ).scalar_one()
+            == 0
+        )
+        assert (
+            connection.execute(
+                text(
+                    "SELECT count(*) FROM trade_system.outbox_quarantine "
+                    "WHERE released_at IS NULL"
+                )
+            ).scalar_one()
+            == 1
+        )
+    assert (
+        release_quarantine(
+            outbox_database, event, decision_reference="fixture:qa-decision"
+        )
+        == 1
+    )
+    assert (
+        release_quarantine(
+            outbox_database, event, decision_reference="fixture:qa-decision"
+        )
+        == 0
+    )
+    delivered: list[object] = []
+
+    def record(envelope: Mapping[str, object]) -> None:
+        delivered.append(envelope["event_id"])
+        publish(envelope)
+
+    while dispatch_once(outbox_database, record):
+        pass
+    assert delivered == ["evt_v2", "evt_v3"]
+    publish(event)
+    while consume_once(outbox_database, apply_diagnostic_event):
+        pass
+    with outbox_database.connect() as connection:
+        assert (
+            connection.execute(
+                select(func.sum(DIAGNOSTIC_COUNT.c.event_count))
+            ).scalar_one()
+            == 4
+        )
+        assert (
+            connection.execute(
+                text(
+                    "SELECT decision_reference FROM trade_system.outbox_quarantine "
+                    "WHERE released_at IS NOT NULL"
+                )
+            ).scalar_one()
+            == "fixture:qa-decision"
+        )
+
+
+@pytest.mark.parametrize("removed", [False, True])
+def test_outbox_gap_escalation_preserves_attempts(
+    outbox_database: Engine, event: dict[str, object], removed: bool
+) -> None:
+    publisher = LocalPublisher(outbox_database)
+    if removed:
+        with outbox_database.begin() as connection:
+            append_event(connection, event)
+        assert dispatch_once(outbox_database, publisher)
+        assert consume_once(outbox_database, apply_diagnostic_event)
+        with pytest.raises(ValueError, match="outbox_retention: ineligible_event"):
+            remove_published_event(
+                outbox_database,
+                str(event["event_id"]),
+                decision_reference="fixture:before-cutoff",
+            )
+        with outbox_database.begin() as connection:
+            connection.execute(
+                OUTBOX.update().values(
+                    published_at=func.now() - timedelta(days=30),
+                )
+            )
+        assert remove_published_event(
+            outbox_database,
+            str(event["event_id"]),
+            decision_reference="fixture:retention",
+        )
+    successor = {**event, "event_id": "evt_gap_v2", "aggregate_version": 2}
+    threshold = timedelta(hours=1)
+    with outbox_database.begin() as connection:
+        append_event(connection, successor)
+    if not removed:
+        with outbox_database.begin() as connection:
+            connection.execute(
+                OUTBOX.update().values(
+                    enqueued_at=func.now() - timedelta(seconds=3590),
+                )
+            )
+        assert not dispatch_once(outbox_database, publisher)
+        with outbox_database.begin() as connection:
+            assert (
+                connection.execute(
+                    text("SELECT count(*) FROM trade_system.outbox_quarantine")
+                ).scalar_one()
+                == 0
+            )
+            connection.execute(
+                OUTBOX.update()
+                .where(OUTBOX.c.event_id == "evt_gap_v2")
+                .values(enqueued_at=func.now() - timedelta(seconds=3600))
+            )
+
+    restarted = create_engine(outbox_database.url)
+    try:
+        for _ in range(2):
+            assert not dispatch_once(
+                restarted,
+                LocalPublisher(restarted),
+                gap_after=None if removed else threshold,
+            )
+        with restarted.begin() as connection:
+            append_event(
+                connection,
+                {
+                    **event,
+                    "event_id": "evt_independent_gap",
+                    "aggregate_id": "independent_gap",
+                },
+            )
+        assert dispatch_once(restarted, LocalPublisher(restarted), gap_after=threshold)
+        with restarted.connect() as connection:
+            counts = connection.execute(
+                select(OUTBOX.c.attempts, OUTBOX.c.published_at).where(
+                    OUTBOX.c.event_id == "evt_gap_v2"
+                )
+            ).one()
+            assert tuple(counts) == (0, None)
+            incident = connection.execute(
+                text("""
+                SELECT reason, expected_version, released_at
+                FROM trade_system.outbox_quarantine
+            """)
+            ).one()
+            reason = "retention_removed" if removed else "missing"
+            assert tuple(incident) == (reason, 1, None)
+        with pytest.raises(ValueError, match="incomplete_chain"):
+            release_quarantine(restarted, event, decision_reference="fixture:qa")
+        with restarted.begin() as connection:
+            append_event(connection, event)
+        assert not dispatch_once(
+            restarted, LocalPublisher(restarted), gap_after=threshold
+        )
+        assert (
+            release_quarantine(restarted, event, decision_reference="fixture:qa") == 1
+        )
+        assert dispatch_once(restarted, LocalPublisher(restarted), gap_after=threshold)
+        assert dispatch_once(restarted, LocalPublisher(restarted), gap_after=threshold)
+        assert not dispatch_once(
+            restarted, LocalPublisher(restarted), gap_after=threshold
+        )
+        while consume_once(restarted, apply_diagnostic_event):
+            pass
+        with restarted.connect() as connection:
+            assert (
+                connection.execute(
+                    select(func.sum(DIAGNOSTIC_COUNT.c.event_count))
+                ).scalar_one()
+                == 3
+            )
+    finally:
+        restarted.dispose()
+        # The disposable fixture downgrades after this test.
+        with outbox_database.begin() as connection:
+            connection.execute(
+                text(
+                    "DELETE FROM trade_system.outbox_quarantine "
+                    "WHERE event_id = 'evt_gap_v2'"
+                )
+            )
+            connection.execute(
+                text(
+                    "DELETE FROM trade_system.outbox_retention_receipt "
+                    "WHERE event_id = :id"
+                ),
+                {"id": event["event_id"]},
+            )
+
+
+def test_outbox_retention_preserves_unconsumed_and_predecessor(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    publisher = LocalPublisher(outbox_database)
+    event_id = str(event["event_id"])
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+    assert dispatch_once(outbox_database, publisher)
+    with outbox_database.begin() as connection:
+        connection.execute(
+            OUTBOX.update().values(
+                published_at=func.now() - timedelta(days=31),
+            )
+        )
+    with pytest.raises(ValueError, match="outbox_retention: ineligible_event"):
+        remove_published_event(
+            outbox_database,
+            event_id,
+            decision_reference="fixture:unconsumed",
+        )
+    assert consume_once(outbox_database, apply_diagnostic_event)
+    with outbox_database.begin() as connection:
+        append_event(
+            connection,
+            {**event, "event_id": "evt_retention_successor", "aggregate_version": 2},
+        )
+    with pytest.raises(ValueError, match="outbox_retention: ineligible_event"):
+        remove_published_event(
+            outbox_database,
+            event_id,
+            decision_reference="fixture:predecessor",
+        )
+    with outbox_database.connect() as connection:
+        assert connection.scalar(select(func.count()).select_from(OUTBOX)) == 2
+        assert (
+            connection.scalar(
+                text("SELECT count(*) FROM trade_system.outbox_retention_receipt")
+            )
+            == 0
+        )
+    assert dispatch_once(outbox_database, publisher)
+
+
+def test_outbox_sensitive_operations_require_database_membership(
+    outbox_database: Engine,
+    event: dict[str, object],
+) -> None:
+    with outbox_database.begin() as connection:
+        connection.execute(text("CREATE ROLE ac07_reader NOLOGIN"))
+        connection.execute(text("CREATE ROLE ac07_data_operator NOLOGIN"))
+        connection.execute(text("CREATE ROLE ac07_dispatch_operator NOLOGIN"))
+        connection.execute(
+            text("GRANT outbox_retention_authorizer TO ac07_data_operator")
+        )
+        connection.execute(
+            text("GRANT outbox_resume_authorizer TO ac07_dispatch_operator")
+        )
+        connection.execute(text("GRANT USAGE ON SCHEMA trade_system TO ac07_reader"))
+        connection.execute(
+            text("GRANT SELECT, DELETE ON trade_system.outbox TO ac07_reader")
+        )
+        append_event(connection, event)
+    publisher = LocalPublisher(outbox_database)
+    assert dispatch_once(outbox_database, publisher)
+    assert consume_once(outbox_database, apply_diagnostic_event)
+    event_id = str(event["event_id"])
+    with outbox_database.begin() as connection:
+        connection.execute(
+            OUTBOX.update().values(
+                published_at=func.now() - timedelta(days=31),
+            )
+        )
+
+    def as_identity(role: str) -> Engine:
+        engine = create_engine(outbox_database.url, hide_parameters=True)
+
+        @sqlalchemy_event.listens_for(engine, "connect")
+        def set_session_identity(dbapi_connection: Any, _: object) -> None:
+            dbapi_connection.execute(f"SET SESSION AUTHORIZATION {role}")
+            dbapi_connection.commit()
+
+        return engine
+
+    reader, data, dispatcher = (
+        as_identity(role)
+        for role in ("ac07_reader", "ac07_data_operator", "ac07_dispatch_operator")
+    )
+    try:
+        for denied in (reader, dispatcher):
+            with pytest.raises(DBAPIError, match="operation not authorized"):
+                remove_published_event(
+                    denied, event_id, decision_reference="fixture:denied"
+                )
+        with pytest.raises(DBAPIError, match="operation not authorized"):
+            with reader.begin() as connection:
+                connection.execute(OUTBOX.delete().where(OUTBOX.c.event_id == event_id))
+        assert remove_published_event(
+            data, event_id, decision_reference="fixture:retention"
+        )
+        with outbox_database.begin() as connection:
+            append_event(
+                connection, {**event, "event_id": "evt_auth_v2", "aggregate_version": 2}
+            )
+        assert not dispatch_once(outbox_database, publisher)
+        with outbox_database.begin() as connection:
+            append_event(connection, event)
+        for denied in (reader, data):
+            with pytest.raises(DBAPIError, match="operation not authorized"):
+                release_quarantine(denied, event, decision_reference="fixture:denied")
+        assert (
+            release_quarantine(
+                dispatcher,
+                event,
+                decision_reference="fixture:reconciliation",
+            )
+            == 1
+        )
+        with outbox_database.connect() as connection:
+            assert tuple(
+                connection.execute(
+                    text("""
+                SELECT removed_by, decision_reference
+                FROM trade_system.outbox_retention_receipt
+                """)
+                ).one()
+            ) == ("ac07_data_operator", "fixture:retention")
+            assert tuple(
+                connection.execute(
+                    text("""
+                SELECT released_by, decision_reference
+                FROM trade_system.outbox_quarantine
+                """)
+                ).one()
+            ) == ("ac07_dispatch_operator", "fixture:reconciliation")
+    finally:
+        for engine in (reader, data, dispatcher):
+            engine.dispose()
+        with outbox_database.begin() as connection:
+            connection.execute(
+                text("DELETE FROM trade_system.outbox_retention_receipt")
+            )
+            connection.execute(
+                text(
+                    "DELETE FROM trade_system.outbox_quarantine "
+                    "WHERE reason = 'retention_removed'"
+                )
+            )
+            connection.execute(text("DROP OWNED BY ac07_reader"))
+            connection.execute(
+                text(
+                    "DROP ROLE ac07_reader, ac07_data_operator, ac07_dispatch_operator"
+                )
+            )
+
+
+def test_dispatcher_login_publishes_without_retention_or_release_privileges(
+    outbox_database: Engine,
+    dispatcher_login: Engine,
+    event: dict[str, object],
+) -> None:
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+        connection.execute(
+            text("""
+            INSERT INTO trade_system.outbox_quarantine
+                (environment_id, aggregate_type, aggregate_id, event_id, reason)
+            VALUES ('PAPER', :aggregate_type, 'blocked-fixture',
+                    'evt_blocked_fixture', 'version_conflict')
+        """),
+            {"aggregate_type": event["aggregate_type"]},
+        )
+    with dispatcher_login.connect() as connection:
+        identity = connection.execute(
+            text("""
+            SELECT session_user, rolsuper, rolcreatedb, rolcreaterole,
+                   rolreplication, rolbypassrls
+            FROM pg_roles WHERE rolname = session_user
+        """)
+        ).one()
+        assert tuple(identity) == (
+            "ac07_dispatcher_login",
+            False,
+            False,
+            False,
+            False,
+            False,
+        )
+    assert dispatch_once(dispatcher_login, LocalPublisher(dispatcher_login))
+    blocked = {**event, "aggregate_id": "blocked-fixture"}
+    denied_commands: tuple[Callable[[], object], ...] = (
+        lambda: remove_published_event(
+            dispatcher_login,
+            str(event["event_id"]),
+            decision_reference="fixture:denied",
+        ),
+        lambda: release_quarantine(
+            dispatcher_login, blocked, decision_reference="fixture:denied"
+        ),
+    )
+    for operation in denied_commands:
+        with pytest.raises(DBAPIError, match="operation not authorized"):
+            operation()
+
+    for statement in (
+        "DELETE FROM trade_system.outbox",
+        "UPDATE trade_system.outbox_quarantine SET released_at = clock_timestamp()",
+    ):
+        with (
+            pytest.raises(DBAPIError) as denied,
+            dispatcher_login.begin() as connection,
+        ):
+            connection.execute(text(statement))
+        assert getattr(denied.value.orig, "sqlstate", None) == "42501"
+
+    with outbox_database.connect() as connection:
+        assert connection.execute(select(DELIVERY.c.envelope)).scalar_one() == event
+        published = connection.execute(
+            select(OUTBOX.c.attempts, OUTBOX.c.published_at)
+        ).one()
+        assert published.attempts == 1 and published.published_at is not None
+        assert (
+            connection.scalar(
+                text(
+                    "SELECT count(*) FROM trade_system.outbox_quarantine "
+                    "WHERE released_at IS NULL"
+                )
+            )
+            == 1
+        )
+        assert (
+            connection.scalar(
+                text("SELECT count(*) FROM trade_system.outbox_retention_receipt")
+            )
+            == 0
+        )
+
+
+def test_outbox_event_id_divergence_is_audited_and_equivalent_replay_is_safe(
+    outbox_database: Engine,
+    event: dict[str, object],
+) -> None:
+    publish = LocalPublisher(outbox_database)
+    with outbox_database.begin() as connection:
+        connection.execute(TEST_STATE.insert().values(state_id="original"))
+        append_event(connection, event)
+    assert dispatch_once(outbox_database, publish)
+    assert consume_once(outbox_database, apply_diagnostic_event)
+
+    replay = dict(reversed(list(event.items())))
+    with pytest.raises(IntegrityError), outbox_database.begin() as connection:
+        connection.execute(TEST_STATE.insert().values(state_id="equivalent-replay"))
+        append_event(connection, replay)
+
+    with outbox_database.connect() as connection:
+        assert (
+            connection.scalar(
+                text("SELECT count(*) FROM trade_system.outbox_event_id_conflict")
+            )
+            == 0
+        )
+
+    divergent = {**event, "payload": {"sentinel": "not stored in audit"}}
+    try:
+        with pytest.raises(IntegrityError), outbox_database.begin() as connection:
+            connection.execute(TEST_STATE.insert().values(state_id="divergent-replay"))
+            append_event(connection, divergent)
+        with outbox_database.connect() as connection:
+            assert connection.scalars(select(TEST_STATE.c.state_id)).all() == [
+                "original"
+            ]
+            assert connection.scalars(select(OUTBOX.c.envelope)).all() == [event]
+            incident = (
+                connection.execute(
+                    text("""
+                SELECT event_id, original_sha256, claimed_sha256,
+                       claimed_correlation_id
+                FROM trade_system.outbox_event_id_conflict
+                """)
+                )
+                .mappings()
+                .one()
+            )
+            assert incident["event_id"] == event["event_id"]
+            assert incident["claimed_correlation_id"] == event["correlation_id"]
+            assert (
+                len(incident["original_sha256"])
+                == len(incident["claimed_sha256"])
+                == 64
+            )
+            assert incident["original_sha256"] != incident["claimed_sha256"]
+            assert (
+                connection.scalar(
+                    text("""
+                SELECT reason FROM trade_system.outbox_quarantine
+                WHERE released_at IS NULL
+                """)
+                )
+                == "event_id_conflict"
+            )
+        with outbox_database.begin() as connection:
+            append_event(
+                connection,
+                {
+                    **event,
+                    "event_id": "evt_collision_v2",
+                    "aggregate_version": 2,
+                },
+            )
+        assert not dispatch_once(outbox_database, publish)
+        with outbox_database.connect() as connection:
+            assert (
+                connection.scalar(
+                    select(OUTBOX.c.attempts).where(
+                        OUTBOX.c.event_id == "evt_collision_v2"
+                    )
+                )
+                == 0
+            )
+        publish(replay)
+        assert consume_once(outbox_database, apply_diagnostic_event)
+        with outbox_database.connect() as connection:
+            assert (
+                connection.scalar(select(func.sum(DIAGNOSTIC_COUNT.c.event_count))) == 1
+            )
+            assert (
+                connection.scalar(select(func.count()).select_from(PROCESSED_EVENT))
+                == 1
+            )
+    finally:
+        with outbox_database.begin() as connection:
+            connection.execute(
+                text("""
+                DELETE FROM trade_system.outbox_quarantine
+                WHERE reason = 'event_id_conflict'
+                """)
+            )
+            connection.execute(
+                text("DELETE FROM trade_system.outbox_event_id_conflict")
+            )

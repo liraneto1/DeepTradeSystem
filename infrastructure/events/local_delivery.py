@@ -25,4 +25,6 @@ class LocalPublisher:
     def __call__(self, envelope: Mapping[str, object]) -> None:
         require_event_environment(envelope.get("environment_id"))
         with self.engine.begin() as connection:
-            connection.execute(DELIVERY.insert().values(envelope=dict(envelope)))
+            connection.execute(
+                DELIVERY.insert().inline().values(envelope=dict(envelope))
+            )

@@ -8,10 +8,22 @@ from infrastructure.security.config import ConfigurationError, runtime_environme
 
 
 def local_database_url() -> URL:
+    return _database_url("trade_system", "POSTGRES_PASSWORD")
+
+
+def dispatcher_database_url() -> URL:
     runtime_environment()
-    password = os.environ.get("POSTGRES_PASSWORD")
+    username = os.environ.get("OUTBOX_DISPATCHER_DB_USER", "")
+    if not username.strip():
+        raise ConfigurationError("OUTBOX_DISPATCHER_DB_USER must be set and nonblank.")
+    return _database_url(username, "OUTBOX_DISPATCHER_DB_PASSWORD")
+
+
+def _database_url(username: str, password_variable: str) -> URL:
+    runtime_environment()
+    password = os.environ.get(password_variable)
     if not password or not password.strip():
-        raise ConfigurationError("POSTGRES_PASSWORD must be set and nonblank.")
+        raise ConfigurationError(f"{password_variable} must be set and nonblank.")
 
     port = os.environ.get("POSTGRES_PORT", "55432")
     if not (
@@ -26,7 +38,7 @@ def local_database_url() -> URL:
 
     return URL.create(
         "postgresql+psycopg",
-        username="trade_system",
+        username=username,
         password=password,
         host="127.0.0.1",
         port=int(port),

@@ -4,12 +4,32 @@ O dispatcher lê eventos confirmados na Outbox e grava uma cópia em
 `trade_system.event_delivery`, uma fila durável no PostgreSQL local. A revisão
 `0003` adiciona essa fila e os campos de controle de tentativas à Outbox.
 
-Com o [banco local](postgresql-local.md) iniciado e a senha na sessão PowerShell:
+Com o [banco local](postgresql-local.md) iniciado, execute
+`uv run --no-sync alembic upgrade head` usando a identidade de migração.
+A revisão `0021` cria o papel de grupo `outbox_dispatcher_worker`.
+No PostgreSQL, atribua esse papel a um login dedicado, sem privilégios
+administrativos, usando a sessão de administração. No exemplo,
+`outbox_dispatcher_login` é um login previamente provisionado.
+
+```sql
+GRANT outbox_dispatcher_worker TO outbox_dispatcher_login;
+```
+
+Na sessão PowerShell de PAPER ou TRAINING, configure
+`OUTBOX_DISPATCHER_DB_USER` e injete `OUTBOX_DISPATCHER_DB_PASSWORD`
+a partir do armazenamento local de segredos. Use o mesmo
+`POSTGRES_PORT` do banco local e mantenha `LIVE_ENABLED=false`.
 
 ```powershell
-uv run --no-sync alembic upgrade head
+$env:OUTBOX_DISPATCHER_DB_USER = "outbox_dispatcher_login"
 uv run --no-sync python -m apps.event_dispatcher --once
 ```
+
+A CLI exige as credenciais dedicadas. Na inicialização, verifica o
+papel do login, os atributos administrativos e os privilégios de
+retenção e liberação. O papel de dispatcher permite publicação e
+registro de tentativas e incidentes, sem conceder remoção ou
+liberação das quarentenas.
 
 `--once` tenta publicar até um evento disponível. Remova a opção para o
 processo ficar aguardando eventos. Use **Ctrl+C** para encerrá-lo. Um banco
