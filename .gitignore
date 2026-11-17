@@ -16,3 +16,9 @@ dist/
 /data/market-history/
 
 .runtime/
+
+# Generated client-profile verification binaries; keep the review reports.
+/docs/evidence/ac02-profile-adoption/artifacts/
+/docs/evidence/ac02-profile-adoption/*.zip
+/docs/evidence/ac02-profile-adoption/windows-dist/
+/docs/evidence/ac02-profile-adoption/windows-venv-path.txt

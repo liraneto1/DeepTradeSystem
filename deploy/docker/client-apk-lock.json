@@ -1,0 +1,786 @@
+{
+  "test": [
+    {
+      "name": "alpine-baselayout",
+      "version": "3.7.2-r1",
+      "origin": "alpine-baselayout",
+      "commit": "60a7585bbab2fa0f762504eb617dbca90216e31f"
+    },
+    {
+      "name": "alpine-baselayout-data",
+      "version": "3.7.2-r1",
+      "origin": "alpine-baselayout",
+      "commit": "60a7585bbab2fa0f762504eb617dbca90216e31f"
+    },
+    {
+      "name": "alpine-keys",
+      "version": "2.6-r0",
+      "origin": "alpine-keys",
+      "commit": "b9f23becced4d7b3ccc0fa0f28530243ccd314a0"
+    },
+    {
+      "name": "alpine-release",
+      "version": "3.24.4-r0",
+      "origin": "alpine-base",
+      "commit": "105b835acd9971b9770fb61f5a1ddcc133c180dc"
+    },
+    {
+      "name": "apk-tools",
+      "version": "3.0.9-r0",
+      "origin": "apk-tools",
+      "commit": "13685e8f2cf1c103cbba2fb9efcfcf19f4918df0"
+    },
+    {
+      "name": "bash",
+      "version": "5.3.9-r1",
+      "origin": "bash",
+      "commit": "1522c3193610902d8493f9790a2755c11f21f26d"
+    },
+    {
+      "name": "binutils",
+      "version": "2.45.1-r1",
+      "origin": "binutils",
+      "commit": "673df4f3ce2e71e9bcfbf64939332917a35795fc"
+    },
+    {
+      "name": "brotli-libs",
+      "version": "1.2.1-r0",
+      "origin": "brotli",
+      "commit": "8313352127992a9d82e2c2024494f6c38a4dffb4"
+    },
+    {
+      "name": "build-base",
+      "version": "0.5-r4",
+      "origin": "build-base",
+      "commit": "1eff03395e9533e60c804a7a21400e59d5c8a1bf"
+    },
+    {
+      "name": "busybox",
+      "version": "1.37.0-r31",
+      "origin": "busybox",
+      "commit": "c3ef5d10e6ef6528852c51f0564963e2f8c1be19"
+    },
+    {
+      "name": "busybox-binsh",
+      "version": "1.37.0-r31",
+      "origin": "busybox",
+      "commit": "c3ef5d10e6ef6528852c51f0564963e2f8c1be19"
+    },
+    {
+      "name": "c-ares",
+      "version": "1.34.9-r0",
+      "origin": "c-ares",
+      "commit": "50f178d7a4c30ea44b54b7d4731ab58558c38b14"
+    },
+    {
+      "name": "ca-certificates",
+      "version": "20261020-r0",
+      "origin": "ca-certificates",
+      "commit": "e78f5987166c6ffbe23f6472e2e8f040298fe2da"
+    },
+    {
+      "name": "ca-certificates-bundle",
+      "version": "20261020-r0",
+      "origin": "ca-certificates",
+      "commit": "e78f5987166c6ffbe23f6472e2e8f040298fe2da"
+    },
+    {
+      "name": "clang22",
+      "version": "22.1.3-r2",
+      "origin": "clang22",
+      "commit": "ae31ee6bd9b88ee679224bbb0105585725b33cdc"
+    },
+    {
+      "name": "clang22-headers",
+      "version": "22.1.3-r2",
+      "origin": "clang22",
+      "commit": "ae31ee6bd9b88ee679224bbb0105585725b33cdc"
+    },
+    {
+      "name": "clang22-libs",
+      "version": "22.1.3-r2",
+      "origin": "clang22",
+      "commit": "ae31ee6bd9b88ee679224bbb0105585725b33cdc"
+    },
+    {
+      "name": "file",
+      "version": "5.47-r2",
+      "origin": "file",
+      "commit": "a05d36fa86411cd0ce86d756f818e525d0eee1c3"
+    },
+    {
+      "name": "fortify-headers",
+      "version": "3.0.1-r2",
+      "origin": "fortify-headers",
+      "commit": "363be18be4b1f33af5a058990ba9b297e8fb547b"
+    },
+    {
+      "name": "g++",
+      "version": "15.2.0-r5",
+      "origin": "gcc",
+      "commit": "423a8ad043d07f2c7546c8ec3e2b0384cda360ae"
+    },
+    {
+      "name": "gcc",
+      "version": "15.2.0-r5",
+      "origin": "gcc",
+      "commit": "423a8ad043d07f2c7546c8ec3e2b0384cda360ae"
+    },
+    {
+      "name": "gdbm",
+      "version": "1.26-r0",
+      "origin": "gdbm",
+      "commit": "1ea03990396db618edfcc8a9a0bc6b72662bac8f"
+    },
+    {
+      "name": "gmp",
+      "version": "6.3.0-r4",
+      "origin": "gmp",
+      "commit": "206e7b39f7884d62a174aba4d33a42454518c1c2"
+    },
+    {
+      "name": "icu",
+      "version": "78.1-r0",
+      "origin": "icu",
+      "commit": "6755fdb21483ba250d374c3244f0f48bc63447e2"
+    },
+    {
+      "name": "icu-data-en",
+      "version": "78.1-r0",
+      "origin": "icu",
+      "commit": "6755fdb21483ba250d374c3244f0f48bc63447e2"
+    },
+    {
+      "name": "icu-dev",
+      "version": "78.1-r0",
+      "origin": "icu",
+      "commit": "6755fdb21483ba250d374c3244f0f48bc63447e2"
+    },
+    {
+      "name": "icu-libs",
+      "version": "78.1-r0",
+      "origin": "icu",
+      "commit": "6755fdb21483ba250d374c3244f0f48bc63447e2"
+    },
+    {
+      "name": "isl26",
+      "version": "0.26-r2",
+      "origin": "isl26",
+      "commit": "4f94ecd650b5ea9d18882e45048ad78536fd3149"
+    },
+    {
+      "name": "jansson",
+      "version": "2.15.0-r0",
+      "origin": "jansson",
+      "commit": "88919740865a31680e7f1c4cb568dfd7a87e9f08"
+    },
+    {
+      "name": "keyutils-libs",
+      "version": "1.6.3-r4",
+      "origin": "keyutils",
+      "commit": "8bac74716d06c84627ab02d101fd9d2bafd0a34c"
+    },
+    {
+      "name": "krb5-conf",
+      "version": "1.0-r2",
+      "origin": "krb5-conf",
+      "commit": "4a46b2cb955e25fd6d6f913794d35bc6d876aea9"
+    },
+    {
+      "name": "krb5-libs",
+      "version": "1.22.3-r0",
+      "origin": "krb5",
+      "commit": "95ecd1043f781a308ae20a7aa08b86070806946f"
+    },
+    {
+      "name": "libapk",
+      "version": "3.0.9-r0",
+      "origin": "apk-tools",
+      "commit": "13685e8f2cf1c103cbba2fb9efcfcf19f4918df0"
+    },
+    {
+      "name": "libatomic",
+      "version": "15.2.0-r5",
+      "origin": "gcc",
+      "commit": "423a8ad043d07f2c7546c8ec3e2b0384cda360ae"
+    },
+    {
+      "name": "libbz2",
+      "version": "1.0.8-r6",
+      "origin": "bzip2",
+      "commit": "33283848034c9885d984c8e8697c645c57324938"
+    },
+    {
+      "name": "libcom_err",
+      "version": "1.47.4-r0",
+      "origin": "e2fsprogs",
+      "commit": "8683a6972cb245fbbdb535dad6435a9930bb9374"
+    },
+    {
+      "name": "libcrypto3",
+      "version": "3.5.9-r0",
+      "origin": "openssl",
+      "commit": "29b9ec24b1b5b39aeef51fa2a044210e2ec5258e"
+    },
+    {
+      "name": "libcurl",
+      "version": "8.23.0-r0",
+      "origin": "curl",
+      "commit": "c65a7b3f6d6bc4b3c0a8a6fff759d8fd05a167ce"
+    },
+    {
+      "name": "libecpg",
+      "version": "18.7-r0",
+      "origin": "postgresql18",
+      "commit": "33a57d3919ee0227231f5a3e599540514584e309"
+    },
+    {
+      "name": "libecpg-dev",
+      "version": "18.7-r0",
+      "origin": "postgresql18",
+      "commit": "33a57d3919ee0227231f5a3e599540514584e309"
+    },
+    {
+      "name": "libffi",
+      "version": "3.5.2-r1",
+      "origin": "libffi",
+      "commit": "2c2a7bb4a8b16066834e90402567b2c19403a790"
+    },
+    {
+      "name": "libgcc",
+      "version": "15.2.0-r5",
+      "origin": "gcc",
+      "commit": "423a8ad043d07f2c7546c8ec3e2b0384cda360ae"
+    },
+    {
+      "name": "libgcc-static",
+      "version": "15.2.0-r5",
+      "origin": "gcc",
+      "commit": "423a8ad043d07f2c7546c8ec3e2b0384cda360ae"
+    },
+    {
+      "name": "libgomp",
+      "version": "15.2.0-r5",
+      "origin": "gcc",
+      "commit": "423a8ad043d07f2c7546c8ec3e2b0384cda360ae"
+    },
+    {
+      "name": "libidn2",
+      "version": "2.3.8-r0",
+      "origin": "libidn2",
+      "commit": "8240e09aa2fdd8f9979b2016be082273965aff0c"
+    },
+    {
+      "name": "libintl",
+      "version": "1.0-r0",
+      "origin": "gettext",
+      "commit": "a0b12dbf67fb047e79a1b76c6dfe6f2904d0d391"
+    },
+    {
+      "name": "libmagic",
+      "version": "5.47-r2",
+      "origin": "file",
+      "commit": "a05d36fa86411cd0ce86d756f818e525d0eee1c3"
+    },
+    {
+      "name": "libncursesw",
+      "version": "6.6_p20260516-r0",
+      "origin": "ncurses",
+      "commit": "2cee8a7328d061418336ad327b512d96bcd7bc5e"
+    },
+    {
+      "name": "libnsl",
+      "version": "2.0.1-r2",
+      "origin": "libnsl",
+      "commit": "a9e2a2dc46f377eb25884f7fea9834492de7f518"
+    },
+    {
+      "name": "libpanelw",
+      "version": "6.6_p20260516-r0",
+      "origin": "ncurses",
+      "commit": "2cee8a7328d061418336ad327b512d96bcd7bc5e"
+    },
+    {
+      "name": "libpq",
+      "version": "18.7-r0",
+      "origin": "postgresql18",
+      "commit": "33a57d3919ee0227231f5a3e599540514584e309"
+    },
+    {
+      "name": "libpq-dev",
+      "version": "18.7-r0",
+      "origin": "postgresql18",
+      "commit": "33a57d3919ee0227231f5a3e599540514584e309"
+    },
+    {
+      "name": "libpsl",
+      "version": "0.21.5-r3",
+      "origin": "libpsl",
+      "commit": "6bd45b53fb316dc01bda59f5feaf1e127eb64f22"
+    },
+    {
+      "name": "libssl3",
+      "version": "3.5.9-r0",
+      "origin": "openssl",
+      "commit": "29b9ec24b1b5b39aeef51fa2a044210e2ec5258e"
+    },
+    {
+      "name": "libstdc++",
+      "version": "15.2.0-r5",
+      "origin": "gcc",
+      "commit": "423a8ad043d07f2c7546c8ec3e2b0384cda360ae"
+    },
+    {
+      "name": "libstdc++-dev",
+      "version": "15.2.0-r5",
+      "origin": "gcc",
+      "commit": "423a8ad043d07f2c7546c8ec3e2b0384cda360ae"
+    },
+    {
+      "name": "libtirpc",
+      "version": "1.3.5-r1",
+      "origin": "libtirpc",
+      "commit": "4519a8c0bafdd843397d13a9146c906ff64a6c2f"
+    },
+    {
+      "name": "libtirpc-conf",
+      "version": "1.3.5-r1",
+      "origin": "libtirpc",
+      "commit": "4519a8c0bafdd843397d13a9146c906ff64a6c2f"
+    },
+    {
+      "name": "libunistring",
+      "version": "1.4.2-r0",
+      "origin": "libunistring",
+      "commit": "30d9f19340385b2cd16eaf1cc6a9a8b30c4afe1c"
+    },
+    {
+      "name": "liburing",
+      "version": "2.14-r0",
+      "origin": "liburing",
+      "commit": "b2acc93a60ed96de5b6e3043c505744957cc7d00"
+    },
+    {
+      "name": "liburing-dev",
+      "version": "2.14-r0",
+      "origin": "liburing",
+      "commit": "b2acc93a60ed96de5b6e3043c505744957cc7d00"
+    },
+    {
+      "name": "liburing-ffi",
+      "version": "2.14-r0",
+      "origin": "liburing",
+      "commit": "b2acc93a60ed96de5b6e3043c505744957cc7d00"
+    },
+    {
+      "name": "libuuid",
+      "version": "2.42.3-r1",
+      "origin": "util-linux",
+      "commit": "d98c55af59055e6ca60fbe36e171546918709965"
+    },
+    {
+      "name": "libverto",
+      "version": "0.3.2-r2",
+      "origin": "libverto",
+      "commit": "84a227baf001b6e0208e3352b294e4d7a40e93de"
+    },
+    {
+      "name": "libxml2",
+      "version": "2.13.9-r2",
+      "origin": "libxml2",
+      "commit": "f1bd5b6767a0e7fdda380c95138a1c938eb6e102"
+    },
+    {
+      "name": "llvm22",
+      "version": "22.1.3-r1",
+      "origin": "llvm22",
+      "commit": "7d10bc6cb2ec4d1202cc140ecc753d3200d84fc2"
+    },
+    {
+      "name": "llvm22-libs",
+      "version": "22.1.3-r1",
+      "origin": "llvm22",
+      "commit": "7d10bc6cb2ec4d1202cc140ecc753d3200d84fc2"
+    },
+    {
+      "name": "llvm22-linker-tools",
+      "version": "22.1.3-r1",
+      "origin": "llvm22",
+      "commit": "7d10bc6cb2ec4d1202cc140ecc753d3200d84fc2"
+    },
+    {
+      "name": "lz4-dev",
+      "version": "1.10.0-r1",
+      "origin": "lz4",
+      "commit": "1f16962f34234a77fab0f4651459c4381b4a0cd6"
+    },
+    {
+      "name": "lz4-libs",
+      "version": "1.10.0-r1",
+      "origin": "lz4",
+      "commit": "1f16962f34234a77fab0f4651459c4381b4a0cd6"
+    },
+    {
+      "name": "make",
+      "version": "4.4.1-r4",
+      "origin": "make",
+      "commit": "9368161bd37f74fb11747ba79197f8480aaca7dc"
+    },
+    {
+      "name": "mpc1",
+      "version": "1.3.1-r1",
+      "origin": "mpc1",
+      "commit": "84a227baf001b6e0208e3352b294e4d7a40e93de"
+    },
+    {
+      "name": "mpfr4",
+      "version": "4.2.2-r0",
+      "origin": "mpfr4",
+      "commit": "011955c827a3e7545ea82225e1f20c6a06617c7a"
+    },
+    {
+      "name": "musl",
+      "version": "1.2.6-r3",
+      "origin": "musl",
+      "commit": "8f79d39391b46d6dbf1800fb68b8212a21d5ee2e"
+    },
+    {
+      "name": "musl-dev",
+      "version": "1.2.6-r3",
+      "origin": "musl",
+      "commit": "8f79d39391b46d6dbf1800fb68b8212a21d5ee2e"
+    },
+    {
+      "name": "musl-utils",
+      "version": "1.2.6-r3",
+      "origin": "musl",
+      "commit": "8f79d39391b46d6dbf1800fb68b8212a21d5ee2e"
+    },
+    {
+      "name": "ncurses-terminfo-base",
+      "version": "6.6_p20260516-r0",
+      "origin": "ncurses",
+      "commit": "2cee8a7328d061418336ad327b512d96bcd7bc5e"
+    },
+    {
+      "name": "nghttp2-libs",
+      "version": "1.70.0-r0",
+      "origin": "nghttp2",
+      "commit": "d5a34efc88bbe8d18737fda28125071c4aef8517"
+    },
+    {
+      "name": "openssl-dev",
+      "version": "3.5.9-r0",
+      "origin": "openssl",
+      "commit": "29b9ec24b1b5b39aeef51fa2a044210e2ec5258e"
+    },
+    {
+      "name": "patch",
+      "version": "2.8.1-r0",
+      "origin": "patch",
+      "commit": "5120e945a123efcb74ac4f3e9617165ea551c7d2"
+    },
+    {
+      "name": "pkgconf",
+      "version": "2.5.1-r0",
+      "origin": "pkgconf",
+      "commit": "c6f80aa8e59c70d19e2d556c526f151656058536"
+    },
+    {
+      "name": "postgresql18-dev",
+      "version": "18.7-r0",
+      "origin": "postgresql18",
+      "commit": "33a57d3919ee0227231f5a3e599540514584e309"
+    },
+    {
+      "name": "readline",
+      "version": "8.3.3-r1",
+      "origin": "readline",
+      "commit": "a854c03acdac188901fb012f7acbee70a36e8041"
+    },
+    {
+      "name": "scanelf",
+      "version": "1.3.9-r1",
+      "origin": "pax-utils",
+      "commit": "c61801eeacb3ffcd9c2025b09e402153bb93fb39"
+    },
+    {
+      "name": "sqlite-libs",
+      "version": "3.53.4-r0",
+      "origin": "sqlite",
+      "commit": "a9c3ba8b9129ec0f294d0a9bf538c2f1632bb016"
+    },
+    {
+      "name": "ssl_client",
+      "version": "1.37.0-r31",
+      "origin": "busybox",
+      "commit": "c3ef5d10e6ef6528852c51f0564963e2f8c1be19"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026f-r0",
+      "origin": "tzdata",
+      "commit": "63faba7f731ad47f4cd60d3ff34ff1aadd49c091"
+    },
+    {
+      "name": "xz-libs",
+      "version": "5.8.4-r0",
+      "origin": "xz",
+      "commit": "0c088d609f9fe69eedd6b4c7f4b99cdad847c20a"
+    },
+    {
+      "name": "zlib",
+      "version": "1.4-r0",
+      "origin": "zlib",
+      "commit": "bdf501c870a92a05c097857401f69c48c4810384"
+    },
+    {
+      "name": "zstd",
+      "version": "1.5.7-r2",
+      "origin": "zstd",
+      "commit": "3c6e2ee2b16f403d53eab39c4426eb61f003c322"
+    },
+    {
+      "name": "zstd-dev",
+      "version": "1.5.7-r2",
+      "origin": "zstd",
+      "commit": "3c6e2ee2b16f403d53eab39c4426eb61f003c322"
+    },
+    {
+      "name": "zstd-libs",
+      "version": "1.5.7-r2",
+      "origin": "zstd",
+      "commit": "3c6e2ee2b16f403d53eab39c4426eb61f003c322"
+    }
+  ],
+  "runtime": [
+    {
+      "name": "alpine-baselayout",
+      "version": "3.7.2-r1",
+      "origin": "alpine-baselayout",
+      "commit": "60a7585bbab2fa0f762504eb617dbca90216e31f"
+    },
+    {
+      "name": "alpine-baselayout-data",
+      "version": "3.7.2-r1",
+      "origin": "alpine-baselayout",
+      "commit": "60a7585bbab2fa0f762504eb617dbca90216e31f"
+    },
+    {
+      "name": "alpine-keys",
+      "version": "2.6-r0",
+      "origin": "alpine-keys",
+      "commit": "b9f23becced4d7b3ccc0fa0f28530243ccd314a0"
+    },
+    {
+      "name": "alpine-release",
+      "version": "3.24.4-r0",
+      "origin": "alpine-base",
+      "commit": "105b835acd9971b9770fb61f5a1ddcc133c180dc"
+    },
+    {
+      "name": "apk-tools",
+      "version": "3.0.9-r0",
+      "origin": "apk-tools",
+      "commit": "13685e8f2cf1c103cbba2fb9efcfcf19f4918df0"
+    },
+    {
+      "name": "busybox",
+      "version": "1.37.0-r31",
+      "origin": "busybox",
+      "commit": "c3ef5d10e6ef6528852c51f0564963e2f8c1be19"
+    },
+    {
+      "name": "busybox-binsh",
+      "version": "1.37.0-r31",
+      "origin": "busybox",
+      "commit": "c3ef5d10e6ef6528852c51f0564963e2f8c1be19"
+    },
+    {
+      "name": "ca-certificates",
+      "version": "20261020-r0",
+      "origin": "ca-certificates",
+      "commit": "e78f5987166c6ffbe23f6472e2e8f040298fe2da"
+    },
+    {
+      "name": "ca-certificates-bundle",
+      "version": "20261020-r0",
+      "origin": "ca-certificates",
+      "commit": "e78f5987166c6ffbe23f6472e2e8f040298fe2da"
+    },
+    {
+      "name": "gdbm",
+      "version": "1.26-r0",
+      "origin": "gdbm",
+      "commit": "1ea03990396db618edfcc8a9a0bc6b72662bac8f"
+    },
+    {
+      "name": "keyutils-libs",
+      "version": "1.6.3-r4",
+      "origin": "keyutils",
+      "commit": "8bac74716d06c84627ab02d101fd9d2bafd0a34c"
+    },
+    {
+      "name": "krb5-conf",
+      "version": "1.0-r2",
+      "origin": "krb5-conf",
+      "commit": "4a46b2cb955e25fd6d6f913794d35bc6d876aea9"
+    },
+    {
+      "name": "krb5-libs",
+      "version": "1.22.3-r0",
+      "origin": "krb5",
+      "commit": "95ecd1043f781a308ae20a7aa08b86070806946f"
+    },
+    {
+      "name": "libapk",
+      "version": "3.0.9-r0",
+      "origin": "apk-tools",
+      "commit": "13685e8f2cf1c103cbba2fb9efcfcf19f4918df0"
+    },
+    {
+      "name": "libbz2",
+      "version": "1.0.8-r6",
+      "origin": "bzip2",
+      "commit": "33283848034c9885d984c8e8697c645c57324938"
+    },
+    {
+      "name": "libcom_err",
+      "version": "1.47.4-r0",
+      "origin": "e2fsprogs",
+      "commit": "8683a6972cb245fbbdb535dad6435a9930bb9374"
+    },
+    {
+      "name": "libcrypto3",
+      "version": "3.5.9-r0",
+      "origin": "openssl",
+      "commit": "29b9ec24b1b5b39aeef51fa2a044210e2ec5258e"
+    },
+    {
+      "name": "libffi",
+      "version": "3.5.2-r1",
+      "origin": "libffi",
+      "commit": "2c2a7bb4a8b16066834e90402567b2c19403a790"
+    },
+    {
+      "name": "libintl",
+      "version": "1.0-r0",
+      "origin": "gettext",
+      "commit": "a0b12dbf67fb047e79a1b76c6dfe6f2904d0d391"
+    },
+    {
+      "name": "libncursesw",
+      "version": "6.6_p20260516-r0",
+      "origin": "ncurses",
+      "commit": "2cee8a7328d061418336ad327b512d96bcd7bc5e"
+    },
+    {
+      "name": "libnsl",
+      "version": "2.0.1-r2",
+      "origin": "libnsl",
+      "commit": "a9e2a2dc46f377eb25884f7fea9834492de7f518"
+    },
+    {
+      "name": "libpanelw",
+      "version": "6.6_p20260516-r0",
+      "origin": "ncurses",
+      "commit": "2cee8a7328d061418336ad327b512d96bcd7bc5e"
+    },
+    {
+      "name": "libpq",
+      "version": "18.7-r0",
+      "origin": "postgresql18",
+      "commit": "33a57d3919ee0227231f5a3e599540514584e309"
+    },
+    {
+      "name": "libssl3",
+      "version": "3.5.9-r0",
+      "origin": "openssl",
+      "commit": "29b9ec24b1b5b39aeef51fa2a044210e2ec5258e"
+    },
+    {
+      "name": "libtirpc",
+      "version": "1.3.5-r1",
+      "origin": "libtirpc",
+      "commit": "4519a8c0bafdd843397d13a9146c906ff64a6c2f"
+    },
+    {
+      "name": "libtirpc-conf",
+      "version": "1.3.5-r1",
+      "origin": "libtirpc",
+      "commit": "4519a8c0bafdd843397d13a9146c906ff64a6c2f"
+    },
+    {
+      "name": "libuuid",
+      "version": "2.42.3-r1",
+      "origin": "util-linux",
+      "commit": "d98c55af59055e6ca60fbe36e171546918709965"
+    },
+    {
+      "name": "libverto",
+      "version": "0.3.2-r2",
+      "origin": "libverto",
+      "commit": "84a227baf001b6e0208e3352b294e4d7a40e93de"
+    },
+    {
+      "name": "musl",
+      "version": "1.2.6-r3",
+      "origin": "musl",
+      "commit": "8f79d39391b46d6dbf1800fb68b8212a21d5ee2e"
+    },
+    {
+      "name": "musl-utils",
+      "version": "1.2.6-r3",
+      "origin": "musl",
+      "commit": "8f79d39391b46d6dbf1800fb68b8212a21d5ee2e"
+    },
+    {
+      "name": "ncurses-terminfo-base",
+      "version": "6.6_p20260516-r0",
+      "origin": "ncurses",
+      "commit": "2cee8a7328d061418336ad327b512d96bcd7bc5e"
+    },
+    {
+      "name": "readline",
+      "version": "8.3.3-r1",
+      "origin": "readline",
+      "commit": "a854c03acdac188901fb012f7acbee70a36e8041"
+    },
+    {
+      "name": "scanelf",
+      "version": "1.3.9-r1",
+      "origin": "pax-utils",
+      "commit": "c61801eeacb3ffcd9c2025b09e402153bb93fb39"
+    },
+    {
+      "name": "sqlite-libs",
+      "version": "3.53.4-r0",
+      "origin": "sqlite",
+      "commit": "a9c3ba8b9129ec0f294d0a9bf538c2f1632bb016"
+    },
+    {
+      "name": "ssl_client",
+      "version": "1.37.0-r31",
+      "origin": "busybox",
+      "commit": "c3ef5d10e6ef6528852c51f0564963e2f8c1be19"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026f-r0",
+      "origin": "tzdata",
+      "commit": "63faba7f731ad47f4cd60d3ff34ff1aadd49c091"
+    },
+    {
+      "name": "xz-libs",
+      "version": "5.8.4-r0",
+      "origin": "xz",
+      "commit": "0c088d609f9fe69eedd6b4c7f4b99cdad847c20a"
+    },
+    {
+      "name": "zlib",
+      "version": "1.4-r0",
+      "origin": "zlib",
+      "commit": "bdf501c870a92a05c097857401f69c48c4810384"
+    }
+  ]
+}

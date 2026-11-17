@@ -1,0 +1,30 @@
+{
+  "added": [
+    [
+      "editables",
+      "0.6"
+    ],
+    [
+      "hatchling",
+      "1.28.0"
+    ],
+    [
+      "psycopg-c",
+      "3.3.8"
+    ],
+    [
+      "setuptools",
+      "83.0.0"
+    ],
+    [
+      "trove-classifiers",
+      "2026.9.21.13"
+    ],
+    [
+      "wheel",
+      "0.48.0"
+    ]
+  ],
+  "removed": [],
+  "common_versions_unchanged": true
+}

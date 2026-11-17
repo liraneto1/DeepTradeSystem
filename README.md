@@ -65,3 +65,10 @@ Veja o [guia de telemetria no VS Code](docs/runbooks/telemetria-local.md).
 
 Veja o [guia de coleta do BTCUSDT](docs/runbooks/historico-btcusdt.md)
 para baixar e validar um dia de candles públicos no VS Code.
+
+## Perfis do cliente PostgreSQL
+
+O desenvolvimento Windows conserva Psycopg binário. O perfil Linux/amd64
+aprovado usa Psycopg C e libpq do Alpine, sem LDAP/GSSAPI.
+Consulte o [procedimento de build e verificação](docs/runbooks/client-profile.md)
+e a [decisão de compatibilidade](docs/governance/AC02-CLIENT-PROFILE.md).

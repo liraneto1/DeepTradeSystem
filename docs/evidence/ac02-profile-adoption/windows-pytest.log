@@ -1,0 +1,24 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.12, pytest-9.2.0, pluggy-1.7.0
+rootdir: C:\Users\liran\OneDrive\BUSINESS\06 - TRADE SYSTEM\03. ENGENHARIA\INTELIGENCIA ARTIFICIAL\DeepTradeSystem
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.16.0, hypothesis-6.170.15
+collected 164 items
+
+tests\contracts\test_envelope_schemas.py ............................    [ 17%]
+tests\integration\test_postgres_migrations.py .......................... [ 32%]
+.......................                                                  [ 46%]
+tests\unit\test_binance_funding.py .                                     [ 47%]
+tests\unit\test_binance_mark.py ..                                       [ 48%]
+tests\unit\test_diagnostic_api.py ........                               [ 53%]
+tests\unit\test_local_security.py ......................                 [ 67%]
+tests\unit\test_market_history.py ..........                             [ 73%]
+tests\unit\test_market_state.py .....                                    [ 76%]
+tests\unit\test_market_stream.py ...                                     [ 78%]
+tests\unit\test_outbox_monitor.py ..........                             [ 84%]
+tests\unit\test_package_imports.py ...........                           [ 90%]
+tests\unit\test_paper_simulator.py ...............                       [100%]
+
+- generated xml file: C:\Users\liran\OneDrive\BUSINESS\06 - TRADE SYSTEM\03. ENGENHARIA\INTELIGENCIA ARTIFICIAL\DeepTradeSystem\docs\evidence\ac02-profile-adoption\windows-pytest.xml -
+======================= 164 passed in 66.84s (0:01:06) ========================

@@ -1,0 +1,74 @@
+Resolved 66 packages in 2ms
+Installed 20 packages in 85ms
+   Building deep-trade-system @ file:///C:/Users/liran/OneDrive/BUSINESS/06%20-%20TRADE%20SYSTEM/03.%20ENGENHARIA/INTELIGENCIA%20ARTIFICIAL/DeepTradeSystem
+Downloading sqlalchemy (2.3MiB)
+Downloading pygments (1.2MiB)
+Downloading psycopg-binary (3.5MiB)
+Downloading mypy (10.4MiB)
+Downloading ruff (9.8MiB)
+Downloading pydantic-core (2.2MiB)
+      Built deep-trade-system @ file:///C:/Users/liran/OneDrive/BUSINESS/06%20-%20TRADE%20SYSTEM/03.%20ENGENHARIA/INTELIGENCIA%20ARTIFICIAL/DeepTradeSystem
+ Downloaded pydantic-core
+ Downloaded psycopg-binary
+ Downloaded ruff
+ Downloaded sqlalchemy
+ Downloaded pygments
+ Downloaded mypy
+Prepared 36 packages without build isolation in 12.96s
+Installed 36 packages in 2.02s
+ + alembic==1.20.1
+ + annotated-doc==0.0.6
+ + annotated-types==0.8.0
+ + anyio==4.16.0
+ + arrow==1.4.0
+ + attrs==26.1.0
+ + click==8.5.1
+ + colorama==0.4.6
+ + deep-trade-system==0.1.0 (from file:///C:/Users/liran/OneDrive/BUSINESS/06%20-%20TRADE%20SYSTEM/03.%20ENGENHARIA/INTELIGENCIA%20ARTIFICIAL/DeepTradeSystem)
+ + fastapi==0.162.4
+ + fqdn==1.6.0
+ + h11==0.16.0
+ + httpcore2==2.16.0
+ + httpx2==2.16.0
+ + hypothesis==6.170.15
+ + idna==3.20
+ + iniconfig==2.3.1
+ + isoduration==20.11.0
+ + jsonpointer==3.12
+ + jsonschema==4.26.0
+ + jsonschema-specifications==2025.9.1
+ + lark==1.3.1
+ + librt==0.16.0
+ + mako==1.4.3
+ + markupsafe==3.0.4
+ + mypy==1.20.2
+ + mypy-extensions==1.2.0
+ + opentelemetry-api==1.45.2
+ + opentelemetry-sdk==1.45.2
+ + opentelemetry-semantic-conventions==0.66b2
+ + psycopg==3.3.8
+ + psycopg-binary==3.3.8
+ + pydantic==2.14.3
+ + pydantic-core==2.50.4
+ + pygments==2.21.0
+ + pytest==9.2.0
+ + python-dateutil==4.0.0
+ + referencing==0.37.0
+ + rfc3339-validator==0.1.4
+ + rfc3986-validator==0.1.1
+ + rfc3987-syntax==1.1.0
+ + rpds-py==2026.9.1
+ + ruff==0.17.4
+ + six==1.17.0
+ + sortedcontainers==2.4.0
+ + sqlalchemy==2.1.8
+ + starlette==1.10.0
+ + truststore==0.10.5
+ + types-jsonschema==4.26.0.20261006
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.5
+ + tzdata==2026.6
+ + uri-template==1.3.0
+ + uvicorn==0.54.0
+ + webcolors==25.10.0
+ + websockets==16.1.1

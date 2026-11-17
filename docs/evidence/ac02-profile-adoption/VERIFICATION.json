@@ -1,0 +1,58 @@
+{
+  "manifest_files_verified": 199,
+  "manifest_errors": [],
+  "source_inputs_verified": 12,
+  "source_input_errors": [],
+  "linux_junit": {
+    "tests": 164,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "windows_local_junit": {
+    "tests": 164,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "native_match": {
+    "matched_common_files": 39,
+    "c_extensions": [
+      "_psycopg.cpython-312-x86_64-linux-musl.so",
+      "pq.cpython-312-x86_64-linux-musl.so"
+    ],
+    "differences": []
+  },
+  "runtime_image_id": "sha256:03d3dea2e1ae064bcd8bac34190b4cf415fae42115157041be065fcc662364be",
+  "saved_image_oci_index_matches": true,
+  "saved_image_config_digest": "sha256:7ffb6d88fcd3aeccbdc45ff1404724b7ad26cf8fab55f01e1be9a7334d983fcb",
+  "oci_blobs_verified": 21,
+  "runtime_image_tar_sha256": "df2300ad541892d5dadb731e159fd970adc48019a153e0de7c0cf412183305e2",
+  "runtime_findings": 0,
+  "libpq_runtime": 180007,
+  "libpq_build": 180007,
+  "tls": [
+    {
+      "case": "trusted_hostname",
+      "result": "PASS",
+      "ssl": [
+        true,
+        "TLSv1.3",
+        "TLS_AES_256_GCM_SHA384"
+      ]
+    },
+    {
+      "case": "wrong_hostname",
+      "result": "PASS_REJECTED",
+      "error": "connection failed: connection to server at \"127.0.0.1\", port 55432 failed: server certificate for \"localhost\" (and 1 other name) does not match host name \"wrong.invalid\""
+    },
+    {
+      "case": "missing_trust",
+      "result": "PASS_REJECTED",
+      "error": "connection failed: connection to server at \"127.0.0.1\", port 55432 failed: root certificate file \"/does-not-exist.crt\" does not exist\nEither provide the file, use the system's trusted roots with sslrootcert=system, or change sslmode to disable server certificate verification."
+    }
+  ],
+  "built_wheels": [
+    "test\\wheels\\psycopg_c-3.3.8-cp312-cp312-linux_x86_64.whl"
+  ]
+}
