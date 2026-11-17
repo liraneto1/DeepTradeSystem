@@ -13,6 +13,14 @@ SERVER_ID = "sha256:57e55d6e7bd1f06e5d75408d4d5f5a5ef33513b7a4eaef424530363f53ea
 IMAGE_TAR_SHA = "2dd7d8194012efb4d4b09053a2d7150060e61f120d13152eb814c524f8c1e661"
 
 
+class ArtifactRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is not None and redirected.host != req.host:
+            redirected.remove_header("Authorization")
+        return redirected
+
+
 def digest(path: Path) -> str:
     with path.open("rb") as source:
         return hashlib.file_digest(source, "sha256").hexdigest()
@@ -33,7 +41,8 @@ def main() -> None:
             "User-Agent": "DeepTradeSystem-PostgreSQL-revalidation",
         },
     )
-    with urllib.request.urlopen(request, timeout=120) as response:
+    opener = urllib.request.build_opener(ArtifactRedirect())
+    with opener.open(request, timeout=120) as response:
         with archive.open("wb") as target:
             while chunk := response.read(4 * 1024 * 1024):
                 target.write(chunk)
