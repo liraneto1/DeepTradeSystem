@@ -1,0 +1,98 @@
+name: AC02 native RPM provenance
+on:
+  push:
+    branches: ["review/ac02-native-rpm-ac51f91"]
+permissions:
+  contents: read
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ac51f91cfc08dadae3a3bb411908b0b9a26f11af
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+        with:
+          enable-cache: false
+      - name: Inspect exact installed wheel and vendor RPMs
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y rpm cpio binutils
+          uv python install
+          uv sync --locked
+          .venv/bin/python - <<'PY'
+          import ctypes,hashlib,json,subprocess,sysconfig,urllib.request,urllib.error
+          from pathlib import Path
+          root=Path("audit");root.mkdir(exist_ok=True)
+          libs=Path(sysconfig.get_paths()["purelib"])/"psycopg_binary.libs"
+          class ApiInfo(ctypes.Structure):
+              _fields_=[("info_version",ctypes.c_int),("api_version",ctypes.c_int),("protocol_version",ctypes.c_int),("extensions",ctypes.POINTER(ctypes.c_char_p)),("vendor_name",ctypes.c_char_p),("vendor_version",ctypes.c_int)]
+          ldap=ctypes.CDLL(str(next(libs.glob("libldap-*.so.*"))))
+          ldap.ldap_get_option.argtypes=[ctypes.c_void_p,ctypes.c_int,ctypes.c_void_p]
+          ldap.ldap_get_option.restype=ctypes.c_int
+          info=ApiInfo();info.info_version=1
+          code=ldap.ldap_get_option(None,0,ctypes.byref(info))
+          result={"return_code":code,"api_version":info.api_version,"vendor":info.vendor_name.decode() if info.vendor_name else None,"vendor_version":info.vendor_version}
+          (root/"ldap-runtime.json").write_text(json.dumps(result,indent=2))
+          print("LDAP_RUNTIME",json.dumps(result))
+          def section(p,section):
+              outfile=root/"section.bin"
+              run=subprocess.run(["objcopy","--dump-section",section+"="+str(outfile),str(p)],capture_output=True,text=True)
+              if run.returncode or not outfile.exists():return None
+              value=hashlib.sha256(outfile.read_bytes()).hexdigest();outfile.unlink();return value
+          def elf(p):
+              notes=subprocess.run(["readelf","-n",str(p)],capture_output=True,text=True).stdout
+              bid=next((l.split("Build ID:")[1].strip() for l in notes.splitlines() if "Build ID:" in l),None)
+              return {"file":str(p),"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"build_id":bid,"text":section(p,".text"),"rodata":section(p,".rodata")}
+          installed=[elf(p) for p in sorted(libs.glob("*"))]
+          (root/"installed-elf.json").write_text(json.dumps(installed,indent=2))
+          pkgs=["krb5-libs-1.15.1-55.el7_9","pcre-8.32-17.el7","cyrus-sasl-lib-2.1.26-24.el7_9","libselinux-2.5-15.el7","libcom_err-1.42.9-19.el7","keyutils-libs-1.5.8-3.el7","glibc-2.17-326.el7_9.3","glibc-2.17-326.el7_9","glibc-2.17-325.el7_9","glibc-2.17-324.el7_9"]
+          records=[];matches=[]
+          for pkg in pkgs:
+              dest=root/"rpms"/pkg
+              dest.mkdir(parents=True,exist_ok=True)
+              filename=pkg+".x86_64.rpm"
+              payload=None
+              for repo in ("updates","os"):
+                  url=f"https://vault.centos.org/7.9.2009/{repo}/x86_64/Packages/{filename}"
+                  try:
+                      payload=urllib.request.urlopen(url,timeout=90).read();break
+                  except urllib.error.HTTPError as e:
+                      if e.code!=404: raise
+              if payload is None:
+                  records.append({"package":pkg,"status":"NOT_FOUND"});continue
+              rpm=dest/filename;rpm.write_bytes(payload)
+              query=subprocess.run(["rpm","-qp","--qf","%{NAME} %{EPOCH}:%{VERSION}-%{RELEASE} %{SOURCERPM}\n",str(rpm)],capture_output=True,text=True)
+              changelog=subprocess.run(["rpm","-qp","--changelog",str(rpm)],capture_output=True,text=True)
+              (dest/"metadata.txt").write_text(query.stdout)
+              (dest/"changelog.txt").write_text(changelog.stdout)
+              proc=subprocess.run("rpm2cpio "+str(rpm.resolve())+" | cpio -idm --quiet",shell=True,cwd=dest,capture_output=True,text=True)
+              assert proc.returncode==0,(pkg,proc.stderr)
+              records.append({"package":pkg,"status":"DOWNLOADED","url":url,"sha256":hashlib.sha256(payload).hexdigest(),"metadata":query.stdout})
+              for p in dest.rglob("*.so*"):
+                  if not p.is_file() or p.is_symlink():continue
+                  info=elf(p)
+                  for actual in installed:
+                      if info["build_id"] and info["build_id"]==actual["build_id"] and info["text"]==actual["text"] and info["rodata"]==actual["rodata"]:
+                          matches.append({"installed":actual["file"],"rpm":pkg,"rpm_file":str(p),"build_id":info["build_id"],"text":info["text"],"rodata":info["rodata"]})
+              # Keep metadata, RPM and matched section identifiers; unpacked trees are reproducible.
+              import shutil
+              for child in list(dest.iterdir()):
+                  if child.is_dir():shutil.rmtree(child)
+          (root/"rpm-provenance.json").write_text(json.dumps({"packages":records,"matches":matches},indent=2))
+          print("RPM_MATCHES",json.dumps(matches))
+          
+          PY
+      - name: Artifact integrity
+        if: always()
+        run: find audit -type f -print0 | sort -z | xargs -0 sha256sum > audit-SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ac02-native-rpm-ac51f91
+          path: |
+            audit/
+            audit-SHA256SUMS
