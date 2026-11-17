@@ -2942,3 +2942,166 @@ def test_monitor_incidents_share_metrics_snapshot(
     assert len(incidents) == 1
     assert incidents[0]["aggregate_id"] == event["aggregate_id"]
     assert incidents[0]["reason"] == "retained"
+
+
+@pytest.mark.parametrize("rollback_first", [False, True], ids=["commit", "rollback"])
+@pytest.mark.parametrize("round_number", range(3))
+def test_concurrent_duplicate_consumer_workers(
+    outbox_database: Engine,
+    event: dict[str, object],
+    rollback_first: bool,
+    round_number: int,
+    request: pytest.FixtureRequest,
+) -> None:
+    """Prove overlapping workers, durable deduplication and rollback recovery."""
+    import time
+    from threading import Event
+
+    publish = LocalPublisher(outbox_database)
+    publish(event)
+    publish(event)
+    first_inside_handler = Event()
+    release_first = Event()
+    tags = [f"consumer-audit-{round_number}-{int(rollback_first)}-{n}" for n in (1, 2)]
+    workers = [
+        create_engine(
+            local_database_url(),
+            connect_args={
+                "application_name": tag,
+                "options": "-c statement_timeout=12000 -c lock_timeout=10000",
+            },
+        )
+        for tag in tags
+    ]
+
+    def first_handler(connection: Connection, envelope: Mapping[str, object]) -> None:
+        apply_diagnostic_event(connection, envelope)
+        first_inside_handler.set()
+        if not release_first.wait(15):
+            raise TimeoutError("Concurrent consumer audit release timed out")
+        if rollback_first:
+            raise RuntimeError("intentional consumer rollback")
+
+    def run_first() -> str:
+        try:
+            assert consume_once(workers[0], first_handler)
+        except RuntimeError as error:
+            assert rollback_first and str(error) == "intentional consumer rollback"
+            return "rolled_back"
+        return "committed"
+
+    overlap: dict[str, object] = {}
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first = executor.submit(run_first)
+            try:
+                assert first_inside_handler.wait(10)
+                second = executor.submit(
+                    consume_once, workers[1], apply_diagnostic_event
+                )
+                deadline = time.monotonic() + 8
+                while time.monotonic() < deadline:
+                    with outbox_database.connect() as observer:
+                        blocked = (
+                            observer.execute(
+                                text("""
+                                SELECT w.pid AS waiting_pid, b.pid AS blocking_pid,
+                                       w.wait_event_type, w.wait_event
+                                FROM pg_stat_activity w
+                                JOIN pg_stat_activity b
+                                  ON b.pid = ANY(pg_blocking_pids(w.pid))
+                                WHERE w.application_name = :second
+                                  AND b.application_name = :first
+                                  AND w.state = 'active'
+                                  AND b.xact_start IS NOT NULL
+                            """),
+                                {"first": tags[0], "second": tags[1]},
+                            )
+                            .mappings()
+                            .first()
+                        )
+                    if blocked:
+                        overlap = dict(blocked)
+                        break
+                    time.sleep(0.02)
+                assert overlap, "Second worker never overlapped the first transaction"
+                assert overlap["wait_event_type"] == "Lock"
+                assert not first.done() and not second.done()
+                with outbox_database.connect() as observer:
+                    assert (
+                        observer.scalar(
+                            select(func.count()).select_from(PROCESSED_EVENT)
+                        )
+                        == 0
+                    )
+                    assert (
+                        observer.scalar(
+                            select(func.count()).select_from(DIAGNOSTIC_COUNT)
+                        )
+                        == 0
+                    )
+                    assert (
+                        observer.scalar(
+                            select(func.count())
+                            .select_from(DELIVERY)
+                            .where(DELIVERY.c.consumed_at.is_not(None))
+                        )
+                        == 0
+                    )
+            finally:
+                release_first.set()
+            assert first.result(timeout=15) == (
+                "rolled_back" if rollback_first else "committed"
+            )
+            assert second.result(timeout=15) is True
+
+        for worker in workers:
+            worker.dispose()
+        restarted = create_engine(local_database_url())
+        try:
+            with restarted.connect() as connection:
+                assert connection.scalar(select(DIAGNOSTIC_COUNT.c.event_count)) == 1
+                assert connection.scalars(select(PROCESSED_EVENT.c.event_id)).all() == [
+                    event["event_id"]
+                ]
+                assert connection.scalar(
+                    select(func.count())
+                    .select_from(DELIVERY)
+                    .where(DELIVERY.c.consumed_at.is_not(None))
+                ) == (1 if rollback_first else 2)
+            if rollback_first:
+                assert consume_once(restarted, apply_diagnostic_event)
+            assert not consume_once(restarted, apply_diagnostic_event)
+            with restarted.connect() as connection:
+                assert connection.scalar(select(DIAGNOSTIC_COUNT.c.event_count)) == 1
+                assert connection.scalars(select(PROCESSED_EVENT.c.event_id)).all() == [
+                    event["event_id"]
+                ]
+                acknowledgements: list[object] = list(
+                    connection.scalars(select(DELIVERY.c.consumed_at))
+                )
+                assert len(acknowledgements) == 2
+                assert all(value is not None for value in acknowledgements)
+        finally:
+            restarted.dispose()
+        request.node.user_properties.append(
+            (
+                "concurrency_proof",
+                json.dumps(
+                    {
+                        **overlap,
+                        "rollback_first": rollback_first,
+                        "round": round_number,
+                        "durable_effects": 1,
+                        "durable_processed_ids": 1,
+                        "durable_acknowledgements": 2,
+                        "pending_after_restart": 0,
+                    },
+                    sort_keys=True,
+                ),
+            )
+        )
+    finally:
+        release_first.set()
+        for worker in workers:
+            worker.dispose()

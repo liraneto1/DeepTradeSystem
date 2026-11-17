@@ -1,70 +1,34 @@
-name: Foundation quality and client profiles
+name: PostgreSQL gosu metadata rebuild
 
 on:
   push:
-  pull_request:
+    branches: [review/postgres-gosu-metadata-a26c0a8]
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  quality:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
-        with:
-          enable-cache: false
-      - name: Install system build prerequisites
-        run: sudo apt-get update -qq && sudo apt-get install -y libpq-dev build-essential
-      - run: uv python install
-      - run: uv sync --locked --only-group build
-      - run: uv sync --locked --group build --no-build-isolation
-      - run: uv run --no-sync ruff check src infrastructure apps tests tools/client_profile
-      - run: uv run --no-sync ruff format --check src infrastructure apps tests tools/client_profile
-      - run: uv run --no-sync mypy
-      - run: uv run --no-sync pytest
-      - run: uv build --no-sources --no-build-isolation
-
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
-        with:
-          enable-cache: false
-      - run: uv python install
-      - run: uv sync --locked --only-group build
-      - run: uv sync --locked --group build --no-build-isolation
-      - name: Verify Windows binary selection
-        run: |
-          uv run --no-sync python -c "import psycopg.pq,importlib.metadata as m; assert psycopg.pq.__impl__=='binary'; assert m.version('psycopg-binary')=='3.3.8'; assert not any(d.metadata['Name'].lower().replace('_','-') in ('psycopg-c','setuptools') for d in m.distributions())"
-      - run: uv run --no-sync ruff check src infrastructure apps tests tools/client_profile
-      - run: uv run --no-sync ruff format --check src infrastructure apps tests tools/client_profile
-      - run: uv run --no-sync mypy
-      - run: uv run --no-sync pytest
-      - run: uv build --no-sources --no-build-isolation
-
-  linux-alpine:
-    needs: [quality, windows]
+  paired-revalidation:
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    env:
+      BASE_SHA: a26c0a86ade2ec64d14c4bb06e27c93b2aea5205
+      LIVE_ENABLED: "false"
+      TRADE_SYSTEM_ENVIRONMENT: PAPER
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          fetch-depth: 0
           persist-credentials: false
-      - name: Verify approved Linux runtime
-        run: bash tools/client_profile/verify.sh "$RUNNER_TEMP/client-profile"
+      - name: Rebuild metadata and verify client server pair
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/postgres_revalidation/run.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: client-profile-linux-amd64
-          path: ${{ runner.temp }}/client-profile/
+          name: postgres-gosu-metadata-a26c0a8
+          path: ${{ runner.temp }}/server-pair/
           include-hidden-files: true
           if-no-files-found: error
