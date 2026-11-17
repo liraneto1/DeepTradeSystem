@@ -150,3 +150,18 @@ Aprovados pelo usuário nesta conversa em 17/11/2026 como referência inicial de
 Frequência de coleta, limiares de alerta, operadores individuais e conferência das permissões no ambiente escolhido ficam pendentes. A janela inicial será revista com base nos ensaios.
 
 [Matriz dos 20 critérios](../governance/TS-ST-001-004-EVIDENCE-MATRIX.md)
+
+
+### Decisão de escopo — APPROVED — 17/11/2026
+
+Confirmado o recorte de TS-ST-004 pelo publisher PostgreSQL local e um consumidor lógico diagnóstico. Consumidores independentes que precisam aplicar efeitos próprios exigem revisão da identidade de deduplicação e da entrega.
+
+Aprovação comunicada pelo usuário nesta conversa. Base técnica examinada: 0172728bd36c23247987a28c0fdccd32488e06f3. [Inventário de escopo](../evidence/ts-st-001-004-0172728/INVENTARIOS-ESCOPO.md).
+
+### Monitoramento — APPROVED — 17/11/2026
+
+Coleta a cada 30 s, janela de 300 s; alerta após duas falhas consecutivas ou 60 s sem amostra válida; incidente na primeira falha terminal ou quarentena confirmada; escalonamento de predecessor conforme DOC-04 e limiar de 3.600 s; aviso de idade do elegível acima de 300 s e crítico acima de 900 s em duas amostras; recuperação após duas amostras normais para coleta ou atraso. Volume de backlog depende de ensaio representativo. [Regras completas e verificações de implantação](../evidence/ts-st-001-004-0172728/MONITORAMENTO-PROPOSTA.md).
+
+### Monitor local — implementação verificada — 17/11/2026
+
+Agenda contínua de 30 s, diário local persistente e transições aprovadas implementadas e verificadas em suíte de 164 testes. [Resultados e limites operacionais](../evidence/ts-st-004-monitor/RESULTADOS.md). Revisão de QA, implantação como serviço e conta de operação pendentes.

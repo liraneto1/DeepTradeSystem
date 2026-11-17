@@ -142,3 +142,10 @@ Aprovada pelo usuário nesta conversa em 17/11/2026 como referência inicial.
 - A matriz produtor/consumidor deve cobrir a versão suportada, versões desconhecidas, campos adicionais e mudanças incompatíveis.
 
 [Matriz dos 20 critérios](../governance/TS-ST-001-004-EVIDENCE-MATRIX.md)
+
+
+### Decisão de escopo — APPROVED — 17/11/2026
+
+Confirmado o recorte de aceite de TS-ST-002 pelos dois envelopes CommandEnvelope v1 e EventEnvelope v1. Contratos de conteúdo de payload e schema registry permanecem como cobertura remanescente de P61/P90.
+
+Aprovação comunicada pelo usuário nesta conversa. Base técnica examinada: 0172728bd36c23247987a28c0fdccd32488e06f3. [Inventário de escopo](../evidence/ts-st-001-004-0172728/INVENTARIOS-ESCOPO.md).

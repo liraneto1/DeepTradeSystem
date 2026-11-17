@@ -70,3 +70,15 @@ Fonte primária destas decisões: manifestações do usuário nesta conversa de 
 | Matriz dos 20 critérios | APPROVED | Cobertura documental e verificações pendentes por candidato |
 
 [Histórias](../backlog/) · [Matriz](TS-ST-001-004-EVIDENCE-MATRIX.md)
+
+### Escopo técnico de TS-ST-001–004 — 17/11/2026
+
+APPROVED pelo usuário nesta conversa. Mapeamento físico existente de TS-ST-001; envelopes v1 em TS-ST-002; produtor sintético e regra de integração de produtores em TS-ST-003; publisher PostgreSQL local e consumidor diagnóstico em TS-ST-004. [Registro integral das decisões](../evidence/ts-st-001-004-0172728/INVENTARIOS-ESCOPO.md).
+
+### Parâmetros de monitoramento — 17/11/2026
+
+APPROVED pelo usuário nesta conversa para o recorte local de TS-ST-004. [Parâmetros aprovados](../evidence/ts-st-001-004-0172728/MONITORAMENTO-PROPOSTA.md). Configuração e verificação de implantação pendentes.
+
+### Implementação do monitor TS-ST-004 — 17/11/2026
+
+APPROVED pelo usuário nesta conversa, incluindo resultados dos 164 testes e autorização para criar novo commit candidato. [Evidências](../evidence/ts-st-004-monitor/RESULTADOS.md). Responsáveis e CI remoto serão definidos posteriormente.

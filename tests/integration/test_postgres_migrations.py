@@ -2923,3 +2923,22 @@ def test_outbox_event_id_divergence_is_audited_and_equivalent_replay_is_safe(
             connection.execute(
                 text("DELETE FROM trade_system.outbox_event_id_conflict")
             )
+
+
+def test_monitor_incidents_share_metrics_snapshot(
+    outbox_database: Engine, event: dict[str, object]
+) -> None:
+    from infrastructure.events.quarantine import quarantine
+
+    with outbox_database.begin() as connection:
+        append_event(connection, event)
+        quarantine(connection, event, "retained")
+    result = collect_outbox_metrics(
+        outbox_database, window=timedelta(seconds=300), include_incidents=True
+    )
+    assert result["status"] == "ok"
+    incidents = result["incidents"]
+    assert isinstance(incidents, list)
+    assert len(incidents) == 1
+    assert incidents[0]["aggregate_id"] == event["aggregate_id"]
+    assert incidents[0]["reason"] == "retained"

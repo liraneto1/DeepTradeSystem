@@ -1,0 +1,74 @@
+[
+  {
+    "contract": "command-envelope",
+    "case": "v1",
+    "expected_valid": true,
+    "observed_valid": true
+  },
+  {
+    "contract": "command-envelope",
+    "case": "unknown_version",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "command-envelope",
+    "case": "additional_root_field",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "command-envelope",
+    "case": "changed_type",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "command-envelope",
+    "case": "restricted_value",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "command-envelope",
+    "case": "removed_required",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "event-envelope",
+    "case": "v1",
+    "expected_valid": true,
+    "observed_valid": true
+  },
+  {
+    "contract": "event-envelope",
+    "case": "unknown_version",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "event-envelope",
+    "case": "additional_root_field",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "event-envelope",
+    "case": "changed_type",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "event-envelope",
+    "case": "restricted_value",
+    "expected_valid": false,
+    "observed_valid": false
+  },
+  {
+    "contract": "event-envelope",
+    "case": "removed_required",
+    "expected_valid": false,
+    "observed_valid": false
+  }
+]

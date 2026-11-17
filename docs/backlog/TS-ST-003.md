@@ -130,3 +130,9 @@ Responsabilidade funcional e vínculos aprovados pelo usuário. P48, P49 e P50 n
 ### Aprovação dos critérios detalhados — 17/11/2026
 
 O usuário aprovou os critérios detalhados desta ficha. O aceite da entrega depende da verificação das evidências e da decisão correspondente.
+
+### Decisão de escopo — APPROVED — 17/11/2026
+
+Confirmado o recorte de TS-ST-003 pelo produtor sintético ensaiado, com um evento por versão. Cada produtor operacional deverá ter validação completa do envelope antes de append_event e fonte autoritativa de recuperação definida ao ser integrado.
+
+Aprovação comunicada pelo usuário nesta conversa. Base técnica examinada: 0172728bd36c23247987a28c0fdccd32488e06f3. [Inventário de escopo](../evidence/ts-st-001-004-0172728/INVENTARIOS-ESCOPO.md).

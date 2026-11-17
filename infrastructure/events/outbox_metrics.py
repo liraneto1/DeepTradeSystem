@@ -15,7 +15,9 @@ from infrastructure.security.config import runtime_environment
 CONDITIONS = ("retained", "blocked", "waiting", "eligible")
 
 
-def collect_outbox_metrics(engine: Engine, *, window: timedelta) -> dict[str, object]:
+def collect_outbox_metrics(
+    engine: Engine, *, window: timedelta, include_incidents: bool = False
+) -> dict[str, object]:
     environment = runtime_environment()
     if window <= timedelta(0):
         raise ValueError("outbox_metrics: invalid_window")
@@ -92,6 +94,21 @@ def collect_outbox_metrics(engine: Engine, *, window: timedelta) -> dict[str, ob
                 .mappings()
                 .one()
             )
+            incidents = []
+            if include_incidents:
+                incidents = [
+                    dict(row)
+                    for row in db.execute(
+                        text("""
+                        SELECT id::text AS id, reason, aggregate_type,
+                               aggregate_id, account_id
+                        FROM trade_system.outbox_quarantine
+                        WHERE environment_id = :environment AND released_at IS NULL
+                        ORDER BY id
+                        """),
+                        {"environment": environment},
+                    ).mappings()
+                ]
             return {
                 "status": "ok",
                 "environment": environment,
@@ -112,6 +129,7 @@ def collect_outbox_metrics(engine: Engine, *, window: timedelta) -> dict[str, ob
                     for key, value in published.items()
                 },
                 "transitions": dict(transitions),
+                **({"incidents": incidents} if include_incidents else {}),
             }
     except SQLAlchemyError:
         return {"status": "unavailable", "environment": environment}
