@@ -3077,9 +3077,9 @@ def test_concurrent_duplicate_consumer_workers(
                 assert connection.scalars(select(PROCESSED_EVENT.c.event_id)).all() == [
                     event["event_id"]
                 ]
-                acknowledgements = connection.scalars(
-                    select(DELIVERY.c.consumed_at)
-                ).all()
+                acknowledgements: list[object] = list(
+                    connection.scalars(select(DELIVERY.c.consumed_at))
+                )
                 assert len(acknowledgements) == 2
                 assert all(value is not None for value in acknowledgements)
         finally:
