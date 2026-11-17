@@ -28,13 +28,15 @@ assert not different, different
 )
 # Exclude the outputs of the build itself from the source identity.
 files = [
+    Path(".dockerignore"),
+    Path(".gitignore"),
     Path("pyproject.toml"),
     Path("uv.lock"),
     *Path("deploy/docker").glob("client*"),
     *Path("tools/client_profile").glob("*"),
 ]
 manifest = {
-    str(p): hashlib.sha256(p.read_bytes()).hexdigest()
+    str(p): hashlib.sha256(p.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
     for p in sorted(files)
     if p.is_file()
 }

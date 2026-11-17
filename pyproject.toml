@@ -41,6 +41,15 @@ dev = [
 [tool.uv]
 required-version = "==0.9.26"
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/docs/evidence",
+    "/docs/referencias",
+    "/acervo-local",
+    "/data",
+    "/.runtime",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/trade_system"]
 

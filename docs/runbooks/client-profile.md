@@ -83,3 +83,7 @@ instalado automaticamente.
 O CI publica como artefato o runtime testado, inventários e hashes. Esse
 artefato de teste não é deploy nem promoção automática. LIVE permanece
 desabilitado e nenhuma credencial operacional é utilizada.
+
+O sdist exclui evidências geradas, referências externas, acervo e dados locais.
+Os binários e arquivos brutos da verificação ficam fora do futuro commit;
+os relatórios e manifestos continuam revisáveis.
