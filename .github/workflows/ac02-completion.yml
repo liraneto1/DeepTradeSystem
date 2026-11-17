@@ -1,0 +1,143 @@
+name: AC02 isolated build native and PostgreSQL comparison
+on:
+  push:
+    branches: ["review/ac02-completion-ac51f91"]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ac51f91cfc08dadae3a3bb411908b0b9a26f11af
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+        with:
+          enable-cache: false
+      - name: Capture actual isolated build
+        run: |
+          set -euo pipefail
+          mkdir -p audit/build-env audit-tools
+          git rev-parse HEAD > audit/candidate.txt
+          uv --version > audit/uv-version.txt
+          uv python install
+          uv sync --locked
+          cat > audit-tools/sitecustomize.py <<'PY'
+          import atexit, hashlib, importlib.metadata as md, json, os, sys
+          from pathlib import Path
+          def capture():
+              packages=[]
+              for dist in md.distributions():
+                  name=dist.metadata.get("Name")
+                  if name:
+                      packages.append({"name":name,"version":dist.version,"metadata_sha256":hashlib.sha256((dist.read_text("METADATA") or "").encode()).hexdigest(),"location":str(dist.locate_file(""))})
+              if any(p["name"].lower()=="hatchling" and "builds-v0" in p["location"] for p in packages):
+                  target=Path(os.environ["BUILD_CAPTURE"])/("build-env-"+str(os.getpid())+".json")
+                  target.write_text(json.dumps({"python":sys.version,"executable":sys.executable,"packages":packages},indent=2))
+          atexit.register(capture)
+          PY
+          export BUILD_CAPTURE="$PWD/audit/build-env"
+          export PYTHONPATH="$PWD/audit-tools"
+          uv build --no-sources -v > audit/build-isolated.log 2>&1
+          unset PYTHONPATH
+          .venv/bin/python - <<'PY'
+          import json
+          from pathlib import Path
+          captured=list(Path("audit/build-env").glob("*.json"))
+          assert captured, "No actual isolated environment captured"
+          for p in captured:
+              data=json.loads(p.read_text())
+              print("ISOLATED_BUILD",json.dumps(data))
+          PY
+          sha256sum dist/* uv.lock > audit/release-hashes.txt
+      - name: Inventory native libraries and query advisories
+        run: |
+          .venv/bin/python - <<'PY'
+          import hashlib,importlib.metadata as md,json,subprocess,sys,sysconfig
+          from pathlib import Path
+          import psycopg
+          root=Path(sysconfig.get_paths()["purelib"])
+          items=[]
+          for p in sorted((root/"psycopg_binary.libs").glob("*")):
+              text=subprocess.run(["strings","-a",str(p)],capture_output=True,text=True).stdout
+              candidates=[s for s in text.splitlines() if any(k in s.lower() for k in ("kerberos 5 release","openldap:","openssl 3.","cyrus sasl","pcre 8.","selinux","keyutils")) and len(s)<220][:30]
+              dynamic=subprocess.run(["readelf","-d",str(p)],capture_output=True,text=True).stdout
+              items.append({"file":p.name,"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"version_evidence":candidates,"elf_dynamic":dynamic})
+          result={"python":sys.version,"python_executable_sha256":hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),"psycopg":psycopg.__version__,"libpq_version":psycopg.pq.version(),"distribution_metadata_files":[str(p) for p in md.distribution("psycopg-binary").files if any(x in str(p).lower() for x in ("sbom","license","metadata","direct_url"))],"libraries":items}
+          Path("audit/native-full.json").write_text(json.dumps(result,indent=2))
+          print("NATIVE_FULL",json.dumps({"libraries":len(items),"python":sys.version,"psycopg":psycopg.__version__,"libpq":psycopg.pq.version()}))
+          PY
+          curl -fsSL https://raw.githubusercontent.com/psycopg/psycopg/3.3.8/tools/ci/build_libpq.sh -o audit/upstream-build-libpq.sh
+          curl -fsSL https://raw.githubusercontent.com/psycopg/psycopg/3.3.8/.github/workflows/build-and-cache-libpq.yml -o audit/upstream-build-libpq.yml
+          .venv/bin/python - <<'PY'
+          import importlib.metadata as md,json,urllib.request
+          from pathlib import Path
+          packages={(d.metadata["Name"],d.version) for d in md.distributions() if d.metadata["Name"]!="deep-trade-system"}
+          for p in Path("audit/build-env").glob("*.json"):
+              packages.update((d["name"],d["version"]) for d in json.loads(p.read_text())["packages"])
+          queries=[{"package":{"ecosystem":"PyPI","name":n},"version":v} for n,v in sorted(packages)]
+          req=urllib.request.Request("https://api.osv.dev/v1/querybatch",data=json.dumps({"queries":queries}).encode(),headers={"Content-Type":"application/json"})
+          data=json.load(urllib.request.urlopen(req,timeout=90))
+          Path("audit/osv-all.json").write_text(json.dumps({"queries":queries,"results":data["results"]},indent=2))
+          print("OSV_ALL",json.dumps({"pairs":len(queries),"findings":[{"query":q,"vulns":r["vulns"]} for q,r in zip(queries,data["results"]) if r.get("vulns")]}))
+          PY
+      - name: Audit and test both exact PostgreSQL images
+        env:
+          TRADE_SYSTEM_ENVIRONMENT: PAPER
+          LIVE_ENABLED: "false"
+          RUN_POSTGRES_TESTS: "1"
+        run: |
+          set -euo pipefail
+          docker pull aquasec/trivy:0.76.2
+          docker image inspect aquasec/trivy:0.76.2 > audit/scanner.json
+          for variant in baseline alpine; do
+            if [ "$variant" = baseline ]; then
+              image='postgres@sha256:0d938e975177bef9f1f61f3f9dbcf2e0aa0a139568f66d3415ed8892eb97f6ac'
+            else
+              image='postgres:17-alpine3.24'
+            fi
+            mkdir -p "audit/$variant"
+            docker pull --platform linux/amd64 "$image"
+            docker image inspect "$image" > "audit/$variant/image.json"
+            digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$image")
+            echo "$digest" | tee "audit/$variant/digest.txt"
+            docker run --rm --entrypoint postgres "$digest" --version > "audit/$variant/version.txt"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/audit:/output" aquasec/trivy:0.76.2 image --scanners vuln --format json --output "/output/$variant/trivy.json" "$digest"
+            export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+            echo "::add-mask::$POSTGRES_PASSWORD"
+            printf 'services:\n  postgres:\n    image: "%s"\n' "$digest" > "audit/$variant/compose.yml"
+            compose=(docker compose -p "ac02-$variant" -f deploy/compose/postgres.yml -f "audit/$variant/compose.yml")
+            "${compose[@]}" up -d --wait --wait-timeout 60
+            id=$("${compose[@]}" ps -q postgres)
+            docker inspect --format '{{.Image}}' "$id" > "audit/$variant/running-image.txt"
+            docker exec "$id" sh -c 'cat /etc/os-release; if command -v apk; then apk list --installed; else dpkg-query -W; fi' > "audit/$variant/packages.txt"
+            set +e
+            uv run --no-sync pytest tests/integration > "audit/$variant/tests.log" 2>&1
+            code=$?
+            set -e
+            echo "$code" > "audit/$variant/test-exit-code.txt"
+            tail -3 "audit/$variant/tests.log"
+            "${compose[@]}" down --volumes
+          done
+          .venv/bin/python - <<'PY'
+          import json,collections
+          from pathlib import Path
+          for name in ("baseline","alpine"):
+              root=Path("audit",name)
+              data=json.loads((root/"trivy.json").read_text())
+              findings=[{"target":r["Target"],**v} for r in data.get("Results",[]) for v in r.get("Vulnerabilities",[])]
+              (root/"findings.json").write_text(json.dumps(findings,indent=2))
+              print("IMAGE_SUMMARY",json.dumps({"variant":name,"digest":(root/"digest.txt").read_text().strip(),"test_exit":int((root/"test-exit-code.txt").read_text()),"total":len(findings),"severity":dict(collections.Counter(v["Severity"] for v in findings)),"critical":[v["VulnerabilityID"] for v in findings if v["Severity"]=="CRITICAL"]}))
+          PY
+      - name: Preserve audit hashes
+        if: always()
+        run: find audit -type f -print0 | sort -z | xargs -0 sha256sum > audit-SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ac02-completion-ac51f91
+          path: |
+            audit/
+            audit-SHA256SUMS
