@@ -1,0 +1,33 @@
+# Rastreabilidade DOC-03 para I06
+
+Registro de 12/11/2026 em `IN_REVIEW`. No Blueprint, TS-EP-09 (Operations & Human Control) vincula P33–P47. TS-EP-10 (Integrated PAPER & Resilience) vincula P96–P99 e P101. As histórias TS-ST-017–020 constam nas linhas 2035–2038. Os vínculos abaixo por história, ADR e cenário são propostos por conteúdo. P23, P26–P32, P58–P61 e P100 entram como dependências transversais.
+
+- [Blueprint original](<../referencias/originais/TS-ARCH-GLOBAL-V1.0 - Architecture & MVP Blueprint.txt>) · [D04 original](<../referencias/originais/Domínio 04 - Plataforma de Operações e Observabilidade.txt>) · [D07 original](<../referencias/originais/Domínio 07 - Engenharia, Qualidade e Validação Operacional.txt>)
+- [Pendências por ID](PENDING-ITEM-RECONCILIATION.md) · [ADRs por ID](ADR-RECONCILIATION.md) · [I03](DOC-03-I03-TRACEABILITY.md) · [I04](DOC-03-I04-TRACEABILITY.md) · [I05](DOC-03-I05-TRACEABILITY.md)
+
+## Histórias, pendências e evidências
+
+| História e critério | Pendências e decisões relacionadas | Evidência de dependência e limite |
+|---|---|---|
+| TS-ST-017 · Operations Viewer mínimo · decisão, risco, ordem, fill e posição visíveis | D04 · P33/P34/P36–P38/P42/P43/P46/P47 · ADR-029/030/032/033/035/037/040/051 | Os ensaios de I03 registram fills e estado do Portfolio. I00 fornece API diagnóstica e correlação. Falta Viewer PAPER com projeção que distinga estados, evidencie frescor e recupere snapshot e eventos após reconexão. [API](../evidence/I00-08-api.md) · [Telemetria](../evidence/I00-10-telemetria.md) · [Livro-razão](../evidence/I03-persistencia-paper.md) |
+| TS-ST-018 · Manual Trading Console · RBAC e Control → Risk → Execution | D04/D03 · P34/P35/P39/P44/P45/P47 e P26–P28 · ADR-018/025/030/034/038–040 | `test_control_blocks_non_paper_before_risk` e `test_control_rejections_preserve_balance` são referências do núcleo PAPER. Falta evidência do fluxo pela interface, com autenticação, permissões por ambiente, confirmação, reenvio e recusa sem novo efeito. [Testes PAPER](../../tests/unit/test_paper_simulator.py) · [Control e Risk](../domains/d03-control-risk-paper.md) |
+| TS-ST-019 · E2E PAPER · rastreabilidade ponta a ponta | D03/D05/D07 · P44/P47/P96/P97/P99/P101, P31/P58–P61 · ADR-028/049–052/079/080/087 | `test_correlation_traces_api_dispatcher_and_consumer` cobre diagnóstico em I00. I03 tem ensaios de cotação, fill, custos, funding e reconciliação. Falta execução contínua que correlacione observação ou comando, decisões de Control e Risk, execução simulada, Portfolio, eventos e visualização, com relatório por candidato. [Telemetria](../evidence/I00-10-telemetria.md) · [Market State em PAPER](../evidence/I03-market-state-paper.md) · [Funding PAPER](../evidence/I03-funding-paper.md) |
+| TS-ST-020 · catálogo de falhas · recuperação, bloqueios e reconciliação testados | D03/D04/D07 · P38/P40/P41/P98/P99 e P23/P29–P32 · ADR-026–028/035/036/081 | `test_workers_restart_after_database_connection_failure`, `test_paper_fill_survives_process_restart_and_reconciles` e `test_liquidation_worker_reobserves_mark_after_restart` cobrem partes do percurso. Os registros mostram retry, reinício e recuperação de marcação. Falta campanha integrada de falhas, com verificação de alertas, bloqueios, recuperação e condição de retomada. [Testes de integração](../../tests/integration/test_postgres_migrations.py) · [Resiliência I00](../evidence/I00-13-resiliencia.md) · [Recuperação I03](../evidence/I03-recuperacao-marcacao-paper.md) |
+
+P31, P44 e P58–P61 também precisam de critérios próprios de auditoria. Aprovar schemas e versões, identidade e correlação por evento, vínculo a ator e ambiente, política de consulta e retenção, integridade e reconstrução das projeções. A correlação diagnóstica de I00 e os hashes do livro-razão de I03 são evidência parcial de dependência. P31 e P44 mantêm suas fases primárias. O recorte de controles de interface e segregação de P45/P47 continua sujeito a G40. A administração de P33/P35 e ADR-031, os alertas e incidentes de P40/P41 e o replay e os KPIs de P42/P43 precisam de delimitação no backlog de I06. P96 trata também de paridade lógica, que pode ser verificada por contratos e simulações autorizadas. LIVE permanece indisponível.
+
+## Condições de validação para G2
+
+O Blueprint, tabelas de gates e métricas, e D07 vinculam G2 a PAPER com duração e amostra suficientes, cobertura E2E e de falhas, consistência, reconciliação e rastreabilidade. A arquitetura define as categorias de avaliação. Os limites quantitativos ainda precisam de aprovação.
+
+| Referência | Decisão ou evidência necessária |
+|---|---|
+| P97/P100 · ADR-079/082/083 | Aprovar duração mínima, quantidade e composição da amostra, critérios por mercado e regime, métricas e limites de risco e desempenho. Definir como avaliar sensibilidade a spread, slippage e funding e registrar o tratamento de interrupções na contagem. |
+| TS-ST-017/018 · Operação e autoridade | Aprovar estados e contratos do Viewer e Console, matriz RBAC, condições de confirmação e critérios de frescor e reconexão. Testar comando aceito, recusado e duplicado, segregação e distinção dos estados na interface. |
+| TS-ST-019 · P96/P97/P99 | Executar PAPER contínuo em candidato identificado. Demonstrar correlação do fluxo completo, consistência de ordem, fill, saldos e posições, reconciliação e relatório de operações por janela. Vincular versões de modelo, dados, política e contratos aplicáveis. |
+| TS-ST-020 · P98/P99 | Aprovar catálogo de falhas e critérios por cenário. Exercitar dado atrasado ou ausente, perda de conexão, indisponibilidade de banco ou worker, repetição ou reordenação, divergência financeira, bloqueio seguro e retomada. Registrar estado anterior, resultado, alerta, recuperação e ausência de efeito financeiro duplicado. |
+| P101 · ADR-087 · Evidence Bundle | Consolidar identidade e configuração do candidato, versões, resultados E2E, relatório de duração e amostra, reconciliações, campanha de falhas, métricas, incidentes, lacunas e integridade dos artefatos. Vincular as evidências aplicáveis de G0 e G1 e registrar a decisão humana de G2 com escopo. Os responsáveis propostos pelo Blueprint são QA, Trading e Risk. |
+
+## Verificação desta revisão
+
+Foram conferidos os nomes dos testes citados no checkout oficial, os IDs e os links locais com PowerShell e `rg`. As pastas `tests/e2e/` e `tests/resilience/` contêm apenas `.gitkeep`. Existem integrações de dependência na suíte de PostgreSQL. Não foi localizado relatório de PAPER contínuo de I06, Evidence Bundle de G2 ou decisão humana de homologação no acervo inspecionado. A verificação foi documental. DOC-03 permanece parcial e **G2 segue aberto**.

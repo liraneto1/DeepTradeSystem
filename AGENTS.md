@@ -11,7 +11,7 @@ Implementar incrementalmente o TRADE SYSTEM V1, respeitando a baseline `TS-ARCH-
 5. `docs/04-SEGURANCA-E-ACEITE.md`
 6. `docs/05-ADRS-TECNICAS.md`
 7. `docs/06-PENDENCIAS-E-RASTREABILIDADE.md`
-8. `docs/referencias/*.docx` quando necessário
+8. `docs/referencias/originais/*.txt` quando necessário
 
 ## Regras inegociáveis
 - **Nunca habilitar LIVE.** Não criar/usar credenciais LIVE, não enviar ordens reais, não habilitar endpoints de execução Binance, não permitir promoção automática. `LIVE_ENABLED=false` é proteção adicional, não suficiente: nenhuma capacidade de LIVE deve existir no I00.

@@ -1,0 +1,463 @@
+# FEATURE-TEMPLATE.md
+## TRADE SYSTEM V1 — Feature Specification Template
+
+**Document ID:** TS-DOC-TPL-FEAT-001  
+**Version:** 1.0  
+**Status:** APPROVED  
+**Domain:** GLOBAL / D07  
+**Applicable Increments:** I00–I09  
+**Owner:** Architecture & Documentation Governance  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Document Registry:** TS-DOC-REG-001 — APPROVED  
+**Gap Register:** TS-DOC-GAP-001 — APPROVED  
+**Traceability Matrix:** TS-DOC-TRC-001 — APPROVED  
+**Approval Register:** TS-DOC-APR-001 — APPROVED  
+**Change Log:** TS-DOC-CHG-001 — APPROVED  
+**Increment Template:** TS-DOC-TPL-INC-001 — APPROVED  
+**Epic Template:** TS-DOC-TPL-EPIC-001 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Approval Reference:** [16/11/2026 · aprovação sem ressalvas](../history/TS-DOC-TPL-FEAT-001/APPROVAL.md)  
+**Increment:** I00–I09, conforme aplicabilidade  
+**Source References:** [anexo original](../history/TS-DOC-TPL-FEAT-001/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../TS-DOC-STD-V1.0.md) e [fontes oficiais](../../referencias/originais/)  
+**Related ADRs:** especificar por Feature, conforme seção 3.  
+**Related Components:** especificar por Feature, conforme seção 3.  
+**Related Requirements/Pendências:** especificar por Feature, conforme seções 3, 16 e 19.  
+**Dependencies:** documentos de governança indicados acima e templates aprovados de [Incremento](INCREMENT-TEMPLATE.md) e [Épico](EPIC-TEMPLATE.md). Registrar dependências de cada Feature na seção 9.  
+**Acceptance Criteria:** seções 12, 17 e 18 orientam o registro do aceite e da prontidão de cada Feature.  
+**Last Updated:** 2026-11-16
+
+---
+
+# TEMPLATE — FEATURE SPECIFICATION
+
+> **Instrução de utilização:** substituir os campos entre colchetes exclusivamente por informações verificadas. Não inventar requisitos, ADRs, pendências, contratos ou evidências. Informações desconhecidas deverão permanecer `TBD`, com referência à lacuna correspondente.
+
+## 1. Identificação
+
+| Campo | Valor |
+|---|---|
+| Feature ID | [IXX-FEAT-NNN] |
+| Feature Name | [Nome] |
+| Specification Version | [Versão] |
+| Status | [DRAFT / IN_REVIEW / APPROVED / SUPERSEDED] |
+| Primary Epic | [TS-EP-XX] |
+| Related Epics | [IDs ou N/A] |
+| Primary Increment | [IXX] |
+| Related Increments | [IDs ou N/A] |
+| Primary Domain | [DXX] |
+| Supporting Domains | [IDs ou N/A] |
+| Functional Owner | [Responsável] |
+| Technical Owner | [Responsável] |
+| Related ADRs | [IDs] |
+| Related Components | [IDs] |
+| Related Requirements | [PXX] |
+| Approval Reference | [Referência ou PENDING] |
+| Last Updated | [Data] |
+
+O Feature ID deverá permanecer estável após seu registro.
+
+Mudanças materiais de escopo deverão seguir o Change Control aprovado.
+
+## 2. Objetivo da Feature
+
+### 2.1 Objetivo
+
+[Descrever a capacidade funcional ou técnica.]
+
+### 2.2 Necessidade atendida
+
+[Identificar o problema ou requisito que justifica a Feature.]
+
+### 2.3 Resultado esperado
+
+[Descrever o comportamento ou resultado observável.]
+
+### 2.4 Valor para o sistema
+
+[Explicar contribuição para segurança, desempenho, automação, qualidade ou operação.]
+
+### 2.5 Critério de sucesso
+
+[Definir como o resultado será verificado.]
+
+## 3. Contexto e rastreabilidade
+
+### 3.1 Baselines aplicáveis
+
+[Relacionar baselines e versões.]
+
+### 3.2 Épicos relacionados
+
+[Relacionar Epic IDs.]
+
+### 3.3 ADRs aplicáveis
+
+| ADR ID | Decisão | Impacto | Verificação |
+|---|---|---|---|
+| [ADR] | [Descrição verificada] | [Impacto] | [Estado] |
+
+### 3.4 Componentes envolvidos
+
+| Component ID | Responsabilidade | Owner |
+|---|---|---|
+| [DXX-CYY] | [Responsabilidade] | [Owner] |
+
+### 3.5 Requisitos e pendências
+
+| Requirement ID | Descrição | Origem | Status |
+|---|---|---|---|
+| [PXX] | [Descrição original] | [Fonte] | [Estado] |
+
+### 3.6 Fluxos relacionados
+
+[Relacionar F01–F10, conforme aplicabilidade.]
+
+## 4. Escopo
+
+### 4.1 Incluído
+
+[Relacionar capacidades e comportamentos incluídos.]
+
+### 4.2 Excluído
+
+[Relacionar capacidades não incluídas.]
+
+### 4.3 Limites de responsabilidade
+
+[Definir fronteiras com outras Features e componentes.]
+
+### 4.4 Premissas
+
+[Registrar premissas verificadas ou a confirmar.]
+
+### 4.5 Restrições
+
+[Registrar restrições técnicas, operacionais, financeiras e de segurança.]
+
+## 5. Comportamento funcional e técnico
+
+### 5.1 Cenário principal
+
+[Descrever pré-condições, estímulo, processamento e resultado esperado.]
+
+### 5.2 Cenários alternativos
+
+[Descrever variações válidas.]
+
+### 5.3 Cenários de rejeição
+
+[Descrever condições de rejeição e respostas esperadas.]
+
+### 5.4 Cenários de falha
+
+[Descrever timeouts, indisponibilidade, inconsistência, duplicidade ou outras falhas aplicáveis.]
+
+### 5.5 Recuperação
+
+[Descrever comportamento esperado após falha.]
+
+### 5.6 Regras e invariantes
+
+[Relacionar regras que devem permanecer verdadeiras.]
+
+## 6. Requisitos não funcionais
+
+| Categoria | Requisito | Métrica/critério | Fonte |
+|---|---|---|---|
+| Performance | [Requisito] | [Critério] | [Fonte] |
+| Reliability | [Requisito] | [Critério] | [Fonte] |
+| Security | [Requisito] | [Critério] | [Fonte] |
+| Observability | [Requisito] | [Critério] | [Fonte] |
+| Scalability | [Requisito] | [Critério] | [Fonte] |
+| Maintainability | [Requisito] | [Critério] | [Fonte] |
+| Auditability | [Requisito] | [Critério] | [Fonte] |
+
+Métricas ainda não aprovadas deverão permanecer `TBD`.
+
+## 7. Contratos e interfaces
+
+| Contract ID | Versão | Tipo | Producer | Consumer | Status |
+|---|---|---|---|---|---|
+| [Contrato] | [Versão] | [Command/Event/API/Query] | [Producer] | [Consumer] | [Estado] |
+
+### 7.1 Entradas
+
+[Descrever dados e comandos recebidos.]
+
+### 7.2 Saídas
+
+[Descrever eventos, respostas ou estados produzidos.]
+
+### 7.3 Validações
+
+[Definir validações obrigatórias.]
+
+### 7.4 Compatibilidade
+
+[Definir requisitos de versionamento.]
+
+### 7.5 Erros e rejeições
+
+[Definir comportamento contratual em falhas.]
+
+Não duplicar schemas completos quando existir fonte autoritativa.
+
+## 8. Dados e persistência
+
+### 8.1 Entidades
+
+[Relacionar entidades utilizadas.]
+
+### 8.2 Ownership de dados
+
+[Definir quem pode criar, alterar e consultar.]
+
+### 8.3 Consistência
+
+[Definir requisitos transacionais e eventual consistency.]
+
+### 8.4 Idempotência
+
+[Definir chaves e efeitos esperados.]
+
+### 8.5 Versionamento e migração
+
+[Relacionar modelos e migrations.]
+
+### 8.6 Auditoria e retenção
+
+[Definir requisitos aplicáveis.]
+
+## 9. Dependências
+
+### 9.1 Dependências internas
+
+[Relacionar componentes e serviços.]
+
+### 9.2 Dependências entre Features
+
+[Relacionar Feature IDs.]
+
+### 9.3 Dependências entre histórias
+
+[Relacionar Story IDs.]
+
+### 9.4 Dependências entre incrementos
+
+[Relacionar I00–I09.]
+
+### 9.5 Dependências externas
+
+[Relacionar APIs, fornecedores ou infraestrutura.]
+
+### 9.6 Bloqueios
+
+[Relacionar Gap IDs e impedimentos.]
+
+## 10. Histórias técnicas
+
+| Story ID | Objetivo | Dependências | Prioridade | Status |
+|---|---|---|---|---|
+| [TS-ST-NNN] | [Objetivo] | [IDs] | [Prioridade] | [Status] |
+
+Cada história deverá possuir critérios de aceite próprios.
+
+A Feature deverá manter referência às histórias sem duplicar suas especificações integrais.
+
+## 11. Estratégia de testes
+
+### 11.1 Cenários obrigatórios
+
+[Relacionar cenários de sucesso, rejeição, falha e recuperação.]
+
+### 11.2 Tipos de teste
+
+| Tipo | Aplicabilidade | Objetivo | Referência |
+|---|---|---|---|
+| Unit | [Sim/Não] | [Objetivo] | [Test ID] |
+| Contract | [Sim/Não] | [Objetivo] | [Test ID] |
+| Integration | [Sim/Não] | [Objetivo] | [Test ID] |
+| Property-Based | [Sim/Não] | [Objetivo] | [Test ID] |
+| End-to-End | [Sim/Não] | [Objetivo] | [Test ID] |
+| Resilience | [Sim/Não] | [Objetivo] | [Test ID] |
+| Security | [Sim/Não] | [Objetivo] | [Test ID] |
+
+Tipos não aplicáveis deverão possuir justificativa.
+
+### 11.3 Dados de teste
+
+[Definir fixtures, datasets e cenários sintéticos.]
+
+### 11.4 Ambiente de teste
+
+[Definir ambiente permitido.]
+
+### 11.5 Critérios de falha
+
+[Definir condições que impedem aceite.]
+
+## 12. Critérios de aceite da Feature
+
+| Feature AC ID | Critério | Método de verificação | Evidência |
+|---|---|---|---|
+| [FEAT-AC-NNN] | [Critério] | [Método] | [Evidence ID] |
+
+Os critérios deverão ser específicos, mensuráveis quando aplicável e verificáveis.
+
+A conclusão das histórias não implicará automaticamente o aceite da Feature.
+
+## 13. Segurança, risco e governança
+
+### 13.1 Identidade e autorização
+
+[Definir atores e permissões.]
+
+### 13.2 Segregação de ambientes
+
+[Definir TRAINING/PAPER/LIVE conforme aplicabilidade.]
+
+### 13.3 Invariantes financeiros
+
+[Relacionar regras aplicáveis.]
+
+### 13.4 Tratamento de falhas
+
+[Definir fail-closed, bloqueios e recuperação.]
+
+### 13.5 Auditoria
+
+[Definir eventos e registros necessários.]
+
+### 13.6 Aprovações
+
+[Relacionar decisões e gates aplicáveis.]
+
+Nenhuma Feature poderá conceder autoridade financeira fora dos componentes aprovados de Control, Risk e Execution.
+
+## 14. Observabilidade
+
+### 14.1 Logs
+
+[Definir eventos e campos de correlação.]
+
+### 14.2 Métricas
+
+[Definir indicadores.]
+
+### 14.3 Traces
+
+[Definir spans e propagação de contexto.]
+
+### 14.4 Alertas
+
+[Definir condições de alerta.]
+
+### 14.5 Diagnóstico
+
+[Definir mecanismos de investigação.]
+
+## 15. Evidências
+
+### 15.1 Evidências esperadas
+
+[Relacionar testes e resultados exigidos.]
+
+### 15.2 Evidências produzidas
+
+[Relacionar somente evidências existentes.]
+
+### 15.3 Evidências pendentes
+
+[Relacionar itens ainda não executados.]
+
+### 15.4 Integridade
+
+[Definir referências a builds, commits e versões.]
+
+## 16. Riscos e lacunas
+
+| Risk/Gap ID | Descrição | Severidade | Impacto | Tratamento | Status |
+|---|---|---|---|---|---|
+| [ID] | [Descrição] | [Nível] | [Impacto] | [Ação] | [Status] |
+
+Lacunas bloqueantes deverão impedir a implementação das histórias afetadas.
+
+## 17. Feature Documentation Readiness
+
+A Feature estará documentalmente pronta quando:
+
+- Objetivo e escopo estiverem definidos.
+- Requisitos possuírem origem verificável.
+- ADRs e componentes aplicáveis estiverem identificados.
+- Comportamentos principais, alternativos e de falha estiverem especificados.
+- Contratos necessários estiverem definidos.
+- Dependências estiverem mapeadas.
+- Histórias técnicas estiverem identificadas.
+- Critérios de aceite estiverem testáveis.
+- Estratégia de testes estiver definida.
+- Riscos e lacunas estiverem registrados.
+- Restrições de segurança estiverem preservadas.
+
+**Documentation Readiness Status:** [NOT_READY / READY_WITH_CONDITIONS / READY]
+
+A prontidão da Feature não substitui a Definition of Ready de cada história.
+
+## 18. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- As histórias obrigatórias estiverem concluídas.
+- Os critérios de aceite estiverem atendidos.
+- Os testes aplicáveis tiverem sido executados.
+- Os contratos estiverem conformes.
+- As evidências estiverem vinculadas.
+- Os riscos residuais estiverem avaliados.
+- As lacunas bloqueantes estiverem encerradas.
+- A rastreabilidade estiver atualizada.
+- A aprovação competente estiver registrada.
+
+**Implementation Acceptance Status:** [NOT_EVALUATED / REJECTED / APPROVED_WITH_CONDITIONS / APPROVED]
+
+O aceite da Feature não substitui o aceite do épico, incremento ou gate.
+
+## 19. Rastreabilidade
+
+A Feature deverá integrar a cadeia:
+
+**ADR → Componente → Pendência → Épico → Feature → História → Contrato → Teste → Evidência**
+
+Cada relacionamento deverá possuir estado de verificação.
+
+Vínculos desconhecidos deverão permanecer pendentes.
+
+## 20. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| [Versão] | [Data] | [ID] | [Descrição] | [Referência] |
+
+## 21. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Feature ID | [IXX-FEAT-NNN] |
+| Version | [Versão] |
+| Approval Category | DOC / TECH, conforme finalidade |
+| Decision | [Resultado] |
+| Approved By | [Autoridade] |
+| Approval Reference | [Referência] |
+| Conditions | [Condições] |
+| Date | [Data] |
+
+---
+
+**Template Status:** APPROVED  
+**Template Approval:** [16/11/2026 · aprovação sem ressalvas](../history/TS-DOC-TPL-FEAT-001/APPROVAL.md)  
+**Next Artifact:** STORY-TEMPLATE.md  
+**Próxima etapa:** aguardar o conteúdo do STORY-TEMPLATE.md.
+
+## Histórico da revisão do template
+
+A versão **1.0** foi aprovada em 16/11/2026. O histórico preserva a [revisão local anterior à aprovação](../history/TS-DOC-TPL-FEAT-001/REVISAO-LOCAL-IN-REVIEW.txt). O [template de Feature anterior](FEATURE.md) mantém sua aprovação original. A [aprovação comunicada do Approval Register](../history/TS-DOC-APR-001/APPROVAL.md) está registrada e a conferência do seu texto integral no checkout segue pendente.
+
+[G0](../G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

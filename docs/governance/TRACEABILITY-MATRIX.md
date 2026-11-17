@@ -1,0 +1,392 @@
+# TRACEABILITY-MATRIX.md
+## TRADE SYSTEM V1 — Master Requirements Traceability Matrix
+
+**Document ID:** TS-DOC-TRC-001  
+**Version:** 1.0  
+**Status:** APPROVED  
+**Domain:** GLOBAL / D07  
+**Increment:** I00–I09  
+**Owner:** Architecture & Documentation Governance  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Document Registry:** TS-DOC-REG-001 — APPROVED  
+**Gap Register:** TS-DOC-GAP-001 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Approval Reference:** [16/11/2026 · TRC-R01–TRC-R10 aprovadas sem ressalvas](history/TS-DOC-TRC-001/APPROVAL.md)  
+**Source References:** [TS-DOC-STD-V1.0](TS-DOC-STD-V1.0.md), [originais TXT](../referencias/originais/), [texto submetido](history/TS-DOC-TRC-001/IN-REVIEW.txt) e [DOC-03 consolidado](DOC-03-CONSOLIDATION.md)  
+**Related ADRs:** ADR-001–088 e TS-ADR-089–098, conforme as seções 3, 6 e 8  
+**Related Components:** componentes por domínio e vínculos propostos nas seções 6 e 8  
+**Related Requirements/Pendências:** P01–P106, DOC-GAP-001–008 e os critérios de I00 referenciados na matriz operacional  
+**Dependencies:** [Document Registry](DOCUMENT-REGISTRY.md), [Gap Register](GAP-REGISTER.md) e [matriz operacional](REQUIREMENTS-TRACEABILITY-MATRIX.md)  
+**Acceptance Criteria:** seção 18  
+**Last Updated:** 2026-11-16
+
+---
+
+## 1. Objetivo
+
+Estabelecer a matriz oficial de rastreabilidade dos requisitos, decisões, componentes, entregas, contratos, testes e evidências do TRADE SYSTEM V1.
+
+A matriz deverá permitir responder:
+
+1. Qual decisão ou requisito originou determinada implementação?
+2. Quais componentes são impactados por uma alteração?
+3. Quais épicos, Features e histórias implementam determinada capacidade?
+4. Quais contratos definem o comportamento esperado?
+5. Quais testes verificam o atendimento aos requisitos?
+6. Quais evidências comprovam os resultados?
+7. Quais requisitos permanecem sem cobertura?
+8. Quais mudanças exigem revalidação?
+
+## 2. Modelo oficial de rastreabilidade
+
+A cadeia de referência será:
+
+**ADR → Componente → Pendência → Épico → Feature → História Técnica → Contrato → Teste → Evidência**
+
+O incremento, o domínio e o gate serão dimensões adicionais de classificação e aceite.
+
+O modelo representa um grafo de relacionamentos, e não uma sequência obrigatória de associações um-para-um.
+
+Relacionamentos muitos-para-muitos serão permitidos e deverão ser identificados explicitamente.
+
+## 3. Entidades rastreáveis
+
+| Entidade | Identificador |
+|---|---|
+| Baseline | TS-ARCH-GLOBAL-V1.0 / TS-ENG-I00-V1.0 |
+| Domínio | D01–D07 |
+| ADR | ADR-001–088 / TS-ADR-089–098 |
+| Componente | DXX-CYY |
+| Pendência | P01–P106 |
+| Incremento | I00–I09 |
+| Épico | TS-EP-01–14 |
+| Feature | IXX-FEAT-NNN |
+| História Técnica | TS-ST-NNN |
+| Contrato | Identificador e versão do contrato |
+| Teste | TS-TEST-NNN |
+| Evidência | TS-EVB-IXX-NNN |
+| Gate | G0–G5 |
+| Lacuna | DOC-GAP-NNN |
+
+Identificadores deverão permanecer únicos, estáveis e vinculados aos respectivos registros mestres.
+
+## 4. Modelo de relacionamento
+
+Cada relacionamento deverá possuir:
+
+- Relationship ID.
+- Source Entity ID.
+- Target Entity ID.
+- Relationship Type.
+- Source Reference.
+- Verification Status.
+- Responsible Owner.
+- Last Reviewed.
+- Gap Reference, quando aplicável.
+
+Tipos de relacionamento:
+
+| Tipo | Significado |
+|---|---|
+| GOVERNS | Decisão estabelece regra para o elemento |
+| ALLOCATED_TO | Requisito atribuído a componente ou entrega |
+| DECOMPOSES_INTO | Elemento detalhado em unidades menores |
+| IMPLEMENTS | História ou componente implementa requisito |
+| DEPENDS_ON | Dependência necessária |
+| DEFINED_BY | Comportamento definido por contrato |
+| VERIFIED_BY | Requisito verificado por teste |
+| EVIDENCED_BY | Resultado comprovado por evidência |
+| ACCEPTED_BY | Entrega vinculada a aceite ou gate |
+| IMPACTS | Alteração afeta outro artefato |
+| SUPERSEDES | Artefato substitui versão anterior |
+
+## 5. Estado de verificação dos vínculos
+
+| Estado | Definição |
+|---|---|
+| VERIFIED | Relação confirmada em fonte identificada |
+| PROPOSED | Relação sugerida, aguardando revisão |
+| UNVERIFIED | Relação registrada, mas sem confirmação suficiente |
+| MISSING | Relação obrigatória ausente |
+| NOT_APPLICABLE | Relação não aplicável, com justificativa |
+| SUPERSEDED | Relação substituída por revisão posterior |
+
+A criação de um relacionamento não implica sua verificação.
+
+A matriz deverá distinguir explicitamente a existência do vínculo de sua conformidade com a baseline.
+
+## 6. Cobertura arquitetural por domínio
+
+| Domínio | ADRs | Componentes | Pendências |
+|---|---|---|---|
+| D01 | ADR-001–006 | D01-C01–C03 | P01–P08 |
+| D02 | ADR-007–016 | D02-C01–C03 | P09–P18 |
+| D03 | ADR-017–028 | D03-C01–C04 | P19–P32 |
+| D04 | ADR-029–040 | D04-C01–C05 | P33–P47 |
+| D05 | ADR-041–054 | D05-C01–C06 | P48–P64 |
+| D06 | ADR-055–070 | D06-C01–C06 | P65–P84 |
+| D07 | ADR-071–088 | D07-C01–C06 | P85–P106 |
+| **Total** | **88** | **33** | **106** |
+
+As faixas acima representam a alocação aprovada por domínio.
+
+Elas não comprovam que cada ADR individual esteja vinculada a cada componente ou pendência da respectiva faixa.
+
+As ADRs técnicas TS-ADR-089–098 deverão ser relacionadas adicionalmente aos componentes e entregas afetados.
+
+## 7. Cobertura por incremento
+
+| Incremento | Capacidade principal | Épicos relacionados |
+|---|---|---|
+| I00 | Engineering Foundation | TS-EP-01, TS-EP-02 |
+| I01 | Market Data | TS-EP-03 |
+| I02 | Features & Market State | TS-EP-04 |
+| I03 | Risk, Control & PAPER Execution | TS-EP-05, TS-EP-06 |
+| I04 | AI Training & Inference | TS-EP-07 |
+| I05 | Quantitative Validation | TS-EP-08 |
+| I06 | Integrated PAPER Operations | TS-EP-09, TS-EP-10 |
+| I07 | LIVE Readiness | TS-EP-11, TS-EP-12 |
+| I08 | LIVE Limited | TS-EP-13 |
+| I09 | LIVE Controlled Evolution | TS-EP-14 |
+
+A associação representa o planejamento principal aprovado. Épicos poderão possuir dependências e entregas transversais em outros incrementos.
+
+## 8. Matriz inicial de rastreabilidade I00
+
+A matriz abaixo constitui o conjunto inicial de relações a verificar durante a preparação documental.
+
+| ID | ADR | Componente | Épico | História | Contrato | Status |
+|---|---|---|---|---|---|---|
+| TRC-I00-001 | TS-ADR-090 | D07-C01 | TS-EP-01 | TS-ST-001 | N/A | PROPOSED |
+| TRC-I00-002 | TS-ADR-094 | D07-C01 / C02 | TS-EP-01 | TS-ST-001 | N/A | PROPOSED |
+| TRC-I00-003 | TS-ADR-097 | D05-C02 / D07-C02 | TS-EP-01 | TS-ST-002 | CommandEnvelope.v1 / EventEnvelope.v1 | PROPOSED |
+| TRC-I00-004 | TS-ADR-092 | D05-C01 | TS-EP-02 | TS-ST-003 | Data Schema | PROPOSED |
+| TRC-I00-005 | TS-ADR-093 | D05-C02 | TS-EP-02 | TS-ST-003 | OutboxRecord.v1 | PROPOSED |
+| TRC-I00-006 | TS-ADR-093 | D05-C02 | TS-EP-02 | TS-ST-004 | EventEnvelope.v1 | PROPOSED |
+| TRC-I00-007 | TS-ADR-095 | D06-C02 | TS-EP-01 | A refinar | CI Pipeline Contract | PROPOSED |
+| TRC-I00-008 | TS-ADR-096 | D06-C04 | TS-EP-01 | A refinar | Telemetry Specification | PROPOSED |
+| TRC-I00-009 | TS-ADR-098 | D06-C03 / C06 | TS-EP-01 | A refinar | Environment Policy | PROPOSED |
+| TRC-I00-010 | TS-ADR-091 | D04-C01 / D07-C01 | TS-EP-01 | A refinar | HealthStatus.v1 | PROPOSED |
+
+**Observações:**
+
+- A coluna Pendência não foi preenchida porque os vínculos individuais com P01–P106 ainda exigem conferência das fontes originais.
+- As Features I00 ainda precisam ser formalizadas.
+- Os contratos indicados representam referências de especificação, não schemas necessariamente implementados.
+- As histórias TS-ST-001–004 possuem IDs aprovados, mas seus relacionamentos detalhados ainda exigem revisão.
+- Nenhuma evidência de implementação foi produzida ou validada por esta matriz.
+
+## 9. Registro de pendências de rastreabilidade I00
+
+| Item | Pendência | Gap relacionado |
+|---|---|---|
+| TRC-GAP-001 | Confirmar vínculos individuais ADR-001–088 | DOC-GAP-003 |
+| TRC-GAP-002 | Associar pendências originais P01–P106 às histórias | DOC-GAP-001 / 005 |
+| TRC-GAP-003 | Confirmar classificação e relações de P18 | DOC-GAP-002 |
+| TRC-GAP-004 | Formalizar registros TS-ADR-089–098 | DOC-GAP-004 |
+| TRC-GAP-005 | Criar e vincular Features I00 | DOC-GAP-006 |
+| TRC-GAP-006 | Validar localização e versão dos arquivos | DOC-GAP-007 |
+| TRC-GAP-007 | Definir responsáveis pelas revisões | DOC-GAP-008 |
+
+Esses identificadores representam itens de rastreabilidade associados às lacunas documentais existentes. Não criam automaticamente novos requisitos arquiteturais.
+
+## 10. Rastreabilidade dos contratos
+
+Cada contrato deverá identificar:
+
+- Contract ID.
+- Schema Version.
+- Producer.
+- Consumer.
+- Domain Owner.
+- Related Components.
+- Related Stories.
+- Related Requirements.
+- Compatibility Policy.
+- Validation Tests.
+- Evidence References.
+
+Contratos compartilhados por múltiplas histórias deverão possuir registro único, com referências aos consumidores e produtores.
+
+Uma alteração incompatível deverá acionar análise de impacto e revalidação.
+
+## 11. Rastreabilidade dos testes
+
+Cada teste deverá identificar:
+
+- Test ID.
+- Test Type.
+- Requirement/Acceptance Criteria.
+- Related Story.
+- Related Contract.
+- Environment.
+- Expected Result.
+- Execution Reference.
+- Actual Result.
+- Evidence Reference.
+
+Os testes poderão ser classificados como:
+
+- Unit.
+- Contract.
+- Integration.
+- Property-Based.
+- End-to-End.
+- Resilience.
+- Security.
+- Quantitative Validation.
+- Operational Acceptance.
+
+Os tipos aplicáveis dependerão do comportamento e do risco de cada história.
+
+## 12. Rastreabilidade das evidências
+
+Cada evidência deverá possuir:
+
+- Evidence ID.
+- Increment ID.
+- Gate ID, quando aplicável.
+- Build/Commit.
+- Test Execution ID.
+- Environment.
+- Artifact Versions.
+- Result.
+- Timestamp.
+- Integrity Reference.
+- Approval Reference.
+
+Evidências deverão ser vinculadas aos critérios efetivamente verificados.
+
+Uma evidência poderá comprovar múltiplos critérios, desde que seu escopo de validação seja explícito.
+
+## 13. Indicadores de cobertura
+
+A governança deverá acompanhar:
+
+### 13.1 Cobertura de requisitos
+
+Percentual de requisitos aplicáveis com histórias ou entregas vinculadas e verificadas.
+
+### 13.2 Cobertura de histórias
+
+Percentual de histórias com critérios de aceite e testes associados.
+
+### 13.3 Cobertura de contratos
+
+Percentual de contratos obrigatórios com schemas versionados e testes de conformidade.
+
+### 13.4 Cobertura de evidências
+
+Percentual de critérios de aceite com evidências válidas.
+
+### 13.5 Cobertura arquitetural
+
+Percentual de ADRs aplicáveis com relações verificadas para componentes e entregas.
+
+### 13.6 Lacunas de rastreabilidade
+
+Quantidade de vínculos obrigatórios ausentes, não verificados ou inconsistentes.
+
+**Regra de cálculo:** os indicadores deverão utilizar como denominador os itens aplicáveis ao escopo avaliado. Itens NOT_APPLICABLE exigem justificativa e não poderão ser utilizados para inflar artificialmente a cobertura.
+
+Nenhum percentual de cobertura será declarado sem inventário, critérios de aplicabilidade e verificação dos vínculos.
+
+## 14. Análise de impacto
+
+Toda mudança material em ADR, requisito, componente, Feature, história ou contrato deverá produzir uma análise dos elementos relacionados.
+
+O processo deverá:
+
+1. Identificar o artefato alterado.
+2. Localizar seus relacionamentos diretos.
+3. Identificar dependências transitivas relevantes.
+4. Determinar contratos e testes afetados.
+5. Identificar evidências que perderam validade.
+6. Atualizar os registros de mudança.
+7. Solicitar aprovação quando necessário.
+8. Executar novamente as validações aplicáveis.
+
+A rastreabilidade deverá permitir reconstruir a justificativa de uma implementação e compreender as consequências de sua alteração.
+
+## 15. Documentation Readiness
+
+Uma história estará documentalmente pronta quando:
+
+- Sua origem estiver identificada.
+- As ADRs aplicáveis estiverem referenciadas.
+- Os componentes responsáveis estiverem definidos.
+- As pendências relevantes estiverem vinculadas ou justificadas.
+- A Feature e o Épico estiverem identificados.
+- Os contratos necessários estiverem especificados.
+- Os critérios de aceite estiverem testáveis.
+- Os cenários de teste estiverem definidos.
+- As lacunas bloqueantes estiverem resolvidas.
+
+A existência de uma referência não verificada não satisfaz automaticamente o critério de prontidão.
+
+## 16. Implementation Acceptance
+
+Uma história poderá ser considerada DONE quando:
+
+- Os requisitos aplicáveis estiverem implementados.
+- Os testes obrigatórios tiverem sido executados.
+- As evidências estiverem vinculadas.
+- Os contratos estiverem conformes.
+- As versões dos artefatos estiverem identificadas.
+- As lacunas bloqueantes estiverem encerradas.
+- A revisão e aprovação exigidas estiverem registradas.
+
+O aceite de uma história não equivale ao aceite do incremento.
+
+## 17. Governança da matriz
+
+O TS-DOC-GOV será responsável por:
+
+- Manter o inventário de relacionamentos.
+- Identificar vínculos ausentes.
+- Detectar referências inválidas.
+- Verificar consistência de identificadores.
+- Produzir relatórios de cobertura.
+- Identificar impactos de alterações.
+- Propor correções.
+- Atualizar o registro após aprovações.
+
+O TS-DOC-GOV não poderá:
+
+- Inventar vínculos sem fonte.
+- Declarar relações verificadas sem conferência.
+- Aprovar alterações arquiteturais.
+- Fabricar evidências.
+- Marcar histórias como DONE sem validação.
+- Autorizar promoção LIVE.
+
+## 18. Critérios de aceite deste documento
+
+A TRACEABILITY-MATRIX.md estará apta à aprovação quando:
+
+1. O modelo de rastreabilidade estiver definido.
+2. As entidades e identificadores estiverem padronizados.
+3. Os tipos de relacionamento estiverem definidos.
+4. Os estados de verificação estiverem estabelecidos.
+5. A cobertura por domínio estiver registrada.
+6. A cobertura por incremento estiver registrada.
+7. A matriz inicial I00 estiver apresentada sem vínculos presumidos como confirmados.
+8. As lacunas de rastreabilidade estiverem identificadas.
+9. Os critérios de cobertura e análise de impacto estiverem definidos.
+10. As regras de Documentation Readiness, Implementation Acceptance e segurança estiverem preservadas.
+
+---
+
+**Status:** APPROVED  
+**Approval Reference:** [16/11/2026 · TRC-R01–TRC-R10 aprovadas sem ressalvas](history/TS-DOC-TRC-001/APPROVAL.md)  
+**Próximo documento:** APPROVAL-REGISTER.md  
+**Próxima etapa:** aguardar o conteúdo do Approval Register para revisão.
+
+## 19. Vínculos existentes e histórico
+
+A [matriz operacional](REQUIREMENTS-TRACEABILITY-MATRIX.md) mantém os vínculos existentes de I00, incluindo os 14 pacotes e 12 critérios, os contratos, os testes e as evidências registradas para AC02, AC07, AC09 e AC12. O [DOC-03 consolidado](DOC-03-CONSOLIDATION.md) indexa os demais recortes por incremento. A evidência histórica e os aceites vigentes mantêm o escopo original, inclusive o [Evidence Bundle I00 RC1](DOC-07-RC1-ACCEPTANCE.md), aceito para I00-14 e AC12. Os dez vínculos iniciais da seção 8 permanecem PROPOSED.
+
+O [Gap Register](GAP-REGISTER.md) mantém DOC-GAP-001–008 abertas. [G0](G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.
+
+O [anexo original](history/TS-DOC-TRC-001/IN-REVIEW.txt), a [cópia da matriz operacional anterior a esta revisão](history/TS-DOC-TRC-001/MATRIZ-OPERACIONAL-ANTERIOR.txt) e o [bloco de aprovação recebido](history/TS-DOC-TRC-001/TEXTO-DE-APROVACAO-RECEBIDO.md) estão arquivados. A versão **1.0** foi aprovada em 16/11/2026. O histórico também preserva a [revisão local anterior à aprovação](history/TS-DOC-TRC-001/REVISAO-LOCAL-IN-REVIEW.txt).

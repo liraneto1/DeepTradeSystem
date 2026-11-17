@@ -18,4 +18,4 @@ Consulte o [registro mestre de I00](backlog/registro-mestre-i00.md) para acompan
 R01 sobreajuste PPO; R02 paridade PAPER/LIVE; R03 ordem UNKNOWN; R04 divergência Binance; R05 Market State obsoleto; R06 alavancagem/exposição; R07 credenciais; R08 infraestrutura/dados; R09 versões; R10 bypass manual; R11 limites inadequados; R12 rastreabilidade incompleta.
 
 ## Fonte e confiabilidade
-Os DOCX em `docs/referencias/` são **edições reconstruídas** a partir da consolidação global, não transcrições originais completas. A ausência de detalhes deve ser registrada como pendência, jamais preenchida por suposição.
+Os TXT em `docs/referencias/originais/` são as fontes oficiais confirmadas pelo usuário em 16/11/2026. A ausência de detalhes deve ser registrada como pendência, jamais preenchida por suposição.

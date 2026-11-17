@@ -1,0 +1,856 @@
+# I00-FEAT-002.md
+## TRADE SYSTEM V1 — Python Toolchain & Quality
+
+**Document ID:** I00-FEAT-002  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-02  
+**Primary Epic:** TS-EP-01 — Engineering Foundation  
+**Primary Domain:** D07 — Engineering, Quality & Validation  
+**Supporting Domain:** D06 — Infrastructure, Security & DevOps  
+**Functional Owner:** Engineering Architecture  
+**Technical Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 — APPROVED  
+**Epic Baseline:** TS-EP-01 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Predecessor Feature:** I00-FEAT-001 / V1.0 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Approval Reference:** PENDING  
+**Last Updated:** 2026-11-16
+
+---
+
+## 1. Objetivo
+
+### 1.1 Objetivo principal
+
+Estabelecer uma toolchain Python padronizada, reproduzível e verificável para o desenvolvimento do TRADE SYSTEM V1.
+
+A Feature deverá definir como os desenvolvedores, agentes autorizados e pipelines poderão:
+
+- Instalar o ambiente.
+- Resolver dependências.
+- Executar verificações estáticas.
+- Validar tipagem.
+- Executar testes.
+- Identificar versões.
+- Reproduzir resultados.
+- Registrar falhas e evidências.
+
+### 1.2 Necessidade atendida
+
+O sistema exige consistência entre ambientes locais, execução automatizada e futuras entregas.
+
+A ausência de padronização pode provocar:
+
+- Divergência entre versões de dependências.
+- Falhas de instalação.
+- Resultados diferentes entre máquinas.
+- Problemas de tipagem.
+- Defeitos não identificados.
+- Dificuldade de reprodução.
+- Alterações incompatíveis.
+- Inconsistência entre desenvolvimento e CI.
+
+### 1.3 Resultado demonstrável
+
+Ao final da implementação, deverá ser possível preparar um ambiente Python limpo, instalar as dependências fixadas e executar os comandos de qualidade e testes de maneira documentada e reproduzível.
+
+### 1.4 Declaração da Feature
+
+**Como** equipe de engenharia do TRADE SYSTEM V1,  
+**quero** uma toolchain Python versionada e reproduzível,  
+**para** desenvolver, validar e integrar componentes com qualidade consistente e evidências verificáveis.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-01.
+- TS-I00-FEAT-CAT-001.
+- I00-FEAT-001.
+- TS-DOC-STD-V1.0.
+- TS-DOC-TRC-001.
+- TS-DOC-GAP-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+
+### 2.2 ADRs
+
+A Feature deverá observar as decisões técnicas TS-ADR-089–098 aplicáveis.
+
+Os vínculos individuais permanecerão UNVERIFIED até conferência dos textos originais.
+
+Nenhum conteúdo específico de ADR será reconstruído por inferência.
+
+### 2.3 Componentes
+
+O domínio D07 será responsável pela qualidade e validação técnica.
+
+O domínio D06 fornecerá a infraestrutura de execução e automação aplicável.
+
+Os IDs individuais dos componentes deverão ser confirmados no catálogo arquitetural.
+
+### 2.4 Fluxos
+
+A toolchain fornecerá suporte transversal aos fluxos arquiteturais, mas não implementará diretamente F01–F10.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Seleção e controle de versão Python.
+- Gestão de dependências com uv.
+- Configuração de pyproject.toml.
+- Lockfile.
+- Ambiente virtual isolado.
+- Configuração de Ruff.
+- Configuração de mypy.
+- Configuração de pytest.
+- Configuração de Hypothesis.
+- Convenções de execução.
+- Scripts ou comandos de qualidade.
+- Documentação de bootstrap.
+- Verificação de reprodutibilidade.
+- Relatórios de validação.
+- Integração futura com CI/CD.
+
+### 3.2 Excluído
+
+- Implementação do pipeline GitHub Actions.
+- Implantação de infraestrutura produtiva.
+- Treinamento de modelos PPO.
+- Backtesting quantitativo.
+- Execução de ordens financeiras.
+- Integração operacional com Binance.
+- Implantação LIVE.
+- Definição de estratégias de mercado.
+- Homologação de gates.
+
+### 3.3 Fronteiras
+
+**I00-FEAT-001:** estrutura do repositório.
+
+**I00-FEAT-002:** ferramentas e verificações de engenharia Python.
+
+**I00-FEAT-011:** execução automatizada das verificações no CI/CD.
+
+A separação deverá evitar duplicação de ownership.
+
+---
+
+## 4. Stack aprovada
+
+| Ferramenta | Responsabilidade |
+|---|---|
+| Python 3.12+ | Runtime |
+| uv | Dependências e ambiente |
+| Ruff | Lint e formatação |
+| mypy | Tipagem estática |
+| pytest | Testes automatizados |
+| Hypothesis | Testes baseados em propriedades |
+| pyproject.toml | Configuração Python |
+| uv.lock | Resolução fixada de dependências |
+
+### 4.1 Política de versões
+
+A baseline permite Python 3.12 ou superior, sujeito à compatibilidade aprovada.
+
+A versão exata do interpretador e das ferramentas deverá ser fixada e registrada durante a implementação.
+
+Não será presumido que uma versão futura do Python seja automaticamente compatível.
+
+### 4.2 Política de atualização
+
+Atualizações de ferramentas e dependências deverão:
+
+1. Possuir justificativa.
+2. Identificar versões anteriores e novas.
+3. Avaliar compatibilidade.
+4. Executar verificações aplicáveis.
+5. Registrar evidências.
+6. Seguir Change Control quando necessário.
+
+---
+
+## 5. Gestão de dependências
+
+### 5.1 Ferramenta
+
+O uv será utilizado para resolver e instalar dependências Python.
+
+### 5.2 Lockfile
+
+O arquivo `uv.lock` deverá registrar a resolução aprovada das dependências.
+
+### 5.3 Instalação reproduzível
+
+A instalação deverá utilizar as versões fixadas, sem atualização implícita não autorizada.
+
+### 5.4 Grupos de dependências
+
+A organização deverá distinguir dependências de execução e desenvolvimento, conforme necessidade.
+
+Grupos adicionais poderão ser definidos para testes ou ferramentas específicas, desde que justificados.
+
+### 5.5 Dependências transitivas
+
+As versões transitivas deverão ser controladas pelo mecanismo de lock.
+
+### 5.6 Fontes de pacotes
+
+Fontes de dependências deverão ser identificadas e autorizadas.
+
+### 5.7 Segurança
+
+Dependências não deverão exigir inclusão de segredos no repositório.
+
+### 5.8 Integridade
+
+A instalação deverá utilizar mecanismos de integridade disponíveis e aprovados.
+
+### 5.9 Falhas
+
+Uma instalação incompatível ou não reproduzível deverá resultar em falha explícita, não em substituição silenciosa de versões.
+
+---
+
+## 6. Configuração do projeto
+
+### 6.1 pyproject.toml
+
+Deverá conter as configurações Python necessárias à toolchain.
+
+### 6.2 .python-version
+
+Deverá indicar a versão selecionada do interpretador.
+
+### 6.3 uv.lock
+
+Deverá ser versionado conforme política aprovada.
+
+### 6.4 Ambientes virtuais
+
+Deverão ser isolados e não versionados no Git.
+
+### 6.5 Configurações compartilhadas
+
+As configurações deverão ser centralizadas quando isso reduzir duplicação sem comprometer o isolamento modular.
+
+### 6.6 Configurações por pacote
+
+Exceções locais poderão existir quando houver justificativa técnica e compatibilidade com a baseline.
+
+---
+
+## 7. Ruff — Lint e formatação
+
+### 7.1 Objetivo
+
+Padronizar estilo e detectar problemas estáticos de código.
+
+### 7.2 Responsabilidades
+
+- Verificar regras de lint aprovadas.
+- Verificar formatação.
+- Detectar padrões problemáticos cobertos pelas regras.
+- Produzir resultados consistentes.
+- Permitir execução local e em CI.
+
+### 7.3 Política de configuração
+
+As regras deverão ser versionadas.
+
+### 7.4 Supressões
+
+Supressões deverão ser justificadas e localizadas.
+
+### 7.5 Critério de falha
+
+Violações de regras obrigatórias deverão resultar em falha da verificação.
+
+### 7.6 Limites
+
+A aprovação do Ruff não comprova ausência de defeitos funcionais.
+
+---
+
+## 8. mypy — Tipagem estática
+
+### 8.1 Objetivo
+
+Verificar consistência dos tipos Python e reduzir incompatibilidades detectáveis estaticamente.
+
+### 8.2 Escopo
+
+O escopo de análise deverá incluir os pacotes e aplicações implementados.
+
+### 8.3 Configuração
+
+O nível de rigor deverá ser definido e versionado.
+
+### 8.4 Exclusões
+
+Exclusões deverão possuir justificativa.
+
+### 8.5 Bibliotecas externas
+
+Incompatibilidades de tipagem deverão ser tratadas de maneira explícita.
+
+### 8.6 Critério de falha
+
+Erros de tipagem cobertos pelas regras obrigatórias deverão bloquear a verificação.
+
+### 8.7 Limites
+
+Tipagem estática não substitui testes de comportamento.
+
+---
+
+## 9. pytest — Testes automatizados
+
+### 9.1 Objetivo
+
+Estabelecer um mecanismo padronizado para descoberta e execução de testes.
+
+### 9.2 Organização
+
+Os testes deverão seguir a estrutura aprovada em I00-FEAT-001.
+
+### 9.3 Categorias
+
+Deverão ser suportadas, conforme aplicabilidade:
+
+- Unit.
+- Contract.
+- Integration.
+- Property-based.
+- Resilience.
+- Security.
+- End-to-end.
+
+### 9.4 Fixtures
+
+Fixtures deverão ser reutilizáveis, controladas e isoladas.
+
+### 9.5 Marcadores
+
+Marcadores poderão distinguir categorias, dependências e requisitos de ambiente.
+
+### 9.6 Falhas
+
+Falhas de testes obrigatórios deverão produzir resultado não aprovado.
+
+### 9.7 Relatórios
+
+As execuções deverão permitir registrar resultados, versões e referências de evidência.
+
+### 9.8 Ausência de testes
+
+A ausência de testes obrigatórios não poderá ser interpretada como sucesso.
+
+---
+
+## 10. Hypothesis — Property-Based Testing
+
+### 10.1 Objetivo
+
+Permitir verificação automatizada de propriedades e invariantes sobre conjuntos variados de entradas.
+
+### 10.2 Aplicações previstas
+
+- Validação de estruturas de dados.
+- Serialização e desserialização.
+- Idempotência.
+- Restrições de domínio.
+- Tratamento de entradas inválidas.
+- Invariantes de contratos.
+
+### 10.3 Reprodutibilidade
+
+Seeds, exemplos de falha e configurações relevantes deverão ser registrados quando aplicável.
+
+### 10.4 Casos reduzidos
+
+Falhas minimizadas deverão ser preservadas como referência para regressão.
+
+### 10.5 Limites
+
+Testes baseados em propriedades não substituem testes de integração e validação operacional.
+
+---
+
+## 11. Comandos padronizados
+
+A implementação deverá definir uma interface documentada para:
+
+| Operação | Finalidade |
+|---|---|
+| Environment Setup | Preparar ambiente |
+| Dependency Sync | Instalar dependências fixadas |
+| Lint Check | Executar lint |
+| Format Check | Verificar formatação |
+| Type Check | Executar mypy |
+| Unit Tests | Executar testes unitários |
+| Contract Tests | Executar testes de contrato |
+| Integration Tests | Executar testes de integração |
+| Property Tests | Executar Hypothesis |
+| Quality Check | Executar conjunto obrigatório |
+
+Os comandos específicos deverão ser definidos e validados durante a implementação.
+
+Esta especificação não presume que scripts ou comandos personalizados já existam.
+
+---
+
+## 12. Comportamento esperado
+
+### 12.1 Cenário principal
+
+**Given:** repositório estruturado e versão Python compatível disponível.
+
+**When:** o procedimento documentado de bootstrap for executado.
+
+**Then:**
+
+- O ambiente virtual será preparado.
+- As dependências fixadas serão instaladas.
+- As ferramentas estarão disponíveis.
+- Os comandos de qualidade poderão ser executados.
+- Os resultados serão identificáveis.
+- Nenhuma operação financeira será executada.
+
+### 12.2 Ambiente limpo
+
+**Given:** workspace novo sem dependências previamente instaladas.
+
+**When:** o procedimento de instalação for executado.
+
+**Then:** a resolução deverá respeitar o lockfile e produzir um ambiente compatível com a configuração aprovada.
+
+### 12.3 Dependência incompatível
+
+**Given:** uma dependência incompatível com a configuração aprovada.
+
+**When:** a instalação ou verificação for executada.
+
+**Then:** deverá ocorrer falha explícita e rastreável.
+
+### 12.4 Código com violação de lint
+
+**Given:** código que viola regra obrigatória.
+
+**When:** Ruff for executado.
+
+**Then:** a verificação deverá falhar.
+
+### 12.5 Código com erro de tipagem
+
+**Given:** código que viola regra de tipagem obrigatória.
+
+**When:** mypy for executado.
+
+**Then:** a verificação deverá falhar.
+
+### 12.6 Teste funcional com falha
+
+**Given:** teste obrigatório com resultado divergente.
+
+**When:** pytest for executado.
+
+**Then:** o resultado deverá ser FAIL, sem mascaramento.
+
+### 12.7 Configuração ausente
+
+**Given:** arquivo ou configuração obrigatória ausente.
+
+**When:** a verificação correspondente for executada.
+
+**Then:** a falha deverá ser identificada e documentada.
+
+---
+
+## 13. Contratos e interfaces
+
+### 13.1 Contratos de domínio
+
+Esta Feature não define diretamente contratos financeiros ou de eventos.
+
+### 13.2 Interfaces de engenharia
+
+Deverá estabelecer interfaces documentadas para:
+
+- Instalação.
+- Lint.
+- Formatação.
+- Tipagem.
+- Testes.
+- Relatórios.
+- Identificação de versões.
+
+### 13.3 Integração com CI/CD
+
+A I00-FEAT-011 deverá utilizar as mesmas verificações obrigatórias aprovadas para execução local.
+
+### 13.4 Compatibilidade
+
+Alterações nas interfaces de execução deverão ser versionadas quando afetarem consumidores ou automações.
+
+---
+
+## 14. Dados e persistência
+
+### 14.1 Persistência operacional
+
+Não aplicável.
+
+### 14.2 Arquivos de configuração
+
+Deverão permanecer versionados.
+
+### 14.3 Lockfile
+
+Deverá representar as dependências fixadas.
+
+### 14.4 Resultados de testes
+
+Relatórios deverão ser armazenados ou publicados conforme política de evidências.
+
+### 14.5 Dados sensíveis
+
+Não deverão ser incluídos em logs, fixtures ou relatórios.
+
+### 14.6 Banco de dados
+
+A configuração e persistência do PostgreSQL pertencem à I00-FEAT-004.
+
+---
+
+## 15. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação proposta |
+|---|---|---|
+| Reprodutibilidade | Ambiente reconstruível | Bootstrap limpo |
+| Consistência | Mesmas regras locais e CI | Comparação de execução |
+| Manutenibilidade | Configuração centralizada | Revisão técnica |
+| Qualidade | Verificações obrigatórias | Relatórios de ferramentas |
+| Segurança | Dependências e segredos controlados | Verificações de segurança |
+| Auditabilidade | Versões identificadas | Manifesto de ambiente |
+| Testabilidade | Descoberta e execução de testes | Execução pytest |
+| Evolutividade | Suporte aos pacotes futuros | Revisão de configuração |
+
+Não serão definidos limiares quantitativos sem aprovação.
+
+---
+
+## 16. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| I00-FEAT-001 | Feature precedente | APPROVED documentalmente |
+| TS-ENG-I00-V1.0 | Baseline técnica | APPROVED |
+| TS-EP-01 | Épico | APPROVED |
+| TS-I00-FEAT-CAT-001 | Catálogo | APPROVED |
+| Python Runtime | Dependência técnica | NOT_VERIFIED |
+| uv | Ferramenta | NOT_VERIFIED |
+| Ruff | Ferramenta | NOT_VERIFIED |
+| mypy | Ferramenta | NOT_VERIFIED |
+| pytest | Ferramenta | NOT_VERIFIED |
+| Hypothesis | Ferramenta | NOT_VERIFIED |
+| Repository Snapshot | Fonte técnica | NOT_INSPECTED |
+
+A aprovação documental de I00-FEAT-001 não significa que sua estrutura já esteja implementada.
+
+---
+
+## 17. Histórias técnicas
+
+O vínculo da I00-FEAT-002 com histórias do backlog TS-ST-001–024 deverá ser confirmado contra os registros originais.
+
+**Story Mapping:** PENDING.
+
+Nenhum Story ID será atribuído por inferência.
+
+Caso não exista história adequada, uma nova história deverá ser proposta e aprovada conforme a governança do backlog.
+
+---
+
+## 18. Estratégia de testes
+
+### 18.1 Teste de bootstrap
+
+Preparar o ambiente a partir de um workspace limpo.
+
+### 18.2 Teste de lockfile
+
+Verificar que a instalação respeita as versões fixadas.
+
+### 18.3 Teste de lint
+
+Introduzir violação controlada e verificar falha.
+
+### 18.4 Teste de formatação
+
+Verificar detecção de formatação divergente.
+
+### 18.5 Teste de tipagem
+
+Introduzir erro controlado e verificar falha.
+
+### 18.6 Teste de descoberta
+
+Verificar que pytest identifica os testes esperados.
+
+### 18.7 Teste de falha funcional
+
+Verificar que testes com falha produzem resultado não aprovado.
+
+### 18.8 Teste property-based
+
+Verificar execução de propriedades e reprodução de casos de falha.
+
+### 18.9 Teste de isolamento
+
+Verificar ausência de credenciais LIVE e de ações financeiras.
+
+### 18.10 Teste de integração com CI
+
+Verificar posteriormente que o CI utiliza a mesma configuração e os mesmos critérios obrigatórios.
+
+---
+
+## 19. Critérios de aceite
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| FEAT002-AC01 | Versão Python selecionada e documentada | Configuração e relatório |
+| FEAT002-AC02 | Dependências fixadas | Lockfile |
+| FEAT002-AC03 | Instalação reproduzível | Teste de bootstrap |
+| FEAT002-AC04 | Ruff configurado e verificável | Relatório de lint |
+| FEAT002-AC05 | Formatação verificável | Relatório de formatação |
+| FEAT002-AC06 | mypy configurado e verificável | Relatório de tipagem |
+| FEAT002-AC07 | pytest configurado | Relatório de descoberta e execução |
+| FEAT002-AC08 | Hypothesis disponível | Teste property-based |
+| FEAT002-AC09 | Falhas obrigatórias bloqueiam aprovação | Testes negativos |
+| FEAT002-AC10 | Interface de execução documentada | Procedimento validado |
+| FEAT002-AC11 | Segurança e isolamento preservados | Verificação de segurança |
+| FEAT002-AC12 | Evidências rastreáveis | Evidence Bundle |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+Os critérios contribuem para:
+
+- EP01-AC02 — Toolchain e dependências controladas.
+- EP01-AC08 — CI com verificações obrigatórias.
+- I00-AC01 — Build reproduzível.
+- I00-AC02 — Dependências fixadas.
+
+Esses vínculos são propostas documentais e deverão ser reconciliados na Traceability Matrix.
+
+---
+
+## 20. Segurança e governança
+
+### 20.1 Segregação
+
+A toolchain deverá operar em ambiente de desenvolvimento autorizado.
+
+### 20.2 LIVE
+
+Nenhuma ferramenta deverá executar operações financeiras LIVE.
+
+### 20.3 Segredos
+
+Credenciais não deverão ser incluídas em configurações versionadas ou relatórios.
+
+### 20.4 Dependências
+
+Fontes de pacotes deverão seguir políticas aprovadas.
+
+### 20.5 Agentes
+
+O Codex deverá utilizar a toolchain conforme as permissões e baselines aplicáveis.
+
+### 20.6 Alterações
+
+Atualizações de dependências e ferramentas deverão preservar rastreabilidade e passar pelas verificações necessárias.
+
+### 20.7 Falhas
+
+Verificações obrigatórias não poderão ser ignoradas para produzir aprovação artificial.
+
+---
+
+## 21. Observabilidade e evidências
+
+A execução das ferramentas deverá permitir registrar:
+
+- Versão Python.
+- Versões das ferramentas.
+- Versão do lockfile.
+- Commit.
+- Ambiente.
+- Comando executado.
+- Timestamp.
+- Resultado.
+- Código de saída.
+- Relatório.
+- Referência de evidência.
+
+Essas informações deverão integrar os registros de teste e o Evidence Bundle, conforme aplicabilidade.
+
+---
+
+## 22. Evidências esperadas
+
+| Referência proposta | Evidência |
+|---|---|
+| EV-FEAT002-01 | Inventário de versões |
+| EV-FEAT002-02 | Lockfile validado |
+| EV-FEAT002-03 | Bootstrap em ambiente limpo |
+| EV-FEAT002-04 | Relatório Ruff |
+| EV-FEAT002-05 | Relatório mypy |
+| EV-FEAT002-06 | Relatório pytest |
+| EV-FEAT002-07 | Resultado Hypothesis |
+| EV-FEAT002-08 | Testes negativos |
+| EV-FEAT002-09 | Verificação de segurança |
+| EV-FEAT002-10 | Procedimento reproduzível |
+| EV-FEAT002-11 | Manifesto de integridade |
+
+Os identificadores deverão ser reconciliados com a convenção oficial de evidências antes do registro definitivo.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 23. Riscos e lacunas
+
+| Referência | Risco ou lacuna | Tratamento |
+|---|---|---|
+| DOC-GAP-003 | ADRs individuais não verificadas | Conferir fontes |
+| DOC-GAP-004 | ADRs técnicas não formalizadas integralmente | Recuperar registros |
+| DOC-GAP-005 | Rastreabilidade incompleta | Confirmar vínculos |
+| DOC-GAP-006 | História da Feature ainda não identificada | Refinar backlog |
+| DOC-GAP-007 | Repositório não auditado | Inspecionar antes de implementar |
+| DOC-GAP-008 | Owners pendentes | Formalizar responsáveis |
+
+Riscos adicionais de dependências, compatibilidade e reprodutibilidade deverão ser avaliados durante o refinamento técnico.
+
+A aprovação da Feature não encerrará lacunas automaticamente.
+
+---
+
+## 24. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. A baseline técnica estiver verificada.
+3. A estrutura da Feature precedente estiver disponível.
+4. A versão Python estiver definida.
+5. As configurações de ferramentas estiverem especificadas.
+6. A política de dependências estiver definida.
+7. Os comandos obrigatórios estiverem especificados.
+8. As histórias estiverem identificadas.
+9. Os critérios de aceite estiverem testáveis.
+10. A estratégia de testes estiver aprovada.
+11. Os owners estiverem definidos.
+12. As lacunas bloqueantes estiverem resolvidas.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação documental não altera automaticamente esse estado.
+
+---
+
+## 25. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- O ambiente estiver implementado.
+- Os critérios FEAT002-AC01–12 estiverem atendidos.
+- O bootstrap reproduzível estiver demonstrado.
+- As verificações estáticas estiverem operacionais.
+- Os testes estiverem executáveis.
+- As falhas obrigatórias forem detectadas.
+- As configurações estiverem versionadas.
+- As evidências estiverem verificadas.
+- A rastreabilidade estiver atualizada.
+- As lacunas bloqueantes estiverem resolvidas.
+- A aprovação competente estiver registrada.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite desta Feature não substitui o aceite do TS-EP-01, I00 ou G0.
+
+---
+
+## 26. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-01 → I00-FEAT-002 → História → Teste → Evidência**
+
+### Estados iniciais
+
+- Epic Link: VERIFIED documentalmente.
+- Work Package Link: VERIFIED documentalmente.
+- Predecessor Feature Link: VERIFIED documentalmente.
+- Story Link: PENDING.
+- ADR Links: UNVERIFIED.
+- Component Links: UNVERIFIED.
+- Requirement Links: UNVERIFIED.
+- Test Links: PLANNED.
+- Evidence Links: PLANNED.
+
+Vínculos não verificados não poderão ser promovidos automaticamente a VERIFIED.
+
+---
+
+## 27. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-16 | PENDING | Especificação inicial Python Toolchain & Quality | PENDING |
+
+---
+
+## 28. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-002 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEAT-003.md
+
+**Restriction:** não avançar antes da aprovação desta Feature.

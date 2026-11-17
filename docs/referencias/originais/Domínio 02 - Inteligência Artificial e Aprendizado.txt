@@ -1,0 +1,552 @@
+# TRADE SYSTEM — Validação Arquitetural V1
+
+Domínio 02 · Inteligência Artificial e Aprendizado
+
+Vamos estruturar o Domínio 02 — AI & Learning Engine, seguindo o mesmo método utilizado na aprovação do Domínio 01.
+
+Neste domínio, definiremos como o Trade System utilizará Inteligência Artificial para interpretar o mercado, tomar decisões operacionais, aprender com experiências e evoluir seus modelos de forma controlada.
+
+A premissa central será:
+
+> O agente de IA propõe decisões de trading. O sistema de risco autoriza, o motor de execução operacionaliza e o ambiente de aprendizado avalia os resultados para melhorar futuras versões do agente.
+
+O objetivo é construir uma solução capaz de operar autonomamente 24×7, mas com supervisão humana, rastreabilidade e mecanismos independentes de proteção de capital.
+
+## 1. Componentes propostos
+
+Minha recomendação é organizar o domínio em três componentes principais e quatro serviços internos de suporte.
+
+Agente 01
+	Research & Intelligence
+
+Agente 02
+	Trading Agent
+
+Learning Engine
+	Training & Evaluation
+
+Serviços internos de suporte
+	Observation Builder
+		Estado para inferência
+	Inference Runtime
+		Execução do modelo
+	Trading Environment
+		Simulação e reward
+	Model Registry
+		Versões e aprovação
+
+Esses sete componentes são responsabilidades lógicas, não necessariamente sete microsserviços. Para o MVP, podemos implementá-los em módulos de uma mesma aplicação, preservando contratos claros.
+
+## 2. Arquitetura conceitual proposta
+
+Domínio 01 — Market State Engine
+	Dados normalizados, features e contexto de mercado
+
+Agente 01
+	Pesquisa e oportunidades
+
+Observation Builder
+	Market + Position + Portfolio + Risk
+
+Agente 02 — Trading Agent
+	Inference Runtime · Política de decisão
+	Trading Intent: HOLD / OPEN / REDUCE / CLOSE
+
+Control Manager → Risk Engine → Execution Engine
+	Domínios de controle, risco e execução
+
+Eventos, execuções e resultados
+	Event Store · Position Manager · Analytics
+
+Dados históricos e resultados alimentam experimentos offline
+
+Learning Engine
+	Trading Environment
+	Training PPO / SAC
+	Backtesting & Evaluation
+	Model Registry
+
+Somente modelos validados e aprovados retornam ao Inference Runtime
+
+O fluxo de aprendizado não implica que o modelo operacional será atualizado após cada trade. Recomendo treinamento offline, avaliação independente e promoção controlada de versões.
+
+## 3. Responsabilidades dos componentes
+
+### D02-C01 — Agente 01: Research & Market Intelligence
+
+Responsabilidade: compreender o contexto de mercado, identificar oportunidades e produzir informações para apoiar decisões de investimento e trading.
+
+| Entrada                    | Processamento                              | Saída               |
+| -------------------------- | ------------------------------------------ | ------------------- |
+| Market State               | Regime, tendência, liquidez e volatilidade | Market Context      |
+| Dados de ativos            | Pesquisa, classificação e ranking          | Opportunity Ranking |
+| Smart Money / Price Action | Identificação de estruturas                | Market Signals      |
+| Fontes externas            | Contexto macro e on-chain                  | Research Insights   |
+
+O Agente 01 não executará ordens. Sua saída poderá influenciar o Agente 02, mas não terá autoridade para obrigá-lo a abrir posições.
+
+Proposta: definir seu contrato conceitual agora e deixar a implementação completa para uma evolução posterior ao MVP.
+
+### D02-C02 — Agente 02: Trading Agent
+
+Responsabilidade: selecionar a ação operacional mais adequada com base na observação recebida e na política aprendida.
+
+Espaço de ações proposto — V1
+
+HOLD
+	Não alterar posição
+
+OPEN_LONG
+	Abrir posição comprada
+
+OPEN_SHORT
+	Abrir posição vendida
+
+REDUCE
+	Reduzir exposição
+
+CLOSE
+	Encerrar posição
+
+OPEN_SHORT será válido somente em mercados que permitam venda a descoberto, como Futuros. O contrato deve aplicar máscaras de ações inválidas conforme o mercado e a posição.
+
+Minha recomendação para o MVP é que o agente escolha direção e ação, enquanto o Risk Engine e o Position Manager determinem ou limitem tamanho, alavancagem e proteção da posição.
+
+Isso reduz a complexidade inicial do Reinforcement Learning e evita entregar ao modelo autoridade irrestrita sobre a exposição financeira.
+
+Posteriormente, podemos experimentar ações contínuas para dimensionamento de posições.
+
+### D02-C03 — Learning Engine
+
+Responsabilidade: desenvolver, treinar, avaliar e selecionar modelos candidatos à operação.
+
+| Subcomponente       | Responsabilidade                                                  |
+| ------------------- | ----------------------------------------------------------------- |
+| Trading Environment | Simular transições de estado, ações e resultados                  |
+| Training Pipeline   | Treinar PPO, SAC e outros algoritmos                              |
+| Backtesting Engine  | Avaliar modelos em dados históricos não utilizados no treinamento |
+| Experiment Tracker  | Registrar parâmetros, datasets, seeds e resultados                |
+| Model Registry      | Versionar modelos e seus artefatos                                |
+| Model Evaluation    | Comparar retorno, risco, custos e estabilidade                    |
+| Promotion Pipeline  | Controlar aprovação e disponibilização de modelos                 |
+
+O Learning Engine não deve alterar diretamente o modelo ativo em produção.
+
+## 4. Trading Observation — Contrato entre dados e IA
+
+O Domínio 01 aprovou a separação entre Market, Position, Portfolio e Risk State.
+
+Agora precisamos definir como esses estados serão combinados para a inferência.
+
+Trading Observation
+	Market State
+		Preço, tendência, volatilidade, SMC
+
+	Position State
+		Direção, quantidade, PnL, duração
+
+	Portfolio State
+		Capital, exposição, saldos
+
+	Risk State
+		Limites, drawdown, capacidade
+				↓
+Observation Builder
+	Sincronização · Normalização · Validação · Versionamento
+				↓
+Vetor de observação do Trading Agent
+
+O vetor poderá conter janelas históricas de features, não apenas um snapshot. Por exemplo, os últimos 64 candles de 5 minutos e o contexto de 15 minutos e 1 hora.
+
+O tamanho da janela ainda será um hiperparâmetro experimental.
+
+Cada observação deverá carregar identificadores de versão, instante de referência e qualidade dos dados, permitindo reconstruir exatamente o que o agente recebeu.
+
+## 5. Trading Environment — Ambiente de Deep Reinforcement Learning
+
+Este componente merece atenção especial porque será responsável por ensinar o agente.
+
+Proponho adotar uma interface compatível com o padrão Gymnasium, separando:
+- Observation Space: informações disponíveis ao agente.
+- Action Space: ações permitidas.
+- Transition: atualização do estado após uma ação.
+- Reward: recompensa ou penalidade.
+- Termination: condições de encerramento do episódio.
+
+Historical Market Data
+	Dados históricos e features point-in-time
+			↓
+Trading Environment
+	Simulador de mercado e execução
+			↓ ^
+RL Agent
+	Observation → Action
+			↓
+Execution Simulator
+	Taxas, slippage, funding, preenchimentos
+Reward Engine
+	Retorno, risco e penalidades
+
+O ambiente retorna próxima observação, recompensa e condições de término para o próximo passo de aprendizado.
+
+O simulador precisa representar condições que existem no mercado real: spread, taxas, slippage, latência, execução parcial, funding e, para Futuros, margem e liquidação.
+
+A fidelidade da simulação será uma limitação importante. Um resultado positivo em backtest não comprova desempenho equivalente em produção.
+
+### Reward Function — proposta inicial
+
+Eu não adotaria apenas PnL como recompensa.
+
+Uma formulação inicial para experimentação seria:
+	\\[ r_t = \Delta E_t -\lambda_1 DD_t -\lambda_2 T_t -\lambda_3 V_t \\]
+
+Onde:
+	- \\(\Delta E_t\\): variação do patrimônio líquido, já considerando custos operacionais.
+	- \\(DD_t\\): penalidade de drawdown.
+	- \\(T_t\\): penalidade por turnover excessivo.
+	- \\(V_t\\): penalidade por violações ou aproximação de limites de risco.
+
+Os coeficientes \\(\lambda\\) deverão ser definidos experimentalmente.
+
+Precisaremos evitar dupla contagem de custos e validar se a função de recompensa realmente produz comportamentos desejáveis.
+
+Importante: a meta de 30% líquido ao mês permanece uma hipótese de negócio, não um retorno garantido nem uma condição de sucesso suficiente para aprovar o agente.
+
+## 6. Estratégia de modelos de IA
+
+Não recomendo selecionar PPO como algoritmo definitivo antes dos experimentos.
+
+| Modelo                    | Papel proposto                                                       |
+| ------------------------- | -------------------------------------------------------------------- |
+| PPO                       | Principal candidato inicial para ações discretas                     |
+| SAC                       | Candidato para ações contínuas ou híbridas, com adaptações adequadas |
+| DQN                       | Alternativa para ações discretas                                     |
+| Estratégia determinística | Baseline para comparação                                             |
+| Buy & Hold                | Referência de exposição passiva                                      |
+
+O objetivo não será descobrir qual modelo gera o maior lucro isoladamente, mas qual apresenta melhor desempenho ajustado ao risco e maior estabilidade fora da amostra.
+
+### Processo de avaliação
+	1. Treinamento: períodos históricos selecionados, com custos e regras de execução simulados.
+	2. Validação: ajuste de hiperparâmetros em períodos separados.
+	3. Walk-forward: avaliação cronológica em janelas sucessivas.
+	4. Teste fora da amostra: avaliação final em dados não utilizados na seleção.
+	5. Paper Trading: observação em mercado real sem exposição financeira.
+	6. Produção controlada: capital limitado, monitoramento e critérios de reversão.
+
+As métricas mínimas serão PnL líquido, drawdown máximo, Sharpe/Sortino quando estatisticamente aplicáveis, Profit Factor, turnover, custos, exposição, taxa de liquidação e estabilidade entre regimes de mercado.
+
+Também devemos registrar múltiplas seeds e intervalos de incerteza, evitando escolher modelos por resultados pontuais favoráveis.
+
+## 7. Governança e ciclo de vida dos modelos
+Recomendo implementar um fluxo de promoção de modelos com estados explícitos:
+
+	CANDIDATE
+		Modelo treinado e registrado
+			↓
+	VALIDATED
+		Aprovado nos testes offline
+			↓
+	PAPER
+		Em avaliação sem capital real
+			↓
+	APPROVED
+		Autorizado para implantação
+			↓
+	PRODUCTION
+		Modelo operacional ativo
+
+A substituição de modelos em produção deverá exigir aprovação explícita, verificações de compatibilidade, registro de versão e possibilidade de rollback.
+O aprendizado contínuo significará coletar resultados, detectar degradação, retreinar e revalidar periodicamente, e não permitir que o agente modifique seus próprios parâmetros livremente durante a execução real.
+
+## 8. Decisões arquiteturais propostas
+
+Estas são as decisões que precisamos aprovar para estabelecer a baseline do Domínio 02.
+
+## Checklist — Domínio 02
+Validação da arquitetura de Inteligência Artificial
+
+## 0/10
+Decisões avaliadas
+
+1\. Arquitetura dos agentes
+ADR-007
+Manter Agente 01 (Pesquisa), Agente 02 (Operação) e Learning Engine como componentes lógicos independentes.
+Aprovar
+Revisar
+Postergar
+
+2\. Prioridade de implementação
+ADR-008
+Desenvolver inicialmente o Agente 02. O Agente 01 terá contrato definido, mas implementação completa posterior.
+Aprovar
+Revisar
+Postergar
+
+3\. Espaço de ações
+ADR-009
+MVP com ações discretas HOLD, OPEN_LONG, OPEN_SHORT, REDUCE e CLOSE, aplicando restrições conforme mercado e posição.
+Aprovar
+Revisar
+Postergar
+
+4\. Responsabilidade pelo risco
+ADR-010
+O agente propõe ações; dimensionamento, alavancagem e proteção ficam sob políticas independentes de risco.
+Aprovar
+Revisar
+Postergar
+
+5\. Trading Observation
+ADR-011
+Combinar Market, Position, Portfolio e Risk State por um Observation Builder versionado.
+Aprovar
+Revisar
+Postergar
+
+6\. Trading Environment
+ADR-012
+Criar simulador próprio, compatível com Gymnasium, com custos, slippage, funding e regras de execução.
+Aprovar
+Revisar
+Postergar
+
+7\. Modelos de IA
+ADR-013
+Avaliar PPO inicialmente, comparando com SAC quando adequado, DQN e estratégias determinísticas.
+Aprovar
+Revisar
+Postergar
+
+8\. Reward Function
+ADR-014
+Utilizar recompensa baseada em variação patrimonial líquida, com penalidades de risco e turnover, sujeita a experimentação.
+Aprovar
+Revisar
+Postergar
+
+9\. Ciclo de aprendizado
+ADR-015
+Treinamento offline, avaliação walk-forward, paper trading e promoção controlada de versões.
+Aprovar
+Revisar
+Postergar
+
+10\. Inferência e governança
+ADR-016
+Separar treinamento e inferência; somente modelos aprovados podem operar em produção, com rollback disponível.
+Aprovar
+Revisar
+Postergar
+
+Observações e ajustes (opcional)
+
+
+## 9. Pendências técnicas identificadas
+
+Mesmo aprovando a arquitetura conceitual, os seguintes itens precisarão ser especificados antes da implementação.
+
+| ID  | Pendência                                                                |
+| --- | ------------------------------------------------------------------------ |
+| P09 | Definir dimensões, janelas e normalização do Observation Space           |
+| P10 | Especificar ações válidas para Spot e Futures e transições de posição    |
+| P11 | Formalizar a Reward Function e seus coeficientes                         |
+| P12 | Definir fidelidade, limitações e validação do simulador                  |
+| P13 | Estabelecer datasets e metodologia de walk-forward                       |
+| P14 | Definir métricas e critérios mínimos de aprovação                        |
+| P15 | Especificar contratos do Research Agent                                  |
+| P16 | Definir versionamento, promoção e rollback dos modelos                   |
+| P17 | Estabelecer comportamento do agente sob intervenção manual               |
+| P18 | Definir mecanismos de detecção de degradação e gatilhos de retreinamento |
+
+## 10. Próxima etapa
+
+## Domínio 03 — Risco e Execução
+
+Após a aprovação do Domínio 02, validaremos:
+
+- Risk Engine e políticas de proteção de capital.
+- Execution Engine e integração operacional Binance.
+- Position & Portfolio Manager.
+- Tratamento de falhas, liquidações e reconciliação.
+- Contratos com o Control Manager para intervenção manual.
+
+Resultado esperado: estabelecer o fluxo seguro entre a decisão do agente e a execução efetiva das ordens.
+
+Minha recomendação é aprovar as dez decisões propostas como baseline conceitual, mantendo a seleção definitiva de algoritmos, hiperparâmetros, função de recompensa e critérios quantitativos para a fase experimental.
+
+Isso preserva flexibilidade científica no desenvolvimento dos agentes, sem comprometer a segurança ou a rastreabilidade da plataforma.
+
+=====
+
+# TRADE SYSTEM — Arquitetura Conceitual V1
+
+Registro de Validação Arquitetural · D02
+Aprovado
+
+Domínio 02 — Inteligência Artificial e Aprendizado
+
+Consolidamos as dez decisões arquiteturais do Domínio 02, sem ressalvas ou solicitações de alteração.
+
+A partir desta aprovação, o Trade System passa a ter uma definição conceitual para o desenvolvimento, treinamento, avaliação, implantação e governança dos agentes de Inteligência Artificial.
+
+# 10/10
+Decisões aprovadas
+
+# 3
+Componentes principais
+
+# 0
+Ressalvas na aprovação
+Identificação: TS-ARCH-D02-V1.0 · Data: 10/11/2026 · Estado: Baseline conceitual aprovada
+
+## 1. Decisões consolidadas
+
+| ID      | Decisão                     | Definição aprovada                                                                   |
+| ------- | --------------------------- | ------------------------------------------------------------------------------------ |
+| ADR-007 | Arquitetura dos agentes     | Agente 01, Agente 02 e Learning Engine independentes logicamente                     |
+| ADR-008 | Prioridade                  | Agente 02 implementado primeiro; Agente 01 em evolução posterior                     |
+| ADR-009 | Espaço de ações             | HOLD, OPEN_LONG, OPEN_SHORT, REDUCE e CLOSE                                          |
+| ADR-010 | Responsabilidade pelo risco | Agente propõe; políticas independentes controlam exposição, alavancagem e proteção   |
+| ADR-011 | Trading Observation         | Observation Builder combina Market, Position, Portfolio e Risk State                 |
+| ADR-012 | Trading Environment         | Simulador próprio compatível com Gymnasium                                           |
+| ADR-013 | Modelos de IA               | PPO como candidato inicial, com benchmarks de SAC, DQN e estratégias determinísticas |
+| ADR-014 | Reward Function             | Retorno patrimonial líquido com penalidades de risco e turnover                      |
+| ADR-015 | Ciclo de aprendizado        | Treinamento offline, walk-forward, paper trading e promoção controlada               |
+| ADR-016 | Governança                  | Treinamento e inferência separados; modelos versionados, aprovados e reversíveis     |
+
+As decisões ADR-007 a ADR-016 estão aprovadas como baseline conceitual, sem definir antecipadamente hiperparâmetros ou resultados esperados dos experimentos.
+
+## 2. Arquitetura conceitual aprovada
+
+Domínio 01 — Market State Engine
+	Dados de mercado e features validadas
+			↓
+Agente 01
+	Research & Intelligence
+Observation Builder
+	Market · Position · Portfolio · Risk
+			↓
+Agente 02 — Trading Agent
+	Inference Runtime · Política operacional
+	HOLD · OPEN_LONG · OPEN_SHORT · REDUCE · CLOSE
+			↓
+Control Manager → Risk Engine → Execution Engine
+	Autorização e execução fora da autoridade direta da IA
+			↓
+Event Store & Operational Analytics
+	Decisões, operações, resultados e auditoria
+	Dados históricos e resultados para avaliação offline
+			↓
+Learning Engine
+	Trading Environment
+	PPO / SAC / DQN
+	Backtesting & Evaluation
+	Model Registry
+
+	Treinamento e avaliação isolados da execução real
+
+Promoção controlada para o Inference Runtime
+
+## 3. Componentes e responsabilidades aprovados
+
+	D02-C01 — Research & Market Intelligence Agent
+		Identifica oportunidades, regimes e contexto de mercado. Produz informações para o Agente 02, sem autoridade para executar ordens.
+	Implementação completa: evolução posterior ao MVP.
+
+	D02-C02 — Trading Agent
+		Recebe observações estruturadas e produz intenções operacionais. Não possui acesso direto às credenciais da Binance nem pode contornar o Risk Engine.
+	Implementação: prioridade do MVP.
+
+	D02-C03 — Learning Engine
+		Gerencia simulação, treinamento, experimentos, avaliação, comparação, versionamento e promoção controlada dos modelos.
+	Implementação: necessária para desenvolver e validar o Agente 02.
+
+### Serviços internos aprovados
+
+| Serviço             | Responsabilidade                              |
+| ------------------- | --------------------------------------------- |
+| Observation Builder | Construção e validação do vetor de observação |
+| Inference Runtime   | Execução de modelos aprovados                 |
+| Trading Environment | Simulação de estados, ações e recompensas     |
+| Model Registry      | Versionamento e ciclo de vida dos modelos     |
+
+## 4. Políticas de funcionamento estabelecidas
+
+Autonomia com limites: o agente decide qual ação propor, mas a exposição financeira é controlada por mecanismos independentes.
+
+Treinamento isolado: modelos em treinamento não podem enviar ordens reais.
+
+Reprodutibilidade: cada experimento deverá registrar datasets, configurações, hiperparâmetros, seeds, versões e resultados.
+
+Validação cronológica: modelos serão avaliados em períodos fora da amostra, utilizando walk-forward e cenários de diferentes regimes.
+
+Aprendizado controlado: novas versões somente entrarão em produção após avaliação e aprovação.
+
+Intervenção humana: o Control Manager poderá suspender a autoridade operacional do agente sem interromper a observação do mercado.
+
+Retorno ajustado ao risco: a avaliação considerará lucro líquido, drawdown, custos, estabilidade e preservação de capital, não apenas rentabilidade.
+
+## 5. Pendências técnicas
+
+As dez pendências identificadas durante a validação permanecem abertas para detalhamento.
+
+| ID  | Pendência                                              | Componente responsável          |
+| --- | ------------------------------------------------------ | ------------------------------- |
+| P09 | Dimensões, janelas e normalização do Observation Space | Observation Builder             |
+| P10 | Ações válidas por mercado e transições de posição      | Trading Agent                   |
+| P11 | Formulação definitiva da Reward Function               | Learning Engine                 |
+| P12 | Fidelidade e validação do simulador                    | Trading Environment             |
+| P13 | Datasets e metodologia walk-forward                    | Learning Engine                 |
+| P14 | Métricas e critérios mínimos de aprovação              | Model Evaluation                |
+| P15 | Contratos de entrada e saída do Agente 01              | Research Agent                  |
+| P16 | Versionamento, promoção e rollback                     | Model Registry                  |
+| P17 | Comportamento do agente sob intervenção manual         | Trading Agent / Control Manager |
+| P18 | Detecção de degradação e retreinamento                 | Learning Engine                 |
+
+Essas pendências não impedem a aprovação conceitual. Serão tratadas nos respectivos pacotes de especificação e engenharia.
+
+## 6. Situação geral da validação arquitetural
+
+## Trade System V1
+
+2 domínios aprovados
+	D01 — Integração e Dados de Mercado
+		6/6
+	D02 — Inteligência Artificial
+		10/10
+
+# 16
+	ADRs aprovadas
+# 6
+	Componentes principais
+# 18
+	Pendências técnicas
+
+As 18 pendências são itens de detalhamento, não decisões arquiteturais rejeitadas.
+
+## 7. Próximo domínio — Risco e Execução
+
+## Domínio 03 — Risk & Execution Management
+
+Próxima validação arquitetural
+
+Este domínio é crítico porque transforma uma intenção do agente em uma operação financeira real, mantendo limites de risco e mecanismos de intervenção humana.
+
+Validaremos quatro componentes principais:
+
+| Componente                   | Responsabilidade                                                  |
+| ---------------------------- | ----------------------------------------------------------------- |
+| Risk Engine                  | Políticas de risco, dimensionamento, exposição e circuit breakers |
+| Execution Engine             | Gestão de ordens, execução e integração com a Binance             |
+| Position & Portfolio Manager | Posições, patrimônio, margem e PnL                                |
+| Control Manager              | Autoridade entre IA e humano, intervenção manual e emergência     |
+
+Também precisaremos definir como o sistema responderá a falhas de comunicação, execução parcial, divergência de posições, indisponibilidade da corretora, liquidação e perda de conectividade.
+
+O resultado esperado é estabelecer uma arquitetura em que nenhuma intenção de trading se transforme em ordem sem passar pelos controles necessários, preservando também caminhos seguros para reduzir ou encerrar exposições em situações de emergência.
+
+Registro consolidado
+
+O Domínio 02 está aprovado como baseline conceitual V1.0. As decisões ADR-007 a ADR-016 ficam estabelecidas como referência para as próximas etapas.
+

@@ -1,0 +1,95 @@
+{
+  "candidate": "d561026f27fa3920699af41aeea6e1a60bcf89a6",
+  "lock_sha256": "e40093ac899ba45d0d9290942cb66553fc02722d55f7cceeba70f26713970919",
+  "wheel": "psycopg_binary-3.3.8-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+  "url": "https://files.pythonhosted.org/packages/c7/04/aef0b229adc200259d3aec4c8ba17a2ff233505dec8712f37f7168e45c06/psycopg_binary-3.3.8-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+  "sha256": "a7cdba018e4decf3837793c1e18dbe3dd71709adef54892ab83d81c00e866dc3",
+  "files": [
+    {
+      "file": "psycopg_binary/_psycopg.cpython-312-x86_64-linux-gnu.so",
+      "sha256": "d3dd5eccc9d72daac39d19fa56348973a0e2b41ecee9ef7384ac874801f491ee",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary/pq.cpython-312-x86_64-linux-gnu.so",
+      "sha256": "16468c67fd85b13951d1b95ea0207ba693ec485bd840f67c200051fd8bd13882",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libcom_err-2abe824b.so.2.1",
+      "sha256": "5426dcb54dd01c9eedda05e2179f0e47114e8b48a534ffe9e94916e79471b257",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libcrypt-bc2db45e.so.1",
+      "sha256": "e2a6f6ff300e287a60dfc0c6fdb76ee01e333068df7c60b4e87453d942ccda65",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libcrypto-e1ce7bf2.so.3",
+      "sha256": "298b2a993ce4486459bcb758d78e5a7b950372f94bbc3e7defcd46e7ce4b7681",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libgssapi_krb5-497db0c6.so.2.2",
+      "sha256": "ef73998b86c24e54667a843be6d589442dd082e1b9fc605aa15bcc2293858806",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libk5crypto-b1f99d5c.so.3.1",
+      "sha256": "bf04d7ebe3937aba3855c15acbd991482286a484aeea38bb9ced85e772ea2fb0",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libkeyutils-dfe70bd6.so.1.5",
+      "sha256": "c29e41b03cf4b2dffbfb4960946e2b42f82c0ca5d53d231d3f0fc597ba274488",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libkrb5-fcafa220.so.3.3",
+      "sha256": "94dc6413050486a6c8de4b6f3bfdd288390892b72bc68580c6c53929721fa07b",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libkrb5support-d0bcff84.so.0.1",
+      "sha256": "0eb5322b05ac46e4db7ddb779ee0269006dd01801aaa67b84f8e7f753bfdddf2",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/liblber-84b19c6b.so.2.0.200",
+      "sha256": "58ac3832eb8da3026accddd536b438599f47272cbcf21d916f5aacafe017e3ec",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libldap-e4c00d62.so.2.0.200",
+      "sha256": "2416c22943d8cdc0b0580cc981abae699e01c44739d1a3398337b01086ed8eec",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libpcre-9513aab5.so.1.2.0",
+      "sha256": "02eda850e04931656d8af81f5171bff74d8bec1553d3d85c3d32d7fc5efe8864",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libpq-e9b5c9ac.so.5.18",
+      "sha256": "c18e0848d39ac40fa70395c52f07792660cfca23ced0c7e448e8d32beb186c14",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libsasl2-84219a89.so.3.0.0",
+      "sha256": "e84be55110f16f7ca930af373e9f41fa7f4ec60733c013d933d1443ae5056a98",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libselinux-0922c95c.so.1",
+      "sha256": "99e60178aed625f6d2e2af58bccf605b13619b1544058e9f985a2772affb4a88",
+      "version_status": "Origem e backports precisam de confirmação"
+    },
+    {
+      "file": "psycopg_binary.libs/libssl-8bd944e8.so.3",
+      "sha256": "bc5d065b34f8ae624c6b12224d7f8dd9cb40074be9b379a622f0fb73b4cab4b0",
+      "version_status": "Origem e backports precisam de confirmação"
+    }
+  ],
+  "scope": "Inspeção estática do artefato PyPI. Seleção e carregamento no runner ainda não comprovados."
+}

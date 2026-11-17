@@ -1,0 +1,899 @@
+# TRADE SYSTEM — Validação Arquitetural V1
+
+Domínio 05 · Plataforma de Dados, Eventos e Auditoria
+
+O Domínio 05 — Data Platform & Event Architecture estabelecerá a fundação de persistência, integração, rastreabilidade e reprodução histórica do Trade System V1.
+
+Seguiremos o mesmo método dos Domínios 01 a 04: componentes, responsabilidades, arquitetura conceitual, contratos, decisões arquiteturais, pendências técnicas e checklist de aprovação.
+
+A principal diretriz proposta é:
+	> Todo dado relevante para uma decisão ou operação deverá ser identificável, versionável, rastreável e recuperável. Nenhum evento de execução poderá ser considerado confirmado apenas porque foi publicado ou armazenado internamente.
+
+# 6
+Componentes principais
+
+# 14
+ADRs propostas
+
+# 40
+ADRs aprovadas anteriormente
+
+Identificação: TS-ARCH-D05-V1.0 · Dependências: D01–D04 aprovados · Status: proposta de validação
+
+## 1. Objetivos e limites do domínio
+
+O D05 será responsável por armazenar e disponibilizar dados com garantias explícitas de consistência, integridade, temporalidade e rastreabilidade.
+
+Responsabilidades centrais:
+
+- Persistir estados operacionais, configurações, ordens, fills, posições e registros de controle.
+- Preservar dados históricos de mercado e features utilizadas pela IA.
+- Registrar e distribuir eventos entre os componentes.
+- Construir datasets reproduzíveis para treinamento e avaliação.
+- Manter trilhas de auditoria de decisões automáticas e intervenções humanas.
+- Disponibilizar projeções de leitura eficientes para o Operations Portal e o Replay.
+- Garantir backup, recuperação, retenção e isolamento entre ambientes.
+
+Fronteira de responsabilidade: o D05 não decide operações, não autoriza risco e não executa ordens. Ele sustenta os demais domínios com armazenamento, eventos e consultas.
+
+## 2. Componentes propostos
+
+	D05-C01 — Operational Database
+		Persistência transacional dos estados, configurações, políticas, intenções, autorizações, ordens, execuções, posições, saldos e comandos operacionais.
+	Tecnologia-base: PostgreSQL, conforme ADR-005.
+
+	D05-C02 — Event Store & Event Bus
+		Registro durável e distribuição de eventos de domínio, com contratos versionados, ordenação por entidade, publicação confiável e consumo idempotente.
+	Event Store e Event Bus possuem responsabilidades distintas, mesmo que compartilhem infraestrutura no MVP.
+
+	D05-C03 — Historical Market Data Store
+		Armazenamento histórico de OHLCV, trades, dados de order book, funding, open interest e metadados de qualidade, conforme disponibilidade das fontes.
+	Prioridade: BTCUSDT, Binance Spot e USDⓈ-M Futures.
+
+	D05-C04 — Feature & Dataset Store
+		Persistência e versionamento das features, snapshots de observação, datasets, janelas de treinamento, validação e teste.
+	Permite reconstruir exatamente os dados disponibilizados ao agente em cada decisão.
+
+	D05-C05 — Audit & Traceability Engine
+		Correlação entre dados de mercado, observações, modelos, decisões, políticas, ordens, fills, intervenções e resultados.
+	Auditoria append-only, com controles de integridade e acesso.
+
+	D05-C06 — Analytics & Read Models
+		Projeções de consulta para dashboards, posições, performance, indicadores operacionais, relatórios e Strategy Replay.
+	Modelos de leitura derivados, reconstruíveis e separados das tabelas transacionais críticas.
+
+Os seis componentes são módulos lógicos. A aprovação desta arquitetura não implica seis bancos de dados, seis processos ou seis microsserviços.
+
+## 3. Arquitetura conceitual
+
+	D01 — Market Data
+	D02 — AI & Learning
+	D03 — Risk & Execution
+	D04 — Operations
+			↓ ^
+	Data & Event Contracts
+	APIs · Schemas · Outbox · Consumers
+			↓ ^
+	Operational Database
+	Event Store & Bus
+	Historical Market Data
+	Feature & Dataset Store
+	Audit & Traceability
+	Analytics & Read Models
+
+	PostgreSQL + Artefatos Versionados
+Persistência · Integridade · Backup · Recuperação
+
+Visão lógica. A implementação inicial privilegia PostgreSQL e componentes operacionais simples, sem impedir evolução da infraestrutura.
+
+### Decisões estruturantes propostas
+
+	PostgreSQL como plataforma inicial: aproveitar a tecnologia já aprovada no D01, organizando os dados por responsabilidades, com isolamento lógico e permissões específicas.
+
+	Event-driven com entrega confiável: utilizar eventos para propagar mudanças, mas não presumir que a publicação em um barramento garante processamento exatamente uma vez.
+
+	Transactional Outbox: registrar alterações transacionais e eventos pendentes na mesma transação, evitando a situação em que uma mudança é persistida sem que seu evento seja disponibilizado.
+
+	Idempotência no consumo: consumidores devem suportar reentrega de eventos sem duplicar efeitos financeiros ou operacionais.
+
+	Read Models derivados: dashboards e analytics consultam projeções, enquanto os comandos operacionais dependem dos estados autoritativos do D03.
+
+## 4. PostgreSQL — Organização dos dados
+
+Proponho manter o PostgreSQL como banco principal do MVP, utilizando schemas para separar responsabilidades e facilitar a governança.
+
+### Organização lógica sugerida
+
+| Schema      | Entidades principais                                                | Domínio responsável |
+| ----------- | ------------------------------------------------------------------- | ------------------- |
+| `market`    | candles, trades, order_book_snapshots, funding_rates, open_interest | D01                 |
+| `features`  | feature_definitions, feature_values, market_snapshots               | D01 / D02           |
+| `ai`        | models, experiments, model_versions, trading_decisions              | D02                 |
+| `risk`      | risk_policies, risk_decisions, risk_limits, circuit_breakers        | D03                 |
+| `execution` | trading_intents, orders, order_events, fills                        | D03                 |
+| `portfolio` | accounts, balances, positions, position_events, portfolio_snapshots | D03                 |
+| `control`   | control_states, manual_commands, interventions                      | D03                 |
+| `events`    | domain_events, outbox_messages, consumer_checkpoints                | D05                 |
+| `audit`     | audit_records, trace_links, integrity_checkpoints                   | D05                 |
+| `analytics` | trade_performance, portfolio_equity, operational_metrics            | D05 / D04           |
+| `security`  | users, roles, permissions, access_events                            | D04                 |
+
+A divisão por schema não deve ser interpretada como autorização para qualquer componente alterar qualquer tabela. Cada entidade terá um proprietário lógico de escrita, enquanto outros componentes a acessarão por contratos, eventos ou projeções autorizadas.
+
+### Regras para o modelo transacional
+
+- Chaves primárias estáveis, preferencialmente UUID ou identificadores equivalentes.
+- Restrições `UNIQUE` para IDs externos de ordens e execuções, com escopo correto de exchange, conta e mercado.
+- Valores financeiros em `NUMERIC` ou representação decimal exata, nunca `FLOAT` para contabilização.
+- Timestamps armazenados em UTC, com distinção entre horário do evento, horário de recebimento e horário de processamento.
+- Transações ACID para atualizações que precisam ser atomicamente consistentes.
+- Índices por conta, mercado, símbolo, período e identificadores de correlação.
+- Particionamento e políticas de retenção para tabelas de alto volume.
+
+Ponto importante: o PostgreSQL é uma escolha inicial de infraestrutura, não uma decisão de armazenar indefinidamente todos os dados brutos de order book em tabelas transacionais. A estratégia de retenção e armazenamento de dados de alta frequência deverá considerar volume, custo e requisitos de replay.
+
+## 5. Event Store & Event Bus
+
+Recomendo separar claramente dois conceitos.
+
+| Elemento    | Função                                                              |
+| ----------- | ------------------------------------------------------------------- |
+| Event Store | Persistir eventos duráveis para histórico, auditoria e reconstrução |
+| Event Bus   | Distribuir eventos aos consumidores interessados                    |
+
+O Event Store preserva o registro. O Event Bus transporta notificações. Um não substitui automaticamente o outro.
+
+### Arquitetura inicial proposta
+
+	Componente de domínio
+		Exemplo: Execution Engine
+			↓
+	Transação PostgreSQL
+		Atualização do estado + registro Outbox
+			↓
+	Outbox Publisher
+		Publicação assíncrona e recuperável
+			↓
+	Event Bus
+		Distribuição com possibilidade de reentrega
+			↓
+	Read Models
+	Audit Engine
+	Monitoring
+
+### Tecnologia do barramento
+
+Para o MVP, proponho PostgreSQL Outbox + dispatcher persistente, utilizando `LISTEN/NOTIFY` apenas como mecanismo opcional de despertar consumidores, nunca como armazenamento durável de eventos.
+
+A necessidade de um broker dedicado, como Kafka ou RabbitMQ, deverá ser avaliada posteriormente a partir de volume, latência, fan-out, retenção e requisitos de recuperação.
+
+Essa escolha reduz a complexidade operacional inicial, sem eliminar a possibilidade de evolução.
+
+### Garantias propostas
+
+| Garantia             | Estratégia                                   |
+| -------------------- | -------------------------------------------- |
+| Publicação confiável | Transactional Outbox                         |
+| Reentrega            | At-least-once                                |
+| Duplicidade          | Consumidores idempotentes                    |
+| Ordenação            | Sequência por agregado ou entidade           |
+| Recuperação          | Checkpoints e replay dos eventos duráveis    |
+| Compatibilidade      | Schemas versionados                          |
+| Falhas permanentes   | Quarentena e procedimento de reprocessamento |
+
+Não proponho prometer ordenação global de todos os eventos. O requisito será ordenação consistente por agregado, com correlação temporal entre agregados.
+
+Para operações financeiras, a idempotência deve existir também na fronteira de execução da Binance, e não apenas no consumo de eventos.
+
+## 6. Historical Market Data Store
+
+O histórico de mercado deve sustentar simultaneamente:
+
+1. Cálculo de indicadores e features.
+2. Treinamento e validação dos modelos.
+3. Backtesting e simulação.
+4. Reprodução das condições observadas em operações reais.
+5. Investigação de incidentes e divergências.
+
+### Dados previstos
+
+| Categoria   | Dados                                              |
+| ----------- | -------------------------------------------------- |
+| OHLCV       | Candles 1m, 5m, 15m e 1h                           |
+| Trades      | Preço, quantidade, lado/agressor quando disponível |
+| Order Book  | Snapshots e atualizações relevantes                |
+| Derivativos | Funding Rate, Open Interest e métricas disponíveis |
+| Integridade | Gaps, atrasos, duplicidades, origem e correções    |
+| Metadados   | Exchange, mercado, símbolo, intervalo e versão     |
+
+### Política temporal
+
+Cada registro deverá distinguir:
+
+- `event_time`: instante associado ao evento na fonte.
+- `received_at`: instante em que o Trade System recebeu o dado.
+- `available_at`: instante a partir do qual o dado estava validado e disponível para consumo.
+
+Essa distinção é fundamental para impedir lookahead bias em treinamento e backtesting.
+
+Uma feature calculada posteriormente não poderá ser tratada como se estivesse disponível ao agente antes de sua efetiva disponibilização.
+
+### Estratégia de armazenamento
+
+Dados de mercado
+
+BTCUSDT · MVP
+
+	Hot Storage
+		PostgreSQL: candles, dados recentes e consultas operacionais
+
+	Historical Archive
+		Arquivos versionados para históricos volumosos e datasets
+
+Separação lógica proposta. A tecnologia de arquivamento e seus prazos de retenção serão detalhados posteriormente.
+
+## 7. Feature & Dataset Store
+
+O Feature & Dataset Store será a ligação entre os dados de mercado do D01 e o ciclo de aprendizado do D02.
+
+### Entidades propostas
+
+| Entidade                | Responsabilidade                                        |
+| ----------------------- | ------------------------------------------------------- |
+| `FeatureDefinition`     | Nome, fórmula, parâmetros, dependências e versão        |
+| `FeatureValue`          | Valor calculado, período, origem e disponibilidade      |
+| `ObservationSnapshot`   | Vetor efetivamente disponibilizado ao agente            |
+| `DatasetManifest`       | Identidade e composição imutável de um dataset          |
+| `DatasetPartition`      | Divisões cronológicas de treinamento, validação e teste |
+| `ExperimentDatasetLink` | Associação entre experimento, dataset e versão          |
+
+### Versionamento de datasets
+
+Cada dataset deverá registrar, no mínimo:
+
+- Universo de ativos, mercados e intervalos.
+- Período histórico e critérios de seleção.
+- Versões dos dados e features.
+- Política de limpeza, correção e normalização.
+- Separação treino/validação/teste.
+- Hashes ou identificadores de integridade dos artefatos.
+- Data de criação e responsável pelo processo.
+
+Requisito essencial: um modelo aprovado deverá poder ser associado ao dataset e à versão de features utilizados em seu treinamento e avaliação.
+
+O sistema deverá preservar a observação efetivamente consumida pelo agente, ou os dados e artefatos imutáveis suficientes para reconstruí-la de forma determinística.
+
+## 8. Audit & Traceability Engine
+
+Este componente formalizará a rastreabilidade ponta a ponta que já definimos nos Domínios 02, 03 e 04.
+
+### Cadeia de rastreabilidade
+
+	Market State
+		Snapshot + Features + Versões
+			↓
+	Trading Observation
+		Market + Position + Portfolio + Risk
+			↓
+	AI Decision
+		Model Version + Trading Intent
+			↓
+	Risk Decision
+		Policy Version + Authorization
+			↓
+	Execution
+		Order ID + Client Order ID + Fills
+			↓
+	Position & Portfolio
+		Exposição + PnL + Patrimônio
+			↓
+	Outcome & Learning
+		Resultado líquido + Avaliação + Replay
+
+Uma operação pode envolver múltiplas ordens, fills e intervenções. A rastreabilidade deve suportar relações um-para-muitos.
+
+### Identificadores fundamentais
+
+| Identificador          | Finalidade                                           |
+| ---------------------- | ---------------------------------------------------- |
+| `correlation_id`       | Relacionar eventos de uma operação ou fluxo          |
+| `causation_id`         | Identificar o evento que originou outro              |
+| `observation_id`       | Identificar a observação consumida                   |
+| `decision_id`          | Identificar a decisão do agente                      |
+| `risk_decision_id`     | Identificar a avaliação de risco                     |
+| `execution_request_id` | Identificar a solicitação de execução                |
+| `client_order_id`      | Correlacionar a ordem com a Binance                  |
+| `exchange_order_id`    | Identificar a ordem reconhecida pela corretora       |
+| `fill_id`              | Identificar a execução parcial ou total              |
+| `position_id`          | Identificar o ciclo ou a entidade de posição interna |
+| `model_version_id`     | Identificar o modelo utilizado                       |
+| `policy_version_id`    | Identificar a política aplicada                      |
+| `operator_id`          | Identificar o responsável por intervenção humana     |
+
+A rastreabilidade deverá preservar também tentativas rejeitadas, comandos não executados, timeouts, falhas de autorização e alterações de configuração.
+
+### Integridade da auditoria
+
+Recomendo registros append-only com permissões restritas, backups independentes e verificações periódicas de integridade.
+
+Para eventos críticos, poderá ser utilizada uma cadeia de hashes ou mecanismo equivalente de detecção de adulteração.
+
+Append-only não é, por si só, garantia de imutabilidade absoluta. A proteção depende de permissões, infraestrutura, retenção, backups e mecanismos de verificação.
+
+## 9. Analytics & Read Models
+
+Os Read Models serão projeções orientadas à consulta, construídas a partir de estados e eventos operacionais.
+
+| Read Model              | Consumidor               |
+| ----------------------- | ------------------------ |
+| `CurrentOperationsView` | Operations Viewer        |
+| `OpenPositionsView`     | Manual Trading Console   |
+| `PortfolioEquitySeries` | Dashboard e Analytics    |
+| `TradePerformanceView`  | Relatórios de desempenho |
+| `AgentDecisionTimeline` | Strategy Replay          |
+| `RiskEventsView`        | Monitoring & Alerts      |
+| `ExecutionQualityView`  | Analytics de execução    |
+| `AuditTrailView`        | Auditoria e investigação |
+
+### Separação entre comandos e consultas
+
+A arquitetura seguirá uma abordagem CQRS leve:
+
+- Write Model: preserva regras transacionais e estados autoritativos.
+- Read Model: fornece projeções otimizadas para consultas.
+- Event Pipeline: atualiza projeções de forma assíncrona quando adequado.
+
+Não será necessário implementar Event Sourcing integral para todos os agregados.
+
+### Consistência das projeções
+
+As projeções poderão apresentar atraso em relação ao estado operacional real.
+
+Por isso, cada Read Model deverá expor indicadores como:
+
+`last_event_id`, `last_sequence`, `updated_at`, `projection_status` e `data_freshness`.
+
+Regra de segurança: decisões de risco e execução não devem depender de uma projeção eventualmente consistente quando exigirem o estado financeiro autoritativo mais recente.
+
+## 10. Contratos de dados e eventos
+
+Proponho contratos versionados e independentes da implementação interna de cada componente.
+
+### Envelope padrão de evento
+
+```
+{
+  "event_id": "uuid",
+  "event_type": "execution.order.filled",
+  "schema_version": "1.0",
+  "aggregate_type": "order",
+  "aggregate_id": "order-uuid",
+  "aggregate_sequence": 7,
+  "correlation_id": "uuid",
+  "causation_id": "uuid",
+  "environment_id": "PAPER",
+  "account_id": "account-uuid",
+  "source": "execution-engine",
+  "event_time": "2026-11-10T17:00:00Z",
+  "recorded_at": "2026-11-10T17:00:01Z",
+  "payload": {
+    "order_id": "order-uuid",
+    "fill_id": "fill-uuid",
+    "symbol": "BTCUSDT",
+    "market_type": "USD_M_FUTURES",
+    "quantity": "0.001",
+    "price": "100000.00"
+  }
+}
+
+```
+
+Exemplo ilustrativo de estrutura, sem representar uma execução real.
+
+### Famílias de eventos
+
+| Família   | Exemplos                                                        |
+| --------- | --------------------------------------------------------------- |
+| Mercado   | `market.candle.closed`, `market.data.gap_detected`              |
+| Features  | `feature.snapshot.created`, `market_state.updated`              |
+| IA        | `ai.decision.created`, `ai.model.promoted`                      |
+| Risco     | `risk.decision.created`, `risk.limit.breached`                  |
+| Execução  | `execution.order.submitted`, `execution.order.filled`           |
+| Portfólio | `portfolio.position.updated`, `portfolio.reconciliation.failed` |
+| Controle  | `control.mode.changed`, `control.emergency.activated`           |
+| Auditoria | `audit.policy.changed`, `audit.manual_command.recorded`         |
+
+Os nomes definitivos, campos obrigatórios, regras de compatibilidade e contratos de consumo serão especificados na engenharia.
+
+## 11. Segurança, backup e recuperação
+
+A plataforma de dados deverá ter controles próprios, além das proteções dos domínios operacionais.
+
+| Dimensão        | Política conceitual                                        |
+| --------------- | ---------------------------------------------------------- |
+| Acesso          | Menor privilégio e separação de credenciais                |
+| Segregação      | Isolamento entre TRAINING, PAPER e LIVE                    |
+| Criptografia    | Proteção em trânsito e em repouso                          |
+| Integridade     | Constraints, hashes e verificações                         |
+| Backup          | Cópias periódicas e recuperação testada                    |
+| Recuperação     | RPO e RTO formalizados por criticidade                     |
+| Retenção        | Políticas específicas por classe de dados                  |
+| Dados sensíveis | Minimização, mascaramento e controle de acesso             |
+| Exclusão        | Política compatível com obrigações de auditoria e retenção |
+
+O histórico de operações e os dados utilizados para treinamento podem ter requisitos de retenção diferentes. A política deverá considerar custos, necessidades técnicas e obrigações legais aplicáveis.
+
+## 12. Decisões arquiteturais propostas — ADR-041 a ADR-054
+
+Proponho 14 decisões para a baseline do Domínio 05.
+
+## Checklist — Domínio 05
+
+Validação das decisões arquiteturais
+
+## 0/14
+
+Avaliadas
+
+Arquitetura do domínio
+
+ADR-041
+
+Adotar seis componentes lógicos: Operational Database, Event Store & Bus, Historical Market Data, Feature & Dataset Store, Audit & Traceability e Analytics & Read Models.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Banco de dados principal
+
+ADR-042
+
+Utilizar PostgreSQL como banco principal do MVP, com schemas por responsabilidade, ownership de escrita e controle de acesso.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Event Store e Event Bus
+
+ADR-043
+
+Separar conceitualmente persistência durável e distribuição de eventos, permitindo infraestrutura compartilhada inicialmente.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Publicação confiável
+
+ADR-044
+
+Adotar Transactional Outbox, entrega at-least-once e consumidores idempotentes.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Tecnologia inicial do barramento
+
+ADR-045
+
+Utilizar PostgreSQL Outbox com dispatcher persistente no MVP; broker dedicado mediante necessidade demonstrada.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Histórico de mercado
+
+ADR-046
+
+Armazenar dados históricos com origem, qualidade, temporalidade e retenção, separando dados operacionais recentes de arquivos volumosos.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Temporalidade dos dados
+
+ADR-047
+
+Distinguir event_time, received_at e available_at para rastreabilidade e prevenção de lookahead bias.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Exibir as outras 7 decisões
+
+Observações ou ajustes (opcional)
+
+Aprovar todasLimpar
+
+Consolidar validação do Domínio 05&#x20;
+
+## 13. Pendências técnicas identificadas
+
+As pendências a seguir deverão ser detalhadas durante a engenharia.
+
+| ID  | Pendência                                                           | Responsável            |
+| --- | ------------------------------------------------------------------- | ---------------------- |
+| P48 | Modelo físico PostgreSQL, schemas, constraints e índices            | Data Engineering       |
+| P49 | Ownership de escrita, transações e limites de consistência          | Arquitetura / Backend  |
+| P50 | Modelo de Event Store, Outbox e dispatcher                          | Event Architecture     |
+| P51 | Política de ordenação, idempotência, retries e quarentena           | Event Architecture     |
+| P52 | Critérios para adoção de broker dedicado                            | Arquitetura / SRE      |
+| P53 | Modelo de armazenamento histórico e particionamento                 | Data Engineering       |
+| P54 | Política de retenção de order book, trades e demais dados volumosos | Market Data            |
+| P55 | Regras de temporalidade, disponibilidade e correções históricas     | Market Data / AI       |
+| P56 | Catálogo de features, normalização e versionamento                  | Feature Engineering    |
+| P57 | Manifestos de datasets e reprodução de experimentos                 | Learning Engine        |
+| P58 | Modelo de correlação e relacionamento entre eventos operacionais    | Audit & Traceability   |
+| P59 | Integridade, retenção e proteção da trilha de auditoria             | Segurança / Dados      |
+| P60 | Read Models, atualização incremental e reconstrução                 | Analytics              |
+| P61 | Catálogo de contratos, schema registry e compatibilidade            | Integração             |
+| P62 | Backup, restore, RPO, RTO e testes de recuperação                   | SRE / Infraestrutura   |
+| P63 | Segurança, criptografia e isolamento por ambiente                   | Segurança              |
+| P64 | Capacidade, crescimento, desempenho e observabilidade do banco      | Data Engineering / SRE |
+
+Total: 17 novas pendências, de P48 a P64.
+
+### Prioridade para o MVP
+
+Recomendo resolver primeiro P48–P51, P53, P55, P58, P61–P63, pois impactam diretamente a consistência dos estados financeiros, a execução segura e a rastreabilidade.
+
+As demais deverão ser planejadas conforme os requisitos de volume de dados, treinamento e analytics.
+
+## 14. Critérios futuros de aceite técnico
+
+Checklist de implementação
+
+0/11
+
+	Atualizações transacionais e registros Outbox são persistidos atomicamente.
+	Consumidores toleram reentrega sem duplicar efeitos.
+	Ordens, fills e posições podem ser reconciliados com a Binance.
+	Uma decisão da IA pode ser relacionada à observação, ao modelo e à política de risco.
+	Datasets e features podem ser reproduzidos sem lookahead.
+	Dados de mercado registram origem, temporalidade e qualidade.
+	Read Models podem ser reconstruídos a partir de fontes duráveis.
+	Projeções desatualizadas não autorizam operações financeiras críticas.
+	Backups são restauráveis e os procedimentos são testados.
+	TRAINING, PAPER e LIVE possuem isolamento de dados e acesso.
+	Eventos críticos possuem trilha de auditoria verificável.
+
+Itens de aceite futuro. Nenhum teste é considerado executado nesta validação conceitual.
+
+## 15. Progresso arquitetural
+
+## Trade System V1
+
+D01 — Integração e Dados de Mercado
+6/6
+
+D02 — Inteligência Artificial
+10/10
+
+D03 — Risco e Execução
+12/12
+
+D04 — Operações e Observabilidade
+12/12
+
+D05 — Dados, Eventos e Auditoria
+14 propostas
+
+# 40
+ADRs aprovadas
+
+# 14
+ADRs em análise
+
+# 64
+Pendências identificadas
+
+## 16. Próximo domínio proposto
+
+## Domínio 06 — Infraestrutura, Segurança e DevOps
+
+Infrastructure, Security & Platform Engineering
+
+Após a aprovação do D05, recomendo validar a arquitetura de implantação e operação contínua do Trade System.
+
+Escopo previsto: ambientes TRAINING/PAPER/LIVE, infraestrutura cloud, containers, CI/CD, secrets management, IAM, observabilidade técnica, backups, disaster recovery, escalabilidade, disponibilidade e governança de releases.
+
+O objetivo será definir como implantar e manter o sistema operando 24×7, com isolamento de ambientes, controles de segurança e capacidade de recuperação.
+
+Recomendação: aprovar as ADR-041 a ADR-054 como baseline conceitual do Domínio 05, mantendo as 17 pendências para a engenharia.
+
+Com essa validação, o Trade System terá uma fundação arquitetural que conecta dados de mercado, IA, risco, execução, supervisão e auditoria, permitindo evoluir o produto sem perder rastreabilidade e controle operacional.
+
+
+=====
+
+# TRADE SYSTEM V1 — Consolidação Arquitetural
+
+TS-ARCH-D05-V1.0 · 10/11/2026
+
+Aprovado
+
+Domínio 05 — Plataforma de Dados, Eventos e Auditoria
+
+A validação arquitetural do Domínio 05 está concluída. As 14 decisões ADR-041 a ADR-054 foram aprovadas integralmente, sem observações ou ressalvas.
+
+Com essa aprovação, o Trade System V1 passa a ter uma arquitetura conceitual formalizada para persistência transacional, distribuição confiável de eventos, armazenamento histórico, versionamento de datasets, rastreabilidade e reconstrução das operações.
+
+# 14/14
+ADRs aprovadas
+
+# 6
+Componentes lógicos
+
+# 0
+Ressalvas
+
+Baseline conceitual aprovada · Escopo BTCUSDT · Binance Spot e USDⓈ-M Futures · PostgreSQL como tecnologia-base
+
+## 1. Registro das decisões aprovadas
+
+| ADR     | Decisão                                                          | Status         |
+| ------- | ---------------------------------------------------------------- | -------------- |
+| ADR-041 | Arquitetura com seis componentes lógicos independentes           | &#x20;Aprovado |
+| ADR-042 | PostgreSQL como banco principal do MVP, com schemas e ownership  | &#x20;Aprovado |
+| ADR-043 | Separação conceitual entre Event Store e Event Bus               | &#x20;Aprovado |
+| ADR-044 | Transactional Outbox, entrega at-least-once e idempotência       | &#x20;Aprovado |
+| ADR-045 | PostgreSQL Outbox com dispatcher persistente no MVP              | &#x20;Aprovado |
+| ADR-046 | Histórico de mercado com qualidade, origem e retenção            | &#x20;Aprovado |
+| ADR-047 | Temporalidade `event_time`, `received_at`, `available_at`        | &#x20;Aprovado |
+| ADR-048 | Versionamento de features, observações e datasets                | &#x20;Aprovado |
+| ADR-049 | Rastreabilidade ponta a ponta das operações                      | &#x20;Aprovado |
+| ADR-050 | Auditoria append-only e verificações de integridade              | &#x20;Aprovado |
+| ADR-051 | Read Models e CQRS leve, sem Event Sourcing integral obrigatório | &#x20;Aprovado |
+| ADR-052 | Contratos de eventos padronizados e versionados                  | &#x20;Aprovado |
+| ADR-053 | Estados autoritativos para decisões financeiras críticas         | &#x20;Aprovado |
+| ADR-054 | Governança, segurança, retenção, backup e recuperação            | &#x20;Aprovado |
+
+Resultado: ADR-041 a ADR-054 incorporadas à baseline arquitetural do Trade System V1.
+
+## 2. Componentes e responsabilidades consolidados
+
+	D05-C01 — Operational Database
+		Persistência transacional de configurações, intenções, decisões, ordens, fills, posições, saldos, políticas e estados operacionais.
+	Tecnologia: PostgreSQL · Integridade ACID · Ownership de escrita.
+
+	D05-C02 — Event Store & Event Bus
+		Registro durável e distribuição de eventos, com Transactional Outbox, dispatcher persistente, entrega at-least-once e consumidores idempotentes.
+	Event Store e Event Bus mantêm responsabilidades distintas.
+
+	D05-C03 — Historical Market Data Store
+		Histórico de candles, trades, order book e métricas de derivativos, com metadados de qualidade, disponibilidade e origem.
+	Dados recentes e arquivos históricos volumosos possuem estratégias de armazenamento distintas.
+
+	D05-C04 — Feature & Dataset Store
+		Versionamento de features, snapshots de observação, datasets e artefatos associados aos experimentos e modelos de IA.
+	Reprodutibilidade e prevenção de lookahead bias.
+
+	D05-C05 — Audit & Traceability Engine
+		Correlação entre observações, decisões da IA, autorizações de risco, ordens, execuções, intervenções humanas e resultados.
+	Trilhas append-only, integridade verificável e acesso controlado.
+
+	D05-C06 — Analytics & Read Models
+		Projeções de consulta para dashboards, performance, auditoria, monitoramento e Strategy Replay.
+	CQRS leve · Projeções reconstruíveis · Consistência eventual explicitada.
+
+## 3. Arquitetura conceitual aprovada
+
+	D01 — Market Data
+	D02 — AI & Learning
+	D03 — Risk & Execution
+	D04 — Operations
+			↓ ^
+	Data & Event Contracts
+		APIs · Schemas · Outbox · Consumers
+			↓ ^
+	Operational Database
+	Event Store & Bus
+	Historical Market Data
+	Feature & Dataset Store
+	Audit & Traceability
+	Analytics & Read Models
+
+	PostgreSQL + Artefatos Versionados
+		Persistência · Integridade · Backup · Recuperação
+
+Arquitetura lógica aprovada, sem obrigatoriedade de microsserviços ou bancos independentes para cada componente.
+
+### Organização PostgreSQL
+
+A estrutura conceitual contempla schemas separados por responsabilidade:
+
+`market`, `features`, `ai`, `risk`, `execution`, `portfolio`, `control`, `events`, `audit`, `analytics` e `security`.
+
+A definição física das tabelas, índices, particionamento e permissões permanece para a engenharia.
+
+### Fluxo de publicação confiável
+
+	Componente de domínio
+		Ex.: Execution Engine registra um fill
+				↓
+	Transação PostgreSQL
+		Estado transacional + registro Outbox
+				↓
+	Outbox Dispatcher
+		Publicação persistente e recuperável
+				↓
+	Event Bus
+		Distribuição at-least-once
+				↓
+	Audit Engine
+	Read Models
+	Monitoring
+
+Garantia estabelecida: a publicação confiável depende de transações, recuperação e idempotência. Não se assume processamento exatamente uma vez em toda a arquitetura.
+
+A Binance permanece a referência externa para ordens e execuções efetivamente reconhecidas pela corretora. A persistência interna não substitui a reconciliação operacional.
+
+## 4. Contratos e princípios consolidados
+
+### Envelope de eventos
+
+Os contratos deverão conter, conforme aplicável:
+
+| Grupo           | Campos                                                 |
+| --------------- | ------------------------------------------------------ |
+| Identidade      | `event_id`, `event_type`, `schema_version`             |
+| Agregado        | `aggregate_type`, `aggregate_id`, `aggregate_sequence` |
+| Rastreabilidade | `correlation_id`, `causation_id`                       |
+| Contexto        | `environment_id`, `account_id`, `source`               |
+| Temporalidade   | `event_time`, `recorded_at`                            |
+| Conteúdo        | `payload` versionado                                   |
+
+Para dados de mercado e features, também será preservado `available_at`, permitindo identificar quando a informação realmente estava disponível ao agente.
+
+### Rastreabilidade ponta a ponta
+
+1. Market State: dados e features disponíveis no momento.
+2. Trading Observation: observação consumida pelo agente.
+3. AI Decision: modelo, versão e intenção.
+4. Risk Decision: política aplicada e autorização.
+5. Execution: ordens, identificadores Binance e fills.
+6. Position & Portfolio: exposição, capital, margem e resultados.
+7. Outcome & Learning: análise do resultado e reprodução histórica.
+
+A arquitetura deverá suportar múltiplas ordens, fills e intervenções associados à mesma decisão ou operação.
+
+### Regras de consistência
+
+- Estados transacionais críticos possuem proprietários de escrita definidos.
+- Consumidores devem tolerar eventos duplicados e reentregas.
+- A ordenação é garantida por agregado conforme os contratos, não globalmente.
+- Read Models podem apresentar atraso, mas devem expor sua atualização e confiabilidade.
+- Decisões financeiras críticas não podem depender exclusivamente de projeções eventualmente consistentes.
+- Replay factual deve preservar a sequência registrada, sem reescrever eventos históricos.
+
+## 5. Pendências técnicas consolidadas
+
+As 17 pendências identificadas no Domínio 05 permanecem abertas.
+
+| ID  | Pendência                                                | Responsável            |
+| --- | -------------------------------------------------------- | ---------------------- |
+| P48 | Modelo físico PostgreSQL, schemas, constraints e índices | Data Engineering       |
+| P49 | Ownership de escrita, transações e consistência          | Arquitetura / Backend  |
+| P50 | Modelo de Event Store, Outbox e dispatcher               | Event Architecture     |
+| P51 | Ordenação, idempotência, retries e quarentena            | Event Architecture     |
+| P52 | Critérios para broker dedicado                           | Arquitetura / SRE      |
+| P53 | Armazenamento histórico e particionamento                | Data Engineering       |
+| P54 | Retenção de order book, trades e dados volumosos         | Market Data            |
+| P55 | Temporalidade, disponibilidade e correções históricas    | Market Data / AI       |
+| P56 | Catálogo de features, normalização e versionamento       | Feature Engineering    |
+| P57 | Manifestos de datasets e reprodução de experimentos      | Learning Engine        |
+| P58 | Correlação entre eventos operacionais                    | Audit & Traceability   |
+| P59 | Integridade e proteção da auditoria                      | Segurança / Dados      |
+| P60 | Read Models e reconstrução                               | Analytics              |
+| P61 | Catálogo de contratos e compatibilidade                  | Integração             |
+| P62 | Backup, restore, RPO, RTO e testes                       | SRE / Infraestrutura   |
+| P63 | Segurança, criptografia e isolamento                     | Segurança              |
+| P64 | Capacidade, crescimento e desempenho                     | Data Engineering / SRE |
+
+### Priorização para o MVP
+
+Prioridade de engenharia
+
+	Resolver inicialmente P48–P51, P53, P55, P58 e P61–P63, por sua relação direta com integridade transacional, recuperação, rastreabilidade e segurança operacional.
+	As demais pendências também deverão ser concluídas conforme o escopo efetivamente incluído no MVP, especialmente os requisitos de datasets, retenção e analytics.
+
+A aprovação do domínio é conceitual. Ela não comprova que os mecanismos de recuperação, consistência, backup ou auditoria já estejam implementados ou testados.
+
+## 6. Progresso acumulado — Trade System V1
+
+## Baseline arquitetural
+
+5 domínios aprovados
+
+D01 — Integração e Dados de Mercado
+6/6
+
+D02 — Inteligência Artificial
+10/10
+
+D03 — Risco e Execução
+12/12
+
+D04 — Operações e Observabilidade
+12/12
+
+D05 — Dados, Eventos e Auditoria
+14/14
+
+# 54
+ADRs aprovadas
+
+# 21
+Componentes principais
+
+# 64
+Pendências técnicas
+
+Os 21 componentes são módulos lógicos: D01 (3), D02 (3), D03 (4), D04 (5) e D05 (6). Não representam necessariamente 21 serviços independentes.
+
+### Visão integrada da arquitetura aprovada
+
+	D01 — Market Data → Features → Market State
+				↓
+	D02 — Trading Observation → AI Agent
+				↓
+	D03 — Control → Risk → Execution → Portfolio
+
+	D04 — Operations Platform
+		Administração, visualização, intervenção e monitoramento
+
+	D05 — Data & Event Platform
+		Persistência, eventos, datasets, auditoria e analytics de todos os domínios
+
+## 7. Próximo domínio — Infraestrutura, Segurança e DevOps
+
+## Domínio 06 — Infrastructure, Security & Platform Engineering
+
+Próxima validação arquitetural proposta
+
+O Domínio 06 definirá como a arquitetura aprovada será implantada, protegida, monitorada e mantida em operação contínua.
+
+| Componente proposto               | Responsabilidade                                                          |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| Infrastructure & Runtime Platform | Cloud, containers, redes, ambientes e recursos computacionais             |
+| CI/CD & Release Management        | Builds, testes, releases, rollback e promoção entre ambientes             |
+| Identity, Access & Secrets        | IAM, credenciais Binance, secrets e segregação de permissões              |
+| Observability & SRE               | Métricas técnicas, logs, traces, SLOs e resposta a incidentes             |
+| Backup & Disaster Recovery        | Backups, recuperação, continuidade e testes de restauração                |
+| Platform Security & Governance    | Hardening, gestão de vulnerabilidades, auditoria e controles de segurança |
+
+### Questões centrais para a validação
+
+- Qual arquitetura cloud e topologia de implantação serão adotadas no MVP?
+- Como separar fisicamente ou logicamente TRAINING, PAPER e LIVE?
+- Como proteger as chaves de API da Binance e impedir execução acidental em LIVE?
+- Como implantar novas versões sem interromper a proteção de posições?
+- Quais serão os SLOs, RPO, RTO e procedimentos de recuperação?
+- Como gerenciar falhas, incidentes e retomada operacional com segurança?
+- Como controlar custos de infraestrutura e workloads de treinamento de IA?
+
+Iniciar validação do Domínio 06&#x20;
+
+Conclusão: o Domínio 05 está aprovado como TS-ARCH-D05-V1.0, consolidando as ADR-041 a ADR-054.
+
+O Trade System V1 possui agora cinco domínios conceitualmente aprovados, 54 decisões arquiteturais e 64 pendências técnicas identificadas. A próxima etapa é definir a infraestrutura e os controles necessários para transformar essa arquitetura em uma plataforma segura, implantável e operacionalmente recuperável.

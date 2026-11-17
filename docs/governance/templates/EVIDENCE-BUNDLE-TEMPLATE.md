@@ -1,0 +1,569 @@
+# EVIDENCE-BUNDLE-TEMPLATE.md
+## TRADE SYSTEM V1 — Evidence Bundle Specification Template
+
+**Document ID:** TS-DOC-TPL-EVB-001  
+**Version:** 1.0  
+**Status:** APPROVED  
+**Domain:** GLOBAL / D07  
+**Applicable Increments:** I00–I09  
+**Owner:** Engineering, Quality & Validation  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Document Registry:** TS-DOC-REG-001 — APPROVED  
+**Gap Register:** TS-DOC-GAP-001 — APPROVED  
+**Traceability Matrix:** TS-DOC-TRC-001 — APPROVED  
+**Approval Register:** TS-DOC-APR-001 — APPROVED  
+**Change Log:** TS-DOC-CHG-001 — APPROVED  
+**Test Specification Template:** TS-DOC-TPL-TEST-001 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Approval Reference:** [16/11/2026 · aprovação sem ressalvas](../history/TS-DOC-TPL-EVB-001/APPROVAL.md)  
+**Increment:** I00–I09, conforme aplicabilidade  
+**Source References:** [anexo original](../history/TS-DOC-TPL-EVB-001/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../TS-DOC-STD-V1.0.md) e [fontes oficiais](../../referencias/originais/)  
+**Related ADRs:** identificar por pacote, conforme seções 3, 11 e 23.  
+**Related Components:** identificar por pacote, conforme seções 11 e 23.  
+**Related Requirements/Pendências:** identificar por pacote, conforme seções 5, 15 e 23.  
+**Dependencies:** documentos de governança indicados acima e [template de especificação de Teste](TEST-SPEC-TEMPLATE.md), conforme aplicabilidade.  
+**Acceptance Criteria:** seções 17, 20 e 21 orientam a validação, a prontidão e o aceite do pacote.  
+**Last Updated:** 2026-11-16
+
+---
+
+# TEMPLATE — EVIDENCE BUNDLE
+
+> **Instrução de utilização:** criar um pacote para o escopo de aceite correspondente. Preencher resultados e referências somente após sua produção e verificação. Nunca criar evidências fictícias, inferir resultados de testes ou declarar um gate aprovado com base na existência do pacote.
+
+## 1. Identificação do pacote
+
+| Campo | Valor |
+|---|---|
+| Evidence Bundle ID | [TS-EVB-IXX-NNN] |
+| Bundle Name | [Nome] |
+| Bundle Version | [Versão] |
+| Document Status | [DRAFT / IN_REVIEW / APPROVED / SUPERSEDED] |
+| Evidence Status | [PLANNED / COLLECTING / READY_FOR_REVIEW / VALIDATED / REJECTED / INVALIDATED] |
+| Increment | [IXX] |
+| Domain | [DXX ou GLOBAL] |
+| Scope Type | [STORY / FEATURE / EPIC / INCREMENT / GATE] |
+| Scope ID | [Identificador] |
+| Related Gate | [G0–G5 ou N/A] |
+| Evidence Owner | [Responsável] |
+| QA Reviewer | [Responsável] |
+| Approval Reference | [Referência ou PENDING] |
+| Created At | [Data] |
+| Last Updated | [Data] |
+
+O estado documental deverá ser mantido separadamente do estado de validação das evidências.
+
+A aprovação deste template não representa a aprovação de nenhum pacote individual.
+
+## 2. Objetivo e escopo
+
+### 2.1 Objetivo
+
+[Descrever qual entrega ou decisão o pacote deverá sustentar.]
+
+### 2.2 Escopo incluído
+
+[Relacionar histórias, Features, contratos, critérios e testes cobertos.]
+
+### 2.3 Escopo excluído
+
+[Identificar explicitamente o que não está sendo demonstrado.]
+
+### 2.4 Ambiente de validade
+
+[Definir o ambiente ao qual os resultados se aplicam.]
+
+### 2.5 Limites de interpretação
+
+[Registrar conclusões que não poderão ser extraídas das evidências.]
+
+Um pacote produzido em TRAINING ou PAPER não comprova qualificação LIVE.
+
+## 3. Referências normativas
+
+| Referência | Versão | Finalidade | Verificação |
+|---|---|---|---|
+| Architecture Baseline | [Versão] | Decisões arquiteturais | [Estado] |
+| Engineering Baseline | [Versão] | Decisões técnicas | [Estado] |
+| Increment Specification | [Versão] | Escopo e critérios | [Estado] |
+| Epic/Feature/Story | [Versão] | Requisitos aplicáveis | [Estado] |
+| Contract Specifications | [Versões] | Interfaces e semântica | [Estado] |
+| Test Specifications | [Versões] | Método de verificação | [Estado] |
+| Approval Register | [Referência] | Decisões | [Estado] |
+
+Referências ainda não verificadas deverão permanecer explicitamente pendentes.
+
+## 4. Identidade da release e do ambiente
+
+| Campo | Valor |
+|---|---|
+| Repository | [Identificador] |
+| Git Commit | [Hash] |
+| Build ID | [ID] |
+| Build Artifact Digest | [Hash] |
+| Dependency Lock Reference | [Arquivo/Hash] |
+| Runtime Version | [Versão] |
+| Container Image Digest | [Hash ou N/A] |
+| Database Schema Version | [Versão] |
+| Contract Versions | [Versões] |
+| Configuration Reference | [Identificador] |
+| Environment ID | [ID] |
+| Environment Type | [LOCAL / CI / TRAINING / PAPER / CONTROLLED] |
+| Execution Timestamp | [Timestamp com timezone] |
+| Execution Identity | [Identidade autorizada] |
+
+O pacote deverá permitir identificar exatamente o software e a configuração avaliados.
+
+Segredos, tokens e credenciais não deverão ser incluídos no manifesto.
+
+## 5. Inventário de critérios de aceite
+
+| Acceptance ID | Requisito | Test ID | Test Run ID | Evidence ID | Coverage Status |
+|---|---|---|---|---|---|
+| [ID] | [Requirement ID] | [TS-TEST-NNN] | [TS-TRUN-NNN] | [Evidence ID] | [Estado] |
+
+Estados de cobertura:
+
+- NOT_MAPPED — critério ainda sem teste ou evidência.
+- PLANNED — verificação planejada.
+- EXECUTED — execução registrada, ainda sem validação final.
+- VERIFIED — evidência validada e aplicável.
+- FAILED — critério não atendido.
+- BLOCKED — verificação impedida.
+- NOT_APPLICABLE — exclusão justificada e aprovada.
+
+A cobertura VERIFIED exige resultado compatível com o critério e evidência válida.
+
+## 6. Manifesto de evidências
+
+Cada evidência deverá possuir um registro individual.
+
+| Campo | Descrição |
+|---|---|
+| Evidence ID | Identificador único |
+| Evidence Type | Tipo de artefato |
+| File Path / URI | Localização |
+| Content Digest | Hash criptográfico |
+| File Size | Tamanho |
+| Media Type | Formato |
+| Source Test Run | Execução de origem |
+| Related Acceptance Criteria | Critérios cobertos |
+| Producer | Pessoa, ferramenta ou serviço |
+| Produced At | Timestamp |
+| Environment | Ambiente |
+| Code Version | Commit/build |
+| Validation Status | Estado |
+| Reviewer | Responsável |
+| Notes | Observações |
+
+O identificador da evidência deverá ser estável e não reutilizado para conteúdos diferentes.
+
+## 7. Tipos de evidência
+
+| Tipo | Exemplos |
+|---|---|
+| TEST_REPORT | Relatório de execução |
+| CONTRACT_VALIDATION | Resultado de conformidade de schema |
+| BUILD_REPORT | Resultado de build |
+| CI_REPORT | Pipeline e checks |
+| STATIC_ANALYSIS | Lint, tipagem e análise estática |
+| SECURITY_REPORT | Resultado de verificação de segurança |
+| PERFORMANCE_REPORT | Medições de desempenho técnico |
+| DATA_QUALITY_REPORT | Qualidade e integridade dos dados |
+| QUANT_VALIDATION_REPORT | Avaliação quantitativa |
+| LOG_EXPORT | Logs estruturados |
+| TRACE_EXPORT | Traces correlacionados |
+| METRIC_EXPORT | Métricas de execução |
+| DATABASE_VERIFICATION | Integridade, migração ou reconciliação |
+| RECOVERY_REPORT | Falha e recuperação |
+| CONFIGURATION_ATTESTATION | Comprovação de configuração |
+| REVIEW_RECORD | Revisão técnica |
+| APPROVAL_RECORD | Decisão de aprovação |
+
+Os tipos deverão ser utilizados conforme sua finalidade real.
+
+Um screenshot isolado não substituirá evidências de execução quando forem necessários resultados reproduzíveis.
+
+## 8. Registro das execuções de teste
+
+| Test Run ID | Test ID | Result | Environment | Build | Evidence | Validity |
+|---|---|---|---|---|---|---|
+| [TS-TRUN-NNN] | [TS-TEST-NNN] | [PASS/FAIL/BLOCKED/INVALID/ERROR] | [ID] | [ID] | [Evidence ID] | [Estado] |
+
+Cada execução deverá preservar:
+
+- Especificação utilizada.
+- Versão do teste.
+- Código executado.
+- Dados e fixtures.
+- Configuração.
+- Ambiente.
+- Resultado observado.
+- Falhas e exceções.
+- Referências de evidência.
+
+Resultados `BLOCKED`, `INVALID` ou `ERROR` não poderão ser contabilizados como aprovação.
+
+## 9. Integridade e autenticidade
+
+### 9.1 Hashes
+
+Os artefatos deverão possuir hashes criptográficos quando aplicável, preferencialmente SHA-256 ou mecanismo equivalente aprovado.
+
+### 9.2 Manifesto
+
+O pacote deverá conter um manifesto que relacione os artefatos e seus digests.
+
+### 9.3 Proveniência
+
+Cada evidência deverá identificar sua origem e o processo que a produziu.
+
+### 9.4 Imutabilidade lógica
+
+Evidências validadas não poderão ser substituídas silenciosamente.
+
+### 9.5 Controle de acesso
+
+A consulta e alteração dos pacotes deverão seguir as permissões aprovadas.
+
+### 9.6 Retenção
+
+O prazo de retenção deverá ser definido pela política aplicável.
+
+### 9.7 Correções
+
+Correções deverão gerar nova versão ou novo registro, preservando a evidência anterior.
+
+Um hash demonstra integridade relativa ao conteúdo registrado, mas não comprova, isoladamente, que a execução ocorreu corretamente.
+
+## 10. Reprodutibilidade
+
+O pacote deverá referenciar:
+
+- Código e dependências versionados.
+- Procedimento de execução.
+- Ambiente e configuração.
+- Dados e fixtures.
+- Seeds, quando aplicável.
+- Ferramentas utilizadas.
+- Critérios de comparação.
+- Tolerâncias aprovadas.
+- Condições de execução.
+- Limitações conhecidas.
+
+Quando a reprodução exata não for tecnicamente possível, deverá ser documentado o método de reprodução equivalente e seus limites.
+
+## 11. Conformidade arquitetural
+
+| Invariant ID | Invariante | Método de verificação | Evidência | Resultado |
+|---|---|---|---|---|
+| [ID] | [Regra] | [Método] | [Evidence ID] | [Estado] |
+
+A verificação deverá considerar os invariantes aplicáveis, incluindo:
+
+- Segregação TRAINING/PAPER/LIVE.
+- Autoridade Control → Risk → Execution.
+- Idempotência.
+- Reconciliação.
+- Auditoria ponta a ponta.
+- Integridade transacional.
+- Ausência de bypass de autorização.
+- Recuperação controlada.
+- Restrições de promoção LIVE.
+
+Nenhum invariante poderá ser declarado atendido sem verificação apropriada.
+
+## 12. Evidências de segurança
+
+### 12.1 Identidade e autorização
+
+[Relacionar testes e resultados.]
+
+### 12.2 Segregação de ambientes
+
+[Relacionar evidências.]
+
+### 12.3 Proteção de segredos
+
+[Relacionar verificações.]
+
+### 12.4 Integridade de dados
+
+[Relacionar resultados.]
+
+### 12.5 Comportamento fail-closed
+
+[Relacionar cenários.]
+
+### 12.6 Controles financeiros
+
+[Relacionar verificações aplicáveis.]
+
+### 12.7 Restrições LIVE
+
+[Comprovar ausência de acesso LIVE quando exigido.]
+
+Evidências de segurança deverão ser produzidas em ambientes e escopos autorizados.
+
+## 13. Evidências quantitativas e de IA
+
+Quando aplicável, registrar:
+
+### 13.1 Identidade do modelo
+
+[Model ID, versão, digest e configuração.]
+
+### 13.2 Dados
+
+[Datasets, versões e períodos.]
+
+### 13.3 Protocolo experimental
+
+[Treino, validação, teste e walk-forward.]
+
+### 13.4 Custos e premissas
+
+[Taxas, slippage, funding e demais custos.]
+
+### 13.5 Baselines
+
+[Referências comparativas.]
+
+### 13.6 Métricas
+
+[Resultados e intervalos de incerteza.]
+
+### 13.7 Robustez
+
+[Resultados por regime e sensibilidade.]
+
+### 13.8 Reprodutibilidade
+
+[Seeds, código e configurações.]
+
+### 13.9 Limitações
+
+[Restrições metodológicas.]
+
+### 13.10 Conclusão
+
+[Conclusão sustentada pelas evidências.]
+
+Resultados históricos ou simulados não garantem retornos futuros.
+
+Metas financeiras não deverão ser tratadas como atingidas sem resultados líquidos verificáveis e metodologia aprovada.
+
+## 14. Evidências operacionais
+
+Quando aplicável:
+
+- Health e readiness.
+- Observabilidade.
+- Alertas.
+- Circuit breakers.
+- Recovery.
+- Reconciliation.
+- Runbooks.
+- Incidentes simulados.
+- Failover.
+- Auditoria.
+- Controles de release.
+- Procedimentos de intervenção humana.
+
+A aplicabilidade deverá considerar o incremento e o gate correspondente.
+
+## 15. Defeitos, exceções e lacunas
+
+| Reference ID | Tipo | Descrição | Severidade | Impacto | Tratamento | Status |
+|---|---|---|---|---|---|---|
+| [ID] | [Defect/Gap/Risk] | [Descrição] | [Nível] | [Impacto] | [Ação] | [Estado] |
+
+O pacote deverá registrar:
+
+- Defeitos conhecidos.
+- Testes não executados.
+- Evidências ausentes.
+- Exceções aprovadas.
+- Riscos residuais.
+- Restrições de interpretação.
+- Critérios ainda não atendidos.
+
+Lacunas bloqueantes impedem o aceite do escopo afetado.
+
+## 16. Análise de cobertura
+
+### 16.1 Cobertura de critérios
+
+Percentual de critérios aplicáveis com evidências verificadas.
+
+### 16.2 Cobertura de testes
+
+Percentual de testes obrigatórios executados e validados.
+
+### 16.3 Cobertura de contratos
+
+Percentual de contratos aplicáveis com evidências de conformidade.
+
+### 16.4 Cobertura de invariantes
+
+Percentual de invariantes aplicáveis verificados.
+
+### 16.5 Cobertura de rastreabilidade
+
+Percentual de vínculos obrigatórios confirmados.
+
+### 16.6 Pendências
+
+Quantidade de critérios sem evidência válida.
+
+**Regra:** os percentuais deverão informar numerador, denominador, critérios de exclusão e versão do inventário.
+
+Itens NOT_APPLICABLE exigem justificativa.
+
+Nenhum indicador poderá ser declarado completo quando existirem critérios obrigatórios não verificados.
+
+## 17. Validação do pacote
+
+O processo de validação deverá:
+
+1. Confirmar a identidade do pacote.
+2. Verificar as versões das fontes normativas.
+3. Verificar a identidade do build.
+4. Conferir o manifesto.
+5. Validar integridade dos arquivos.
+6. Conferir origem e contexto das evidências.
+7. Validar vínculos com testes e critérios.
+8. Verificar resultados e exceções.
+9. Avaliar lacunas e riscos residuais.
+10. Registrar parecer de QA.
+11. Submeter à autoridade competente.
+12. Registrar a decisão no Approval Register.
+
+O TS-DOC-GOV poderá automatizar verificações documentais, mas não poderá aprovar o pacote em nome da autoridade humana.
+
+## 18. Estados de validação
+
+| Estado | Significado |
+|---|---|
+| PLANNED | Pacote previsto |
+| COLLECTING | Evidências em coleta |
+| READY_FOR_REVIEW | Pacote submetido à revisão |
+| VALIDATED | Evidências verificadas no escopo declarado |
+| REJECTED | Pacote rejeitado |
+| INVALIDATED | Evidências anteriormente válidas perderam aplicabilidade |
+
+A validação das evidências não equivale automaticamente à aprovação da entrega ou do gate.
+
+## 19. Invalidação e revalidação
+
+O pacote deverá ser reavaliado quando ocorrer:
+
+- Alteração material de código.
+- Mudança incompatível de contrato.
+- Mudança de modelo ou dataset relevante.
+- Alteração de configuração crítica.
+- Mudança de ambiente que afete o resultado.
+- Revisão de critérios de aceite.
+- Descoberta de erro metodológico.
+- Defeito que comprometa evidências anteriores.
+- Revogação de autorização relevante.
+
+A revalidação poderá ser parcial quando a análise de impacto demonstrar que os demais resultados permanecem aplicáveis.
+
+O histórico de invalidação deverá ser preservado.
+
+## 20. Evidence Readiness
+
+O pacote estará pronto para revisão quando:
+
+- Escopo e critérios estiverem identificados.
+- Referências normativas estiverem verificadas.
+- Build e ambiente estiverem identificados.
+- Manifesto estiver completo.
+- Evidências obrigatórias estiverem presentes.
+- Hashes aplicáveis estiverem registrados.
+- Testes e execuções estiverem vinculados.
+- Resultados estiverem registrados.
+- Defeitos e exceções estiverem identificados.
+- Lacunas bloqueantes estiverem resolvidas.
+- A rastreabilidade estiver consistente.
+
+**Evidence Readiness Status:** [NOT_READY / READY_WITH_CONDITIONS / READY]
+
+## 21. Evidence Bundle Acceptance
+
+O pacote poderá receber aceite quando:
+
+- As evidências forem autênticas e verificáveis.
+- Os critérios aplicáveis estiverem cobertos.
+- As execuções forem identificáveis.
+- Os resultados forem metodologicamente válidos.
+- Os invariantes obrigatórios estiverem demonstrados.
+- Os riscos residuais estiverem avaliados.
+- As exceções estiverem formalmente aprovadas.
+- A revisão de QA estiver registrada.
+- A autoridade competente registrar a decisão.
+
+**Evidence Bundle Acceptance:** [NOT_EVALUATED / REJECTED / APPROVED_WITH_CONDITIONS / APPROVED]
+
+O aceite do pacote não substitui o aceite da história, Feature, épico, incremento ou gate.
+
+## 22. Regras específicas dos gates
+
+| Gate | Evidência principal esperada |
+|---|---|
+| G0 | Fundação de engenharia reproduzível e controles técnicos |
+| G1 | Validação quantitativa e metodológica da estratégia |
+| G2 | Qualificação operacional em PAPER |
+| G3 | Prontidão operacional, risco, segurança e recuperação |
+| G4 | Evidências e autorização para LIVE Limited |
+| G5 | Evidências para evolução LIVE Controlled |
+
+A aprovação da estrutura dos gates não representa sua homologação.
+
+Nenhum gate poderá ser declarado aprovado sem decisão específica e evidências aplicáveis.
+
+## 23. Rastreabilidade
+
+O pacote deverá fechar a cadeia:
+
+**ADR → Componente → Pendência → Épico → Feature → História → Contrato → Teste → Evidência**
+
+Cada evidência deverá apontar para critérios verificáveis.
+
+A existência de arquivos não comprova, isoladamente, a conformidade da entrega.
+
+## 24. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| [Versão] | [Data] | [ID] | [Descrição] | [Referência] |
+
+## 25. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Evidence Bundle ID | [TS-EVB-IXX-NNN] |
+| Bundle Version | [Versão] |
+| Scope | [ID] |
+| Approval Category | DOC / TECH / STORY / INC / GATE, conforme finalidade |
+| Decision | [Resultado] |
+| QA Reviewer | [Responsável] |
+| Approved By | [Autoridade] |
+| Approval Reference | [Referência] |
+| Conditions | [Condições] |
+| Date | [Data] |
+
+---
+
+**Template Status:** APPROVED  
+**Template Approval:** [16/11/2026 · aprovação sem ressalvas](../history/TS-DOC-TPL-EVB-001/APPROVAL.md)  
+**Next Artifact:** GATE-CHECKLIST-TEMPLATE.md  
+**Próxima etapa:** aguardar o conteúdo do GATE-CHECKLIST-TEMPLATE.md.
+
+## Histórico da revisão do template
+
+A versão **1.0** foi aprovada em 16/11/2026. O histórico preserva a [revisão local anterior à aprovação](../history/TS-DOC-TPL-EVB-001/REVISAO-LOCAL-IN-REVIEW.txt). O [template anterior de Evidência](EVIDENCIA.md) mantém sua aprovação original. A [aprovação comunicada do Approval Register](../history/TS-DOC-APR-001/APPROVAL.md) está registrada e a conferência do seu texto integral no checkout segue pendente.
+
+[G0](../G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

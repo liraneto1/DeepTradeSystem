@@ -1,0 +1,995 @@
+# I00-FEAT-003.md
+## TRADE SYSTEM V1 — Versioned Contracts
+
+**Document ID:** I00-FEAT-003  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-03  
+**Primary Epic:** TS-EP-01 — Engineering Foundation  
+**Primary Domain:** D07 — Engineering, Quality & Validation  
+**Supporting Domain:** D05 — Data, Events & Audit  
+**Functional Owner:** Engineering Architecture  
+**Technical Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 — APPROVED  
+**Epic Baseline:** TS-EP-01 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Contract Template:** TS-DOC-TPL-CONTRACT-001 — APPROVED  
+**Predecessor Features:** I00-FEAT-001 / V1.0; I00-FEAT-002 / V1.0  
+**Approval Reference:** PENDING  
+**Domain:** D07, com apoio de D05  
+**Owner:** Engineering Architecture, conforme responsabilidade funcional acima.  
+**Source References:** [anexo original](../governance/history/I00-FEAT-003/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md), [fontes oficiais](../referencias/originais/) e [contratos do I00](../03-CONTRATOS.md)  
+**Related ADRs:** referências da seção 2.  
+**Related Components:** seção 2 e [matriz DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** referências das seções 23, 27 e 30.  
+**Dependencies:** [catálogo I00](../increments/I00-FEATURE-CATALOG.md), [TS-EP-01](../epics/TS-EP-01.md), [I00-FEAT-001](I00-FEAT-001.md), [I00-FEAT-002](I00-FEAT-002.md), templates de [Feature](../governance/templates/FEATURE-TEMPLATE.md) e [Contrato](../governance/templates/CONTRACT-TEMPLATE.md) e dependências da seção 19.  
+**Acceptance Criteria:** seções 23, 28 e 29, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-16
+
+---
+
+## 1. Objetivo
+
+### 1.1 Objetivo principal
+
+Estabelecer uma infraestrutura padronizada para especificar, versionar, validar, publicar e consumir contratos entre componentes do TRADE SYSTEM V1.
+
+### 1.2 Necessidade atendida
+
+O sistema utilizará múltiplos componentes com responsabilidades distintas.
+
+Esses componentes precisarão trocar informações preservando:
+
+- Estrutura e tipos de dados.
+- Identidade das mensagens.
+- Semântica dos campos.
+- Compatibilidade entre versões.
+- Rastreabilidade.
+- Temporalidade.
+- Idempotência.
+- Autorização.
+- Tratamento de erros.
+- Integridade de eventos.
+
+### 1.3 Resultado demonstrável
+
+Ao final da implementação, deverá existir um catálogo inicial de contratos com schemas executáveis, exemplos válidos e inválidos, testes de conformidade e mecanismos de validação reproduzíveis.
+
+### 1.4 Declaração da Feature
+
+**Como** equipe de engenharia do TRADE SYSTEM V1,  
+**quero** contratos versionados e verificáveis,  
+**para** integrar componentes sem ambiguidades de interface e com compatibilidade controlada.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines aplicáveis
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-01 / V1.0.
+- TS-EP-02 / V1.0.
+- TS-I00-FEAT-CAT-001 / V1.0.
+- TS-DOC-STD-V1.0.
+- TS-DOC-TRC-001.
+- TS-DOC-GAP-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+- TS-DOC-TPL-CONTRACT-001.
+
+### 2.2 ADRs
+
+As ADRs técnicas TS-ADR-089–098 e as ADRs arquiteturais aplicáveis deverão ser consultadas individualmente.
+
+**ADR Traceability:** UNVERIFIED.
+
+Não serão atribuídas regras a ADRs sem conferência dos respectivos registros.
+
+### 2.3 Componentes
+
+O domínio D07 estabelecerá as convenções de especificação, validação e qualidade dos contratos.
+
+O domínio D05 será responsável pelas semânticas de eventos e persistência que lhe pertencem.
+
+O ownership de cada contrato deverá ser confirmado em sua especificação individual.
+
+### 2.4 Fluxos
+
+A Feature fornecerá contratos reutilizáveis pelos fluxos F01–F10, quando aplicável, mas não implementará esses fluxos.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Catálogo inicial de contratos.
+- Convenções de identificação.
+- Política de versionamento.
+- Estrutura de schemas.
+- Validação estrutural.
+- Validação semântica.
+- Exemplos válidos e inválidos.
+- Testes automatizados de contratos.
+- Regras de compatibilidade.
+- Política de depreciação.
+- Rastreabilidade de produtores e consumidores.
+- Integração com a toolchain.
+- Documentação e evidências de conformidade.
+
+### 3.2 Excluído
+
+- Implementação do motor de execução financeira.
+- Integração operacional com Binance.
+- Envio de ordens reais.
+- Processamento completo da Outbox.
+- Implementação do Dispatcher.
+- Implementação dos consumidores.
+- Motor de risco.
+- Estratégias e agentes PPO.
+- Contratos definitivos de todos os incrementos futuros.
+- Homologação de G0.
+- Operação LIVE.
+
+### 3.3 Fronteiras
+
+**I00-FEAT-003:** define e valida contratos.
+
+**I00-FEAT-005:** implementará persistência transacional da Outbox.
+
+**I00-FEAT-006:** implementará o Dispatcher.
+
+**I00-FEAT-007:** implementará consumidores idempotentes.
+
+**I00-FEAT-008:** implementará a API de fundação.
+
+Esta Feature não deverá assumir responsabilidades de processamento pertencentes a essas outras Features.
+
+---
+
+## 4. Catálogo inicial de contratos
+
+| Contract ID | Tipo | Finalidade | Ownership proposto |
+|---|---|---|---|
+| CommandEnvelope.v1 | COMMAND | Padronizar comandos | A confirmar |
+| EventEnvelope.v1 | EVENT | Padronizar eventos | D05 |
+| ErrorEnvelope.v1 | ERROR | Padronizar erros | A confirmar |
+| HealthStatus.v1 | QUERY/RESPONSE | Representar saúde operacional | A confirmar |
+| OutboxRecord.v1 | INTERNAL_INTERFACE | Representar registro Outbox | D05 |
+
+Os nomes e a inclusão dos cinco contratos estão estabelecidos na baseline do I00.
+
+As classificações e os owners indicados como propostas deverão ser confirmados nas especificações individuais.
+
+**Contract Catalog Status:** IDENTIFIED.
+
+**Schema Implementation Status:** NOT_VERIFIED.
+
+---
+
+## 5. Estrutura lógica proposta
+
+A organização física deverá respeitar o monorepo aprovado.
+
+Estrutura conceitual:
+
+```text
+packages/
+└── contracts/
+    ├── schemas/
+    │   ├── commands/
+    │   ├── events/
+    │   ├── errors/
+    │   ├── health/
+    │   └── outbox/
+    ├── examples/
+    │   ├── valid/
+    │   └── invalid/
+    └── validation/
+
+tests/
+└── contract/
+
+docs/
+└── contracts/
+```
+
+A estrutura é PROPOSED e não representa arquivos já criados.
+
+A localização final deverá ser reconciliada com I00-FEAT-001 e o estado real do repositório.
+
+---
+
+## 6. Identificação e versionamento
+
+### 6.1 Identificador
+
+Cada contrato deverá possuir identificador estável e versão explícita.
+
+### 6.2 Política de versões
+
+A evolução deverá seguir a política aprovada de compatibilidade e versionamento.
+
+### 6.3 Versão major
+
+Alterações incompatíveis deverão exigir nova versão major ou procedimento equivalente formalmente aprovado.
+
+### 6.4 Versões minor e patch
+
+Alterações deverão ser classificadas conforme sua compatibilidade efetiva.
+
+### 6.5 Imutabilidade
+
+Uma versão publicada e aprovada não poderá ter sua semântica modificada silenciosamente.
+
+### 6.6 Depreciação
+
+A descontinuação deverá identificar consumidores afetados, plano de migração e condições de retirada.
+
+### 6.7 Controle de mudanças
+
+Alterações materiais deverão seguir o Change Log e o Approval Register.
+
+---
+
+## 7. CommandEnvelope.v1
+
+### 7.1 Objetivo
+
+Padronizar o transporte de comandos entre componentes autorizados.
+
+### 7.2 Semântica esperada
+
+O envelope deverá permitir identificar, conforme aplicabilidade:
+
+- Comando.
+- Versão.
+- Emissor.
+- Destinatário.
+- Ambiente.
+- Correlação.
+- Causalidade.
+- Idempotência.
+- Timestamp de emissão.
+- Expiração.
+- Referência de identidade e autorização.
+- Payload.
+
+### 7.3 Segurança
+
+A presença de uma referência de autorização não comprova que o comando está autorizado.
+
+O consumidor deverá aplicar os controles de autenticação e autorização pertinentes.
+
+### 7.4 Temporalidade
+
+Comandos expirados deverão ser rejeitados conforme contrato.
+
+### 7.5 Idempotência
+
+A semântica da chave de idempotência deverá ser definida na especificação individual.
+
+### 7.6 Limites
+
+O CommandEnvelope não autoriza diretamente operações financeiras.
+
+Os campos exatos, obrigatoriedade, tipos e regras de validação permanecem TBD até aprovação do contrato individual.
+
+---
+
+## 8. EventEnvelope.v1
+
+### 8.1 Objetivo
+
+Padronizar eventos produzidos pelos componentes.
+
+### 8.2 Semântica esperada
+
+O envelope deverá permitir identificar, conforme aplicabilidade:
+
+- Evento.
+- Tipo.
+- Versão.
+- Produtor.
+- Ambiente.
+- Agregado.
+- Correlação.
+- Causalidade.
+- Timestamp do evento.
+- Timestamp de registro.
+- Payload.
+- Informações de sequência quando exigidas.
+
+### 8.3 Imutabilidade
+
+Eventos persistidos deverão preservar sua identidade e significado histórico.
+
+### 8.4 Temporalidade
+
+Os timestamps deverão possuir semântica explícita.
+
+### 8.5 Ordenação
+
+A sequência por agregado deverá ser definida quando exigida.
+
+### 8.6 Duplicidade
+
+O contrato deverá permitir identificação consistente de eventos repetidos.
+
+### 8.7 Limites
+
+A existência de um evento não comprova que todos os consumidores concluíram seu processamento.
+
+Os campos exatos e as regras de compatibilidade serão definidos na especificação individual.
+
+---
+
+## 9. ErrorEnvelope.v1
+
+### 9.1 Objetivo
+
+Padronizar a representação de erros e rejeições.
+
+### 9.2 Semântica esperada
+
+Deverá permitir identificar, conforme aplicabilidade:
+
+- Código do erro.
+- Categoria.
+- Descrição segura.
+- Referência de correlação.
+- Origem.
+- Timestamp.
+- Possibilidade de repetição, quando aplicável.
+- Detalhes estruturados permitidos.
+
+### 9.3 Segurança
+
+Mensagens de erro não deverão expor segredos, credenciais ou detalhes internos desnecessários.
+
+### 9.4 Classificação
+
+Erros de validação, autorização, conflito, indisponibilidade e falha interna deverão possuir semântica distinguível.
+
+### 9.5 Limites
+
+A taxonomia final de erros deverá ser formalizada no contrato individual.
+
+---
+
+## 10. HealthStatus.v1
+
+### 10.1 Objetivo
+
+Representar o estado operacional e de prontidão dos componentes.
+
+### 10.2 Semântica esperada
+
+Deverá permitir distinguir:
+
+- Estado de execução do processo.
+- Prontidão para receber trabalho.
+- Dependências relevantes.
+- Estado degradado, quando aplicável.
+- Timestamp da avaliação.
+- Versão do componente ou build.
+
+### 10.3 Liveness e readiness
+
+As verificações deverão possuir semânticas distintas.
+
+### 10.4 Segurança
+
+O contrato não deverá divulgar informações sensíveis de infraestrutura a consumidores não autorizados.
+
+### 10.5 Limites
+
+A implementação dos endpoints pertence à I00-FEAT-008.
+
+O conjunto definitivo de estados será definido na especificação individual.
+
+---
+
+## 11. OutboxRecord.v1
+
+### 11.1 Objetivo
+
+Padronizar o registro utilizado pelo mecanismo Transactional Outbox.
+
+### 11.2 Semântica esperada
+
+Deverá permitir representar, conforme aplicabilidade:
+
+- Identidade do registro.
+- Referência do evento.
+- Agregado.
+- Tipo e versão.
+- Payload.
+- Estado de processamento.
+- Timestamp de criação.
+- Tentativas.
+- Informações de publicação.
+- Correlação.
+- Controle de concorrência.
+
+### 11.3 Atomicidade
+
+A persistência do registro deverá respeitar a transação de negócio correspondente.
+
+### 11.4 Idempotência
+
+O registro deverá permitir processamento recuperável sem duplicação indevida de efeitos.
+
+### 11.5 Concorrência
+
+As regras de reivindicação e atualização deverão ser definidas pela implementação e pela especificação de persistência.
+
+### 11.6 Limites
+
+O contrato não determina sozinho a estratégia de locking, leasing, backoff ou publicação.
+
+Essas decisões pertencem às Features de Outbox e Dispatcher.
+
+---
+
+## 12. Validação estrutural
+
+### 12.1 Schemas
+
+Os contratos deverão possuir schemas executáveis versionados.
+
+### 12.2 Tipos
+
+Os tipos deverão ser definidos sem ambiguidade.
+
+### 12.3 Campos obrigatórios
+
+A obrigatoriedade deverá ser explicitada por contrato.
+
+### 12.4 Campos opcionais
+
+O comportamento na ausência de valores deverá ser definido.
+
+### 12.5 Enumerações
+
+Valores permitidos deverão estar identificados.
+
+### 12.6 Restrições
+
+As restrições de formato, tamanho e domínio deverão ser verificáveis.
+
+### 12.7 Rejeição
+
+Mensagens estruturalmente inválidas deverão produzir rejeição controlada.
+
+---
+
+## 13. Validação semântica
+
+A validação estrutural não substitui a validação do significado dos dados.
+
+Os contratos deverão estabelecer, quando aplicável:
+
+- Consistência de identificadores.
+- Regras temporais.
+- Regras de ambiente.
+- Referências de autorização.
+- Idempotência.
+- Sequência.
+- Compatibilidade.
+- Integridade do payload.
+- Validade de transições de estado.
+
+Regras dependentes do domínio deverão permanecer sob responsabilidade do componente autorizado.
+
+---
+
+## 14. Compatibilidade
+
+### 14.1 Produtores e consumidores
+
+Cada contrato deverá identificar produtores e consumidores conhecidos.
+
+### 14.2 Mudanças compatíveis
+
+Alterações deverão ser avaliadas considerando o comportamento real dos consumidores.
+
+### 14.3 Mudanças incompatíveis
+
+Deverão exigir versionamento e plano de migração apropriados.
+
+### 14.4 Campos desconhecidos
+
+O tratamento de campos desconhecidos deverá ser definido por contrato.
+
+### 14.5 Remoção de campos
+
+A remoção deverá considerar impacto e compatibilidade.
+
+### 14.6 Evolução de enumerações
+
+Novos valores poderão exigir atualização dos consumidores.
+
+### 14.7 Regressão
+
+Mudanças deverão passar por testes de compatibilidade.
+
+### 14.8 Aprovação
+
+Alterações normativas deverão seguir Change Control.
+
+---
+
+## 15. Exemplos de contratos
+
+Cada contrato deverá possuir exemplos representativos de:
+
+- Mensagem válida.
+- Campo obrigatório ausente.
+- Tipo inválido.
+- Versão incompatível.
+- Enumeração inválida.
+- Rejeição semântica.
+- Dados temporais inválidos, quando aplicável.
+- Referência de autorização inválida, quando aplicável.
+
+Os exemplos deverão ser testados contra o schema correspondente.
+
+Exemplos documentais não poderão substituir os testes executáveis.
+
+---
+
+## 16. Integração com a toolchain
+
+A validação deverá ser compatível com:
+
+- Python 3.12+.
+- uv.
+- pytest.
+- Hypothesis.
+- Configuração do monorepo.
+- GitHub Actions, quando implementado.
+
+### 16.1 Execução local
+
+Os contratos deverão possuir procedimento documentado de validação.
+
+### 16.2 Execução automatizada
+
+A I00-FEAT-011 deverá incorporar os testes obrigatórios ao pipeline.
+
+### 16.3 Falhas
+
+Schemas inválidos ou testes obrigatórios não atendidos deverão bloquear o resultado de qualidade.
+
+### 16.4 Relatórios
+
+A execução deverá produzir resultados identificáveis e rastreáveis.
+
+---
+
+## 17. Dados e persistência
+
+### 17.1 Fonte autoritativa
+
+O schema versionado será a fonte executável de validação estrutural.
+
+### 17.2 Documentação
+
+A especificação deverá explicar semântica e responsabilidades sem divergir do schema.
+
+### 17.3 Persistência
+
+Esta Feature não implementará a persistência operacional dos eventos.
+
+### 17.4 Migrações
+
+Mudanças de contrato que afetem dados persistidos deverão possuir análise de impacto e migração quando necessária.
+
+### 17.5 Integridade
+
+Os artefatos aprovados deverão possuir identificação de versão e mecanismos de integridade aplicáveis.
+
+---
+
+## 18. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação proposta |
+|---|---|---|
+| Compatibilidade | Evolução controlada | Testes entre versões |
+| Reprodutibilidade | Schemas versionados | Execução em ambiente limpo |
+| Confiabilidade | Rejeição de mensagens inválidas | Testes negativos |
+| Segurança | Campos e referências controlados | Testes de autorização e exposição |
+| Auditabilidade | Identidade e correlação | Inspeção dos envelopes |
+| Manutenibilidade | Ownership explícito | Revisão documental |
+| Integridade | Validação de estrutura e semântica | Testes de conformidade |
+| Testabilidade | Exemplos executáveis | pytest e validação de schemas |
+
+Limiares quantitativos deverão permanecer TBD até aprovação.
+
+---
+
+## 19. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| I00-FEAT-001 | Estrutura do monorepo | APPROVED documentalmente |
+| I00-FEAT-002 | Toolchain | APPROVED documentalmente |
+| TS-DOC-TPL-CONTRACT-001 | Template | APPROVED |
+| TS-EP-01 | Épico | APPROVED |
+| TS-EP-02 | Épico relacionado | APPROVED |
+| TS-I00-FEAT-CAT-001 | Catálogo | APPROVED |
+| ADRs aplicáveis | Normativa | UNVERIFIED |
+| Catálogo de componentes | Arquitetural | UNVERIFIED |
+| Repositório existente | Técnica | NOT_INSPECTED |
+| Owners individuais | Governança | TBD |
+
+A aprovação das Features predecessoras não comprova sua implementação.
+
+---
+
+## 20. Histórias técnicas
+
+O vínculo inicial com **TS-ST-002 — Versioned Contracts** está identificado como PROPOSED.
+
+A descrição original, o escopo e os critérios da história deverão ser conferidos no backlog autoritativo.
+
+**Story Mapping:** PROPOSED / UNVERIFIED.
+
+Não serão criadas histórias adicionais sem formalização.
+
+---
+
+## 21. Comportamento esperado
+
+### 21.1 Contrato válido
+
+**Given:** schema aprovado e mensagem compatível.
+
+**When:** a validação for executada.
+
+**Then:** a mensagem deverá ser aceita estruturalmente, sem presumir autorização de negócio.
+
+### 21.2 Contrato inválido
+
+**Given:** mensagem com violação de schema.
+
+**When:** a validação for executada.
+
+**Then:** deverá ocorrer rejeição explícita.
+
+### 21.3 Versão incompatível
+
+**Given:** consumidor incompatível com a versão recebida.
+
+**When:** a compatibilidade for verificada.
+
+**Then:** a incompatibilidade deverá ser detectada e tratada conforme política.
+
+### 21.4 Comando sem autorização
+
+**Given:** comando estruturalmente válido sem autorização efetiva.
+
+**When:** o componente responsável avaliar o comando.
+
+**Then:** a operação deverá ser rejeitada.
+
+### 21.5 Mensagem duplicada
+
+**Given:** duas entregas da mesma mensagem.
+
+**When:** o consumidor processá-las.
+
+**Then:** a identidade definida pelo contrato deverá permitir aplicar o controle de idempotência.
+
+A implementação desse controle pertence à Feature do consumidor.
+
+### 21.6 Alteração incompatível
+
+**Given:** proposta de mudança que quebre consumidores existentes.
+
+**When:** os testes de compatibilidade forem executados.
+
+**Then:** a mudança deverá ser sinalizada e não poderá substituir silenciosamente a versão aprovada.
+
+---
+
+## 22. Estratégia de testes
+
+### 22.1 Schema Validation
+
+Verificar campos, tipos, formatos e restrições.
+
+### 22.2 Positive Tests
+
+Validar exemplos conformes.
+
+### 22.3 Negative Tests
+
+Rejeitar exemplos inválidos.
+
+### 22.4 Compatibility Tests
+
+Detectar alterações incompatíveis.
+
+### 22.5 Property-Based Tests
+
+Verificar invariantes de serialização e validação quando aplicável.
+
+### 22.6 Temporal Tests
+
+Verificar timestamps, expiração e sequências aplicáveis.
+
+### 22.7 Security Tests
+
+Verificar ausência de autorização implícita e exposição indevida.
+
+### 22.8 Integration Tests
+
+Verificar utilização dos contratos por componentes de fundação.
+
+### 22.9 Regression Tests
+
+Verificar preservação do comportamento após alterações.
+
+Nenhum teste deverá executar ordens financeiras reais.
+
+---
+
+## 23. Critérios de aceite
+
+Os critérios abaixo são propostos para o aceite da implementação de I00-FEAT-003.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| FEAT003-AC01 | Catálogo inicial identificado | Inventário de contratos |
+| FEAT003-AC02 | Identificadores e versões consistentes | Verificação de nomenclatura |
+| FEAT003-AC03 | Schemas executáveis versionados | Arquivos e hashes |
+| FEAT003-AC04 | CommandEnvelope.v1 conforme | Testes de contrato |
+| FEAT003-AC05 | EventEnvelope.v1 conforme | Testes de contrato |
+| FEAT003-AC06 | ErrorEnvelope.v1 conforme | Testes de contrato |
+| FEAT003-AC07 | HealthStatus.v1 conforme | Testes de contrato |
+| FEAT003-AC08 | OutboxRecord.v1 conforme | Testes de contrato |
+| FEAT003-AC09 | Exemplos válidos e inválidos testados | Relatórios |
+| FEAT003-AC10 | Política de compatibilidade verificada | Testes entre versões |
+| FEAT003-AC11 | Segurança e semântica verificadas | Testes negativos |
+| FEAT003-AC12 | Validação reproduzível | Relatório de execução |
+| FEAT003-AC13 | Rastreabilidade de contratos disponível | Matriz verificada |
+| FEAT003-AC14 | Evidências identificadas e íntegras | Evidence Bundle |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+Os critérios contribuem para:
+
+- EP01-AC03 — Contratos iniciais versionados.
+- EP02-AC11 — Contratos de eventos e Outbox conformes.
+- I00-AC03 — Contratos versionados e testados.
+
+Os vínculos deverão ser confirmados na Traceability Matrix.
+
+---
+
+## 24. Segurança e governança
+
+### 24.1 Ambientes
+
+Contratos deverão preservar a segregação TRAINING/PAPER/LIVE quando aplicável.
+
+### 24.2 Autorização
+
+Um schema válido não equivale a autorização operacional.
+
+### 24.3 Credenciais
+
+Segredos não deverão ser incluídos nos exemplos, logs ou evidências.
+
+### 24.4 Integridade
+
+Versões aprovadas não poderão ser substituídas silenciosamente.
+
+### 24.5 Execução financeira
+
+Nenhum contrato do I00 poderá habilitar execução financeira real.
+
+### 24.6 Autoridade
+
+Os fluxos financeiros futuros deverão preservar Control → Risk → Execution.
+
+### 24.7 Governança
+
+Alterações deverão seguir o Approval Register e o Change Log.
+
+---
+
+## 25. Observabilidade
+
+A validação de contratos deverá permitir registrar:
+
+- Contract ID.
+- Contract Version.
+- Schema Version.
+- Test ID.
+- Test Run ID.
+- Ambiente.
+- Commit.
+- Resultado.
+- Erro de validação.
+- Timestamp.
+- Referência de evidência.
+
+Logs deverão evitar exposição de dados sensíveis.
+
+---
+
+## 26. Evidências esperadas
+
+| Referência proposta | Evidência |
+|---|---|
+| EV-FEAT003-01 | Inventário de contratos |
+| EV-FEAT003-02 | Manifesto de schemas |
+| EV-FEAT003-03 | Testes CommandEnvelope |
+| EV-FEAT003-04 | Testes EventEnvelope |
+| EV-FEAT003-05 | Testes ErrorEnvelope |
+| EV-FEAT003-06 | Testes HealthStatus |
+| EV-FEAT003-07 | Testes OutboxRecord |
+| EV-FEAT003-08 | Exemplos válidos e inválidos |
+| EV-FEAT003-09 | Relatório de compatibilidade |
+| EV-FEAT003-10 | Relatório de segurança |
+| EV-FEAT003-11 | Validação reproduzível |
+| EV-FEAT003-12 | Matriz de rastreabilidade |
+
+Os identificadores deverão ser reconciliados com o padrão oficial de Evidence Bundle.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 27. Riscos e lacunas
+
+| Referência | Risco ou lacuna | Tratamento |
+|---|---|---|
+| DOC-GAP-003 | ADRs individuais não verificadas | Conferir fontes |
+| DOC-GAP-004 | ADRs técnicas não formalizadas integralmente | Recuperar registros |
+| DOC-GAP-005 | Vínculos de rastreabilidade incompletos | Confirmar relações |
+| DOC-GAP-006 | História TS-ST-002 não reconciliada | Verificar backlog |
+| DOC-GAP-007 | Repositório não auditado | Inspecionar antes de implementar |
+| DOC-GAP-008 | Owners de contratos pendentes | Formalizar responsabilidades |
+
+Riscos adicionais:
+
+- Divergência entre schema e documentação.
+- Quebra de compatibilidade.
+- Ambiguidade de timestamps.
+- Interpretação incorreta de autorização.
+- Falhas de validação semântica.
+- Inconsistência de identificadores.
+- Dependência indevida entre domínios.
+
+A aprovação desta Feature não encerrará automaticamente nenhuma lacuna.
+
+---
+
+## 28. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. Catálogo de contratos estiver confirmado.
+3. Ownership de cada contrato estiver definido.
+4. ADRs aplicáveis estiverem verificadas.
+5. História TS-ST-002 estiver refinada, caso seu vínculo seja confirmado.
+6. Regras de versionamento estiverem aprovadas.
+7. Semântica dos envelopes estiver especificada.
+8. Schemas e exemplos necessários estiverem definidos.
+9. Critérios de aceite estiverem testáveis.
+10. Estratégia de testes estiver aprovada.
+11. Dependências bloqueantes estiverem resolvidas.
+12. Rastreabilidade estiver consistente.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação desta especificação não altera automaticamente esse estado.
+
+---
+
+## 29. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- O catálogo estiver implementado.
+- Os cinco contratos iniciais estiverem especificados e versionados.
+- Os schemas executáveis estiverem disponíveis.
+- Os critérios FEAT003-AC01–14 estiverem atendidos.
+- Os exemplos estiverem validados.
+- Os testes obrigatórios tiverem sido executados.
+- A compatibilidade estiver verificada.
+- As regras de segurança estiverem preservadas.
+- As evidências estiverem registradas.
+- As lacunas bloqueantes estiverem resolvidas.
+- A rastreabilidade estiver atualizada.
+- A autoridade competente registrar o aceite.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite desta Feature não substitui o aceite dos contratos individuais, dos épicos, do I00 ou do gate G0.
+
+---
+
+## 30. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-01 → I00-FEAT-003 → TS-ST-002 → Contrato → Teste → Evidência**
+
+### Estados iniciais
+
+- Epic Link: VERIFIED documentalmente.
+- Work Package Link: VERIFIED documentalmente.
+- Feature Catalog Link: VERIFIED documentalmente.
+- Predecessor Feature Links: VERIFIED documentalmente.
+- Story Link: PROPOSED.
+- ADR Links: UNVERIFIED.
+- Component Links: UNVERIFIED.
+- Requirement Links: UNVERIFIED.
+- Contract Specifications: PENDING.
+- Test Links: PLANNED.
+- Evidence Links: PLANNED.
+
+Nenhum vínculo poderá ser promovido a VERIFIED sem conferência de sua fonte.
+
+---
+
+## 31. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-16 | PENDING | Especificação inicial Versioned Contracts | PENDING |
+
+---
+
+## 32. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-003 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEAT-004.md
+
+**Restriction:** não avançar antes da aprovação desta Feature.
+
+## 33. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/I00-FEAT-003/IN-REVIEW.txt) está arquivado. A especificação permanece **IN_REVIEW**, com aprovação **PENDING**.
+
+Os schemas, os exemplos sintéticos e os testes históricos de CommandEnvelope.v1 e EventEnvelope.v1 estão vinculados no [registro de contratos](../03-CONTRATOS.md) e na [evidência do pacote I00-03](../evidence/I00-03-contratos.md). O [registro mestre de I00](../backlog/registro-mestre-i00.md) mantém o alcance das verificações de AC03 e AC10.
+
+A seção 4 lista cinco contratos no catálogo inicial. O registro de contratos classifica ErrorEnvelope.v1, HealthStatus.v1 e OutboxRecord.v1 como propostas complementares. A extensão normativa, a publicação individual e as evidências de conformidade desses três contratos seguem para conferência durante a revisão. [Gap Register](../governance/GAP-REGISTER.md)
+
+O aceite da implementação da Feature permanece pendente. [G0](../governance/G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

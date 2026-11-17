@@ -1,0 +1,755 @@
+# TRADE SYSTEM — Validação Arquitetural V1
+
+Domínio 04 · Plataforma de Operações e Observabilidade
+
+Proposta para validação
+
+Vamos definir a arquitetura do Domínio 04 — Operations Platform & Observability, mantendo o método de aprovação utilizado nos Domínios 01, 02 e 03.
+
+Este domínio será a interface entre os operadores humanos e o Trade System. Sua responsabilidade não será apenas apresentar gráficos, mas permitir acompanhar, compreender, supervisionar, auditar e intervir nas operações com segurança.
+
+A diretriz arquitetural proposta é:
+
+> A plataforma observa e controla o Trade System por meio de APIs e contratos autorizados. Ela não executa ordens diretamente na Binance, não altera decisões do agente e não contorna o Risk Engine.
+
+# 5
+
+Componentes principais
+
+# 12
+
+ADRs propostas
+
+# 28
+
+ADRs já aprovadas
+
+Identificação: TS-ARCH-D04-V1.0 · Dependências: D01, D02 e D03 aprovados · Estado: aguardando validação
+
+## 1. Componentes propostos
+
+	D04-C01 — Admin & Operations Portal
+		Central de administração, configuração, governança e acompanhamento operacional. Consolida ambientes, contas, estratégias, modelos, políticas e indicadores.
+	Prioridade: MVP.
+
+	D04-C02 — Operations Viewer
+		Interface gráfica inspirada no TradingView, com candles, indicadores, decisões da IA, ordens, execuções, posições, stops, alvos e resultados.
+	Prioridade: MVP.
+
+	D04-C03 — Manual Trading Console
+		Console para assumir controle, pausar a IA, reduzir ou encerrar posições, cancelar ordens e gerenciar proteções, integrado ao Control Manager.
+	Prioridade: MVP.
+
+	D04-C04 — Monitoring & Alerts
+		Monitoramento da saúde da plataforma, riscos, posições, conectividade, agentes, execuções e incidentes, com alertas e histórico.
+	Prioridade: MVP, com evolução gradual.
+
+	D04-C05 — Strategy Replay & Analytics
+		Reprodução de decisões e operações históricas, comparação entre modelos, análise de desempenho e identificação de falhas operacionais.
+	Prioridade: MVP básico; análises avançadas em evolução posterior.
+
+Os cinco componentes são módulos funcionais, não cinco aplicações ou microsserviços obrigatórios. Minha recomendação inicial é uma aplicação web integrada, com separação lógica entre os módulos.
+
+## 2. Arquitetura conceitual proposta
+
+Trade System — Web Application
+	Experiência operacional unificada
+		↓
+Admin Portal
+Operations Viewer
+Manual Console
+Monitoring & Alerts
+		
+Strategy Replay & Analytics
+		↓^
+Operations API / BFF
+Autenticação · Autorização · Agregação · Streaming · Auditoria
+		↓^
+Market Data & State
+AI & Model Registry
+Risk & Control
+Execution & Portfolio
+Event Store & Analytics
+Telemetry & Alerts
+
+BFF = Backend for Frontend. A aplicação web acessa serviços internos por interfaces autorizadas, nunca diretamente pelas credenciais de trading.
+
+### Princípios estruturais
+
+- Separação de leitura e comando: consultas e streaming não devem compartilhar indiscriminadamente as mesmas permissões de intervenção.
+- Backend como fronteira de confiança: o frontend nunca recebe chaves privadas de exchange.
+- Estado operacional autoritativo: o painel mostra informações derivadas dos serviços responsáveis, e não mantém uma fonte de verdade paralela.
+- Atualização em tempo real: WebSocket ou SSE para eventos, com snapshots e recuperação de sequência.
+- Auditoria de comandos: toda ação humana relevante deve possuir identidade, contexto, resultado e correlação.
+- Degradação segura: indisponibilidade da interface não pode interromper proteções independentes já estabelecidas.
+
+## 3. Admin & Operations Portal
+
+O Admin Portal será a entrada principal para administração e governança da operação.
+
+### Módulos propostos
+
+| Módulo               | Funções principais                                                |
+| -------------------- | ----------------------------------------------------------------- |
+| Dashboard executivo  | Patrimônio, PnL líquido, drawdown, exposição e status operacional |
+| Ambientes            | TRAINING, PAPER e LIVE, claramente segregados                     |
+| Exchanges & Accounts | Contas vinculadas, conectividade e permissões                     |
+| AI Agents & Models   | Modelo ativo, versão, histórico de promoção e saúde da inferência |
+| Risk Policies        | Consulta e configuração autorizada de políticas versionadas       |
+| Operations           | Posições, ordens, execuções e histórico                           |
+| Users & Access       | Usuários, perfis, permissões e sessões                            |
+| Audit & Incidents    | Eventos, intervenções, mudanças e incidentes                      |
+
+Recomendação: não permitir que alterações críticas de risco sejam aplicadas silenciosamente. Mudanças de alavancagem máxima, limites de exposição e políticas de emergência devem passar por validação, auditoria e, conforme criticidade, aprovação adicional.
+
+## 4. Operations Viewer — TradingView Lightweight Charts
+
+O Operations Viewer será a principal ferramenta visual de acompanhamento das operações e do comportamento da IA.
+
+Recomendo usar TradingView Lightweight Charts no MVP. A biblioteca é open source, licenciada sob Apache 2.0, suporta atualização em tempo real e extensões gráficas. A licença exige atribuição ao TradingView conforme sua documentação.
+
+[image](https://www.google.com/s2/favicons?domain=https://www.tradingview.com\&sz=32)
+
+TradingView+2
+
+
+
+## Operations Viewer — Layout conceitual
+
+Wireframe ilustrativo · Não conectado à Binance
+
+BTCUSDT
+
+BTCUSDT · 5m
+
+Binance USDⓈ-M Futures
+
+AUTO
+
+Dados demonstrativos
+
+Posição
+
+LONG
+
+Risk Status
+
+NORMAL
+
+Modelo
+
+PPO v1
+
+O gráfico acima ilustra camadas visuais previstas. Não representa preço, posição, execução ou resultado real.
+
+### Camadas do gráfico
+
+| Camada      | Conteúdo                                                 |
+| ----------- | -------------------------------------------------------- |
+| Mercado     | Candles OHLCV, volume e indicadores                      |
+| Estrutura   | HH, HL, LH, LL, BOS, CHoCH                               |
+| Smart Money | Order Blocks, FVG e zonas de liquidez                    |
+| IA          | Intenção, ação escolhida, modelo e instante da decisão   |
+| Execução    | Ordens, entradas, saídas, fills parciais e cancelamentos |
+| Risco       | Stop Loss, Take Profit, limites e alertas                |
+| Resultado   | PnL realizado e não realizado, custos e duração          |
+
+As marcações simples podem ser implementadas com os recursos da biblioteca; sobreposições avançadas, como zonas de Order Blocks e FVG, poderão exigir plugins e primitives personalizados.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://github.com\&sz=32)
+
+GitHub+1
+
+O gráfico não será a fonte de verdade de ordens e posições. Ele apenas renderizará os estados e eventos recebidos do backend.
+
+Também recomendo distinguir visualmente três momentos: decisão da IA, autorização do Risk Engine e execução confirmada pela Binance. Eles podem ocorrer em instantes e preços diferentes.
+
+## 5. Manual Trading Console
+
+O console permitirá intervenção humana sem violar a arquitetura aprovada no Domínio 03.
+
+## Console operacional
+
+Simulação de interface · Sem comandos reais
+
+Prévia
+
+Modo operacional
+
+AUTO — Controle automático
+
+SUPERVISED — Aprovação humana
+
+MANUAL — Controle humano
+
+Comandos disponíveis na interface
+
+&#x20;Pausar IA
+
+&#x20;Reduzir posição
+
+&#x20;Fechar posição
+
+&#x20;Cancelar ordens
+
+&#x20;Emergency LockOs controles acima demonstram o desenho de interação. Não estão conectados a serviços nem enviam ordens.
+
+### Requisitos de segurança
+
+Para ações críticas, recomendo confirmação explícita contendo conta, ambiente, símbolo, posição, efeito esperado e versão do estado.
+
+A interface também deverá impedir ações baseadas em dados desatualizados e informar claramente quando uma solicitação foi recebida, autorizada, enviada ou confirmada.
+
+Uma solicitação de fechamento não deve aparecer como posição encerrada antes da confirmação da execução.
+
+## 6. Monitoring & Alerts
+
+A observabilidade deve acompanhar tanto a infraestrutura quanto a operação financeira.
+
+| Dimensão         | Indicadores propostos                               |
+| ---------------- | --------------------------------------------------- |
+| Market Data      | Latência, gaps, staleness e integridade             |
+| AI Runtime       | Disponibilidade, tempo de inferência e versão ativa |
+| Risk Engine      | Rejeições, bloqueios, violações e exposição         |
+| Execution Engine | Erros, latência, ordens incertas e fills            |
+| Portfolio        | Divergências, margem, PnL e drawdown                |
+| Binance          | Conectividade, limites de API e sincronização       |
+| Plataforma       | Erros, disponibilidade, filas e consumo de recursos |
+| Segurança        | Acessos, intervenções e mudanças de política        |
+
+### Classificação proposta
+
+	INFO
+		Eventos normais e mudanças operacionais relevantes.
+
+	WARNING
+		Degradação que exige atenção, sem falha crítica confirmada.
+
+	CRITICAL
+		Falha de segurança, exposição ou operação que exige resposta prioritária.
+
+Recomendo que alertas críticos possuam registro de recebimento, responsável, reconhecimento, escalonamento e resolução. As notificações poderão utilizar canais externos, mas o estado do incidente deve permanecer centralizado no Trade System.
+
+Observação: o motor de circuit breakers continua pertencendo ao Domínio 03. O Monitoring & Alerts observa, notifica e acompanha; não substitui os controles de segurança.
+
+## 7. Strategy Replay & Analytics
+
+O Replay permitirá reconstruir uma operação histórica para responder perguntas como:
+
+- Qual era o Market State quando a IA decidiu entrar?
+- Qual modelo e versão produziram a decisão?
+- O Risk Engine aprovou ou ajustou a intenção?
+- Qual ordem foi enviada e a que preço ocorreu a execução?
+- Houve intervenção humana?
+- O resultado foi influenciado por custos, slippage ou mudança de mercado?
+
+### Linha do tempo de uma operação
+
+1. Market Snapshot: observação disponível ao agente.
+2. AI Decision: intenção e versão do modelo.
+3. Risk Decision: autorização, ajuste ou rejeição.
+4. Execution: envio, confirmação e fills.
+5. Position Updates: evolução de exposição, proteção e PnL.
+6. Outcome: encerramento, custos, resultado e avaliação.
+
+O Replay deve distinguir reprodução factual de simulação contrafactual. Reproduzir eventos registrados é diferente de estimar o que teria acontecido se a IA tivesse escolhido outra ação.
+
+No MVP, recomendo priorizar o replay factual e relatórios básicos de desempenho. Comparações contrafactuais e análises avançadas podem ser implementadas posteriormente.
+
+## 8. Contratos de integração
+
+Proponho que a plataforma consuma contratos versionados por meio do Operations API/BFF.
+
+| Contrato                    | Origem                      | Uso                                    |
+| --------------------------- | --------------------------- | -------------------------------------- |
+| `OperationsSnapshot`        | BFF                         | Estado inicial consolidado do painel   |
+| `MarketCandleEvent`         | Market Data                 | Atualização dos candles                |
+| `TradingDecisionEvent`      | Trading Agent               | Intenções e decisões da IA             |
+| `RiskDecisionEvent`         | Risk Engine                 | Autorizações e rejeições               |
+| `OrderExecutionEvent`       | Execution Engine            | Estados e fills                        |
+| `PositionPortfolioSnapshot` | Position & Portfolio        | Exposição, saldos, margem e PnL        |
+| `ControlStateEvent`         | Control Manager             | Modos e autoridade                     |
+| `ManualCommandRequest`      | Manual Console              | Solicitação autenticada de intervenção |
+| `ManualCommandResult`       | Control Manager / Execution | Resultado e correlação do comando      |
+| `OperationalAlertEvent`     | Monitoring                  | Alertas e incidentes                   |
+| `ReplayTimeline`            | Event Store / Analytics     | Eventos históricos ordenados           |
+
+### Campos transversais obrigatórios
+
+Os contratos deverão incluir, conforme aplicável:
+
+`event_id`, `correlation_id`, `environment_id`, `account_id`, `symbol`, `market_type`, `timestamp`, `sequence`, `schema_version` e `source`.
+
+Para ações humanas, acrescentar identidade do operador, escopo, autorização, justificativa quando exigida e resultado.
+
+### Estratégia de atualização
+
+	REST — Snapshot inicial
+			↓
+	WebSocket / SSE — Eventos incrementais
+			↓
+	Client State — Projeção de leitura
+			↓
+	Operations UI — Estado visual
+
+Em caso de desconexão ou lacuna de sequência, o cliente deverá recuperar o estado por snapshot antes de voltar a apresentar informações como atuais.
+
+Regra proposta: o frontend nunca assume sucesso operacional apenas porque uma API respondeu que recebeu o comando. O resultado definitivo vem dos eventos e estados autoritativos.
+
+## 9. Segurança, ambientes e governança
+
+A plataforma deverá manter segregação explícita entre TRAINING, PAPER e LIVE, evitando que uma operação de teste seja confundida com uma operação real.
+
+Recomendo perfis iniciais:
+
+| Perfil        | Permissões principais                     |
+| ------------- | ----------------------------------------- |
+| Viewer        | Consulta e acompanhamento                 |
+| Trader        | Intervenções operacionais autorizadas     |
+| Risk Manager  | Gestão de políticas e bloqueios de risco  |
+| Administrator | Administração de usuários e configurações |
+| Auditor       | Consulta de eventos, trilhas e relatórios |
+
+O papel de administrador não deverá implicar automaticamente autorização irrestrita para executar trades ou desativar controles de risco.
+
+Para ações de maior criticidade, poderão ser exigidas autenticação reforçada e dupla aprovação. Os detalhes serão formalizados na política de segurança.
+
+## 10. Decisões arquiteturais propostas — ADR-029 a ADR-040
+
+Proponho 12 decisões para aprovação do Domínio 04.
+
+## Checklist — Domínio 04
+
+Validação das decisões arquiteturais
+
+## 0/12
+
+Avaliadas
+
+Arquitetura da plataforma
+
+ADR-029
+
+Adotar cinco módulos funcionais integrados em uma aplicação web, com separação lógica e responsabilidades próprias.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Operations API / BFF
+
+ADR-030
+
+Centralizar autenticação, autorização, agregação e distribuição de dados por uma API de operações; proibir acesso direto do frontend às credenciais da Binance.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Admin & Operations Portal
+
+ADR-031
+
+Centralizar administração de ambientes, contas, agentes, modelos, políticas, usuários e indicadores operacionais.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Biblioteca de gráficos
+
+ADR-032
+
+Adotar TradingView Lightweight Charts para o MVP, com extensões próprias para sinais, SMC, ordens, posições e proteções.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Operations Viewer
+
+ADR-033
+
+Exibir mercado, decisões da IA, autorizações de risco e execuções como eventos distintos, vinculados aos registros autoritativos.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Manual Trading Console
+
+ADR-034
+
+Encaminhar toda intervenção humana pelo Control Manager, Risk Engine e Execution Engine, com confirmação e auditoria.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Exibir as outras 6 decisões
+
+Observações e ajustes (opcional)
+
+Aprovar todasLimpar
+
+Consolidar validação do Domínio 04&#x20;
+
+## 11. Pendências técnicas identificadas
+
+As pendências abaixo deverão ser resolvidas durante o detalhamento e a implementação.
+
+| ID  | Pendência                                                   | Responsável            |
+| --- | ----------------------------------------------------------- | ---------------------- |
+| P33 | Arquitetura frontend, framework e organização dos módulos   | Plataforma             |
+| P34 | Especificação OpenAPI e contratos de streaming              | Operations API         |
+| P35 | Modelo de autenticação, RBAC e permissões por ambiente      | Segurança              |
+| P36 | Design System e padrões de UX operacional                   | UI/UX                  |
+| P37 | Plugins gráficos para SMC, sinais, ordens e proteções       | Operations Viewer      |
+| P38 | Regras de atualização, sequência, reconexão e staleness     | BFF / Viewer           |
+| P39 | Fluxos de confirmação e proteção contra comandos duplicados | Manual Console         |
+| P40 | Métricas, thresholds, canais e escalonamento de alertas     | Monitoring             |
+| P41 | Modelo de incidentes e procedimentos de resposta            | Monitoring / Operações |
+| P42 | Contratos de replay, ordenação e reconstrução histórica     | Replay & Analytics     |
+| P43 | KPIs operacionais e financeiros e suas definições           | Analytics              |
+| P44 | Retenção, consulta e integridade dos eventos de auditoria   | Dados / Segurança      |
+| P45 | Segregação técnica entre TRAINING, PAPER e LIVE             | Plataforma / Segurança |
+| P46 | Requisitos de desempenho, disponibilidade e escalabilidade  | Engenharia             |
+| P47 | Testes E2E, acessibilidade, segurança e falhas de interface | QA                     |
+
+São 15 novas pendências, identificadas como P33 a P47. Sua existência não impede a aprovação conceitual do domínio.
+
+## 12. Critérios de aceite técnico futuros
+
+Após a aprovação da arquitetura, proponho utilizar os seguintes critérios para avaliar a implementação.
+
+Checklist de implementação
+
+0/10
+
+O Viewer distingue decisões, autorizações e execuções reais.
+Dados desatualizados são identificados e não apresentados como atuais.
+O frontend não possui credenciais nem acesso direto à execução Binance.
+Comandos manuais são autenticados, autorizados e auditados.
+Confirmação de comando não é confundida com execução concluída.
+Reconexões recuperam snapshots e sequências corretamente.
+TRAINING, PAPER e LIVE estão segregados e identificados.
+Alertas críticos possuem rastreabilidade e gestão de incidentes.
+O Replay reconstrói decisões e operações sem alterar o histórico.
+A indisponibilidade do Portal não desativa proteções operacionais.
+
+Checklist de planejamento. Nenhum requisito está sendo declarado como implementado ou testado.
+
+## 13. Próximo domínio proposto
+
+## Domínio 05 — Plataforma de Dados, Eventos e Auditoria
+
+Data Platform & Event Architecture
+
+O próximo domínio deverá consolidar a infraestrutura de dados que sustenta os quatro primeiros domínios.
+
+Os principais assuntos serão:
+
+- PostgreSQL e organização dos modelos de dados.
+- Event Store e contratos de eventos.
+- Histórico de mercado, decisões, ordens, fills e posições.
+- Rastreabilidade ponta a ponta e trilhas de auditoria.
+- Versionamento de datasets, features e modelos.
+- Retenção, backup, recuperação e integridade.
+- Estratégias de consulta para dashboards, analytics e replay.
+
+Resultado esperado: definir como o Trade System armazenará, distribuirá, reconstruirá e protegerá seus dados operacionais e históricos.
+
+## 14. Situação geral da arquitetura
+
+## Trade System V1 — Progresso de validação
+
+D01 — Integração e Dados de Mercado
+
+6 ADRs
+
+D02 — Inteligência Artificial
+
+10 ADRs
+
+D03 — Risco e Execução
+
+12 ADRs
+
+D04 — Plataforma de Operações
+
+12 propostas
+
+# 28
+
+ADRs aprovadas
+
+# 12
+
+Novas ADRs em análise
+
+# 47
+
+Pendências identificadas
+
+Recomendação arquitetural: aprovar as ADR-029 a ADR-040 como baseline conceitual do Domínio 04, mantendo os detalhes de implementação, UX, segurança, desempenho e contratos para a engenharia.
+
+Com essa aprovação, teremos definida a camada de interação humana do Trade System, conectando dados de mercado, decisões de IA, gestão de risco, execução e supervisão operacional em uma plataforma integrada.
+
+=====
+
+# TRADE SYSTEM — Arquitetura Conceitual V1
+
+Registro de Validação Arquitetural · D04
+Aprovado
+
+Domínio 04 — Plataforma de Operações e Observabilidade
+
+A validação do Domínio 04 está concluída. As 12 decisões arquiteturais (ADR-029 a ADR-040) foram aprovadas integralmente, sem ressalvas.
+
+Com isso, o Trade System V1 estabelece a arquitetura conceitual da plataforma responsável pela administração, visualização, supervisão, intervenção humana, monitoramento e análise das operações automatizadas.
+
+# 12/12
+
+ADRs aprovadas
+
+# 5
+
+Componentes principais
+
+# 0
+
+Ressalvas
+
+Identificação: TS-ARCH-D04-V1.0 · Data: 10/11/2026 · Estado: Baseline conceitual aprovada
+
+## 1. Decisões arquiteturais consolidadas
+
+| ID      | Decisão                     | Definição aprovada                                                                              |
+| ------- | --------------------------- | ----------------------------------------------------------------------------------------------- |
+| ADR-029 | Arquitetura da plataforma   | Cinco módulos funcionais integrados em aplicação web, com separação lógica                      |
+| ADR-030 | Operations API / BFF        | Fronteira de autenticação, autorização, agregação e streaming; frontend sem credenciais Binance |
+| ADR-031 | Admin & Operations Portal   | Administração centralizada de ambientes, contas, agentes, modelos, políticas e usuários         |
+| ADR-032 | Biblioteca de gráficos      | TradingView Lightweight Charts no MVP, com extensões para sinais, SMC, ordens e proteções       |
+| ADR-033 | Operations Viewer           | Visualização distinta de decisões da IA, autorizações de risco e execuções                      |
+| ADR-034 | Manual Trading Console      | Intervenções encaminhadas por Control Manager, Risk Engine e Execution Engine                   |
+| ADR-035 | Atualização em tempo real   | Snapshot inicial e eventos incrementais via WebSocket/SSE, com recuperação                      |
+| ADR-036 | Monitoring & Alerts         | Monitoramento operacional e gestão de alertas classificados por severidade                      |
+| ADR-037 | Strategy Replay & Analytics | Replay factual e analytics básicos no MVP; análises contrafactuais posteriormente               |
+| ADR-038 | Segurança e permissões      | RBAC, menor privilégio, segregação de funções e confirmação reforçada                           |
+| ADR-039 | Segregação de ambientes     | Separação explícita entre TRAINING, PAPER e LIVE                                                |
+| ADR-040 | Governança da interface     | Qualidade e atualização dos dados, auditoria humana e confirmação efetiva das operações         |
+
+Resultado: as ADR-029 a ADR-040 passam a integrar a baseline arquitetural oficial do Trade System V1.
+
+## 2. Arquitetura conceitual aprovada
+
+	Trade System — Web Application
+		Interface operacional unificada
+			↓ ^
+	Admin & Operations Portal
+	Operations Viewer
+	Manual Trading Console
+	Monitoring & Alerts
+
+	Strategy Replay & Analytics
+			↓ ^
+	Operations API / BFF
+		Autenticação · Autorização · Contratos · Streaming
+			↓ ^
+	D01 — Market Data
+	D02 — AI & Learning
+	D03 — Risk & Control
+	D03 — Execution & Portfolio
+	Event Store & Analytics
+	Telemetry & Alerts
+
+Arquitetura lógica aprovada. O BFF constitui a fronteira de comunicação entre a interface e os serviços operacionais.
+
+### Princípios arquiteturais estabelecidos
+
+- O frontend não executa operações diretamente na Binance.
+- Comandos humanos passam pelos mesmos mecanismos de autoridade, risco e execução definidos no Domínio 03.
+- O estado financeiro exibido é derivado dos componentes responsáveis, sem criar uma fonte de verdade paralela.
+- Atualizações em tempo real utilizam eventos sequenciados, com recuperação após desconexões.
+- A interface distingue intenção, autorização, envio e execução confirmada.
+- A indisponibilidade da aplicação web não deve comprometer as proteções independentes das posições abertas.
+
+## 3. Componentes e responsabilidades aprovados
+
+	D04-C01 — Admin & Operations Portal
+		Centraliza administração de usuários, ambientes, contas, modelos, estratégias, políticas de risco e indicadores operacionais.
+	Prioridade: MVP.
+
+	D04-C02 — Operations Viewer
+		Apresenta candles, indicadores, Smart Money, decisões da IA, ordens, fills, posições, stops, alvos e resultados, utilizando TradingView Lightweight Charts.
+	Prioridade: MVP.
+
+	D04-C03 — Manual Trading Console
+		Permite intervenção humana autorizada: pausa, redução, fechamento, cancelamento, alteração de proteção e retomada operacional.
+	Prioridade: MVP.
+
+	D04-C04 — Monitoring & Alerts
+		Monitora saúde dos serviços, agentes, conectividade, risco, ordens e posições. Gerencia alertas, incidentes e escalonamento.
+	Prioridade: MVP, com evolução gradual.
+
+	D04-C05 — Strategy Replay & Analytics
+		Reconstrói operações históricas e permite analisar decisões, autorizações, execuções, custos e resultados.
+	Prioridade: replay factual e analytics básicos no MVP.
+
+## 4. Contratos e políticas estabelecidos
+
+### Contratos de integração
+
+| Contrato                      | Responsabilidade                         |
+| ----------------------------- | ---------------------------------------- |
+| `OperationsSnapshot`          | Estado consolidado inicial da interface  |
+| `MarketCandleEvent`           | Atualizações de mercado                  |
+| `TradingDecisionEvent`        | Decisões e intenções da IA               |
+| `RiskDecisionEvent`           | Autorizações, ajustes e rejeições        |
+| `OrderExecutionEvent`         | Ordens e execuções                       |
+| `PositionPortfolioSnapshot`   | Posições, patrimônio e exposição         |
+| `ControlStateEvent`           | Modos e autoridade operacional           |
+| `ManualCommandRequest/Result` | Solicitações e resultados de intervenção |
+| `OperationalAlertEvent`       | Alertas e incidentes                     |
+| `ReplayTimeline`              | Reconstrução histórica de operações      |
+
+Os contratos deverão ser versionados e possuir identificadores de evento, correlação, ambiente, conta, instante e origem, conforme aplicável.
+
+### Segurança e governança
+
+Ficam estabelecidas as seguintes políticas conceituais:
+
+| Área                 | Política                                              |
+| -------------------- | ----------------------------------------------------- |
+| Controle de acesso   | RBAC e princípio do menor privilégio                  |
+| Ambientes            | Segregação entre TRAINING, PAPER e LIVE               |
+| Comandos críticos    | Confirmação reforçada e auditoria                     |
+| Dados desatualizados | Indicação explícita e restrições de comando           |
+| Streaming            | Recuperação por snapshot após perda de sequência      |
+| Auditoria            | Identificação do operador e resultado da ação         |
+| Replay               | Reconstrução factual sem alteração do histórico       |
+| Operações            | Sucesso exibido somente após confirmação autoritativa |
+
+## 5. Pendências técnicas consolidadas
+
+As 15 pendências identificadas durante a validação permanecem abertas para detalhamento.
+
+| ID  | Pendência                                                 | Responsável            |
+| --- | --------------------------------------------------------- | ---------------------- |
+| P33 | Arquitetura frontend, framework e organização dos módulos | Plataforma             |
+| P34 | Especificação OpenAPI e contratos de streaming            | Operations API         |
+| P35 | Autenticação, RBAC e permissões por ambiente              | Segurança              |
+| P36 | Design System e padrões de UX operacional                 | UI/UX                  |
+| P37 | Plugins gráficos para SMC, sinais, ordens e proteções     | Operations Viewer      |
+| P38 | Atualização, sequência, reconexão e staleness             | BFF / Viewer           |
+| P39 | Confirmação e proteção contra comandos duplicados         | Manual Console         |
+| P40 | Métricas, thresholds, canais e escalonamento              | Monitoring             |
+| P41 | Modelo de incidentes e resposta operacional               | Monitoring / Operações |
+| P42 | Contratos de replay e reconstrução histórica              | Replay & Analytics     |
+| P43 | KPIs operacionais e financeiros                           | Analytics              |
+| P44 | Retenção e integridade de eventos de auditoria            | Dados / Segurança      |
+| P45 | Segregação técnica TRAINING, PAPER e LIVE                 | Plataforma / Segurança |
+| P46 | Desempenho, disponibilidade e escalabilidade              | Engenharia             |
+| P47 | Testes E2E, acessibilidade, segurança e falhas            | QA                     |
+
+Status das pendências: abertas. Nenhuma impede a aprovação conceitual, mas deverão ser resolvidas nos pacotes de engenharia correspondentes.
+
+### Critérios obrigatórios antes de liberar a plataforma LIVE
+
+A implementação deverá demonstrar que comandos humanos são autorizados e auditados, que a interface não declara execução antes da confirmação, que dados desatualizados são identificados e que ambientes de teste não podem encaminhar comandos ao ambiente real.
+
+Também deverão ser validados os mecanismos de reconexão, recuperação de estado e continuidade das proteções quando o Portal estiver indisponível.
+
+Esses critérios são requisitos futuros de aceite, não funcionalidades já implementadas.
+
+## 6. Progresso acumulado — Trade System V1
+
+## Baseline arquitetural
+
+	4 domínios aprovados
+
+D01 — Integração e Dados de Mercado
+6/6
+
+D02 — Inteligência Artificial
+10/10
+
+D03 — Risco e Execução
+12/12
+
+D04 — Operações e Observabilidade
+12/12
+
+# 40
+ADRs aprovadas
+
+# 15
+Componentes principais
+
+# 47
+Pendências técnicas
+
+As 40 ADRs correspondem aos Domínios 01 a 04. Os 15 componentes são módulos lógicos principais, não necessariamente serviços implantáveis independentes.
+
+### Visão integrada dos quatro domínios
+
+D01 — Market Data → Features → Market State
+			↓
+D02 — Trading Observation → AI Agent
+			↓
+D03 — Control → Risk → Execution
+			↓ ^
+Binance / Position & Portfolio
+		
+D04 — Operations Platform
+	Supervisão, visualização, intervenção, monitoramento e replay de todo o fluxo
+
+## 7. Próximo domínio — Plataforma de Dados, Eventos e Auditoria
+
+## Domínio 05 — Data Platform & Event Architecture
+
+Próxima validação arquitetural
+
+O próximo domínio deverá estabelecer a infraestrutura responsável por persistir, distribuir, reconstruir e proteger os dados produzidos pelos quatro domínios aprovados.
+
+### Componentes a avaliar
+
+| Componente proposto          | Responsabilidade                                              |
+| ---------------------------- | ------------------------------------------------------------- |
+| Operational Database         | Persistência de entidades operacionais e financeiras          |
+| Event Store & Event Bus      | Registro e distribuição de eventos                            |
+| Historical Market Data Store | Armazenamento de dados históricos de mercado                  |
+| Feature & Dataset Store      | Datasets versionados para IA e backtesting                    |
+| Audit & Traceability Engine  | Rastreabilidade de decisões, ordens, execuções e intervenções |
+| Analytics & Read Models      | Projeções de consulta para dashboards e replay                |
+
+### Questões que precisaremos validar
+
+1. Organização do PostgreSQL e separação de dados transacionais, históricos e analíticos.
+2. Modelo de eventos e estratégia de comunicação entre componentes.
+3. Identificadores e relacionamentos entre decisões da IA, autorizações, ordens e fills.
+4. Reconstrução de estados financeiros e operacionais.
+5. Versionamento de datasets, features e experimentos.
+6. Integridade, retenção, backup e recuperação.
+7. Consistência, idempotência e tratamento de falhas na distribuição de eventos.
+8. Estratégia de escalabilidade para crescimento do histórico de mercado.
+
+Registro consolidado
+
+O Domínio 04 está aprovado como TS-ARCH-D04-V1.0, consolidando as ADR-029 a ADR-040. A arquitetura V1 possui agora quatro domínios conceitualmente aprovados, totalizando 40 ADRs.
+
+Iniciar validação do Domínio 05&#x20;
+
+Conclusão: a aprovação do Domínio 04 completa a definição conceitual da camada de supervisão humana do Trade System V1. O próximo passo é consolidar a fundação de dados e eventos, necessária para garantir consistência operacional, auditoria, reprodução histórica e evolução confiável dos agentes de IA.

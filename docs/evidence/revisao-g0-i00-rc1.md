@@ -15,12 +15,12 @@ I00, I01 e I02 como G0 parcial e vincula I03 e I04 a G0. A decisão G49
 mantém o aceite por incremento e os gates independentes. A evidência
 disponível sustenta a contribuição de I00 ao gate. A recomendação é
 manter G0 aberto até revisar as entregas e evidências de I01–I04.
-[D07](../referencias/TS-ARCH-D07-V1.0.docx) · [Blueprint global](../referencias/TS-ARCH-GLOBAL-V1.0.docx)
+[D07](<../referencias/originais/Domínio 07 - Engenharia, Qualidade e Validação Operacional.txt>) · [Blueprint global](<../referencias/originais/TS-ARCH-GLOBAL-V1.0 - Architecture & MVP Blueprint.txt>)
 
 A revisão usou as seções aprovadas dos documentos originais
 `D07 — Engineering, Quality & Validation.docx` e
 `[Rascunho] Architecture & MVP Blueprint.docx`, no acervo local.
-Os links acima apontam para as reconstruções versionadas para consulta.
+Os links acima apontam para os TXT confirmados como fontes oficiais em 16/11/2026.
 
 ## Critérios de aceite de I00
 

@@ -1,0 +1,717 @@
+# TRADE SYSTEM — Validação Arquitetural V1
+
+Domínio 03 · Risco, Execução e Controle Operacional
+
+Vamos iniciar a validação do Domínio 03 — Risk & Execution Management, mantendo o método utilizado nos Domínios 01 e 02: arquitetura conceitual, componentes, responsabilidades, contratos, decisões arquiteturais e checklist de aprovação.
+
+Este domínio é especialmente crítico porque estabelece a fronteira entre uma decisão produzida pela Inteligência Artificial e uma operação financeira efetivamente executada na Binance.
+
+A principal diretriz proposta é:
+   > O agente decide o que pretende fazer. O Control Manager determina se ele possui autoridade. O Risk Engine define o que é permitido. O Execution Engine executa somente ações autorizadas, e o Position & Portfolio Manager mantém o estado financeiro reconciliado.
+
+## 1. Visão executiva
+
+   # 4
+      Componentes principais
+   # 12
+      ADRs propostas
+   # 24×7
+      Operação supervisionada
+
+Identificação: TS-ARCH-D03-V1.0 · Proposta de validação · Dependências: D01 e D02 aprovados
+
+### Objetivos do domínio
+
+- Proteger o patrimônio e limitar perdas e exposições.
+- Transformar intenções de trading em ordens controladas.
+- Garantir consistência entre posições internas e posições na Binance.
+- Permitir intervenções manuais com prioridade sobre a IA.
+- Detectar falhas e interromper comportamentos potencialmente perigosos.
+- Registrar integralmente decisões, autorizações, ordens e resultados.
+
+## 2. Componentes e responsabilidades
+
+D03-C01 — Risk Engine
+   Responsável por avaliar intenções operacionais, dimensionar ou limitar posições, aplicar políticas de risco e autorizar, ajustar ou rejeitar operações.
+   Não gera sinais de mercado nem envia ordens diretamente à corretora.
+
+D03-C02 — Execution Engine
+   Responsável pelo ciclo de vida das ordens: preparação, envio, confirmação, cancelamento, acompanhamento de fills e recuperação de falhas.
+   É o único componente autorizado a encaminhar ordens pelo adapter de execução da Binance.
+
+D03-C03 — Position & Portfolio Manager
+   Responsável pelo estado das posições, patrimônio, saldos, margem, exposição, PnL realizado e não realizado e reconciliação com a corretora.
+   Mantém a fonte de verdade operacional interna, continuamente reconciliada com a Binance.
+
+D03-C04 — Control Manager
+   Responsável pela autoridade operacional entre agente, operador humano e mecanismos de emergência. Gerencia modos AUTO, SUPERVISED e MANUAL, além de pausas e retomadas.
+   Não contorna o Risk Engine e não manipula diretamente ordens na Binance.
+
+### Serviços de suporte
+
+| Serviço                  | Responsabilidade                                          |
+| ------------------------ | --------------------------------------------------------- |
+| Policy Manager           | Versionamento e configuração das políticas de risco       |
+| Order Manager            | Máquina de estados de ordens e deduplicação               |
+| Reconciliation Service   | Conciliação de ordens, fills, saldos e posições           |
+| Protection Manager       | Stops, proteção de posições e procedimentos de emergência |
+| Audit & Event Publisher  | Registro imutável lógico de eventos e rastreabilidade     |
+| Health & Circuit Breaker | Monitoramento operacional e bloqueio preventivo           |
+
+Esses serviços são módulos lógicos; não estamos aprovando uma arquitetura de microsserviços nesta etapa.
+
+## 3. Arquitetura conceitual
+
+   Trading Agent
+      Trading Intent
+   Operador Humano
+      Manual Intent
+            ↓
+   Control Manager
+      Autoridade · Modos · Prioridades · Intervenção
+            ↓
+   Risk Engine
+      Validação · Dimensionamento · Limites · Proteções
+            ↓
+   Execution Engine
+   Ordens · Estados · Fills · Cancelamentos
+            ↓
+   Binance Exchange Adapter
+      Spot / USDⓈ-M Futures · REST / WebSocket
+            ↓ ^
+   Position & Portfolio Manager
+      Posições · Capital · Margem · PnL · Reconciliação
+
+   Event Store & Observability
+      Registra eventos de todos os componentes
+
+Fluxo lógico simplificado. O Risk Engine e o Control Manager consultam continuamente os estados financeiros e operacionais.
+
+Decisão arquitetural importante: a autorização não deve ser apenas uma chamada simples. Ela precisa estar vinculada ao estado, ao contexto, à política e à versão da intenção que foram avaliados.
+
+Se o patrimônio, a posição, o preço ou o modo operacional mudar de forma relevante antes do envio, a intenção deverá ser reavaliada ou rejeitada.
+
+## 4. Fluxo operacional — Da decisão até a Binance
+Proponho um processo com dez etapas e rastreabilidade ponta a ponta.
+
+1. Trading Intent
+   O Agente 02 gera uma intenção com ação, símbolo, mercado, timestamp, versão do modelo e identificador único.
+
+2. Validação de autoridade
+   O Control Manager verifica se o agente pode atuar naquele mercado e se não existe intervenção humana ou bloqueio ativo.
+
+3. Consulta ao estado financeiro
+   O Risk Engine consulta posição, patrimônio, exposição, margem, ordens pendentes e integridade dos dados.
+
+4. Avaliação de risco
+   São aplicadas políticas de capital, perda, alavancagem, liquidez, volatilidade e capacidade operacional.
+
+5. Risk Decision
+   A intenção é aprovada, ajustada ou rejeitada. Qualquer ajuste precisa produzir uma autorização explícita para a ordem resultante.
+
+6. Preparação da ordem
+   O Execution Engine valida precisão, quantidade mínima, notional, modo de posição e demais filtros da Binance.
+
+7. Envio à Binance
+   A ordem é enviada com identificador correlacionável e controle contra duplicidade.
+
+8. Confirmação e acompanhamento
+   O motor processa acknowledgments, eventos de execução, preenchimentos parciais, cancelamentos e rejeições.
+
+9. Atualização e reconciliação
+   O Position & Portfolio Manager atualiza o estado financeiro e compara os registros internos com a corretora.
+
+10. Auditoria e aprendizado
+    Decisão, autorização, ordem, fills e resultado ficam disponíveis para observabilidade, analytics e avaliação posterior dos modelos.
+
+### Contratos conceituais
+
+| Contrato              | Produtor          | Consumidor                        |
+| --------------------- | ----------------- | --------------------------------- |
+| `TradingIntent`       | Trading Agent     | Control Manager                   |
+| `AuthorizedIntent`    | Control Manager   | Risk Engine                       |
+| `RiskDecision`        | Risk Engine       | Execution Engine                  |
+| `ExecutionRequest`    | Execution Engine  | Binance Adapter                   |
+| `OrderExecutionEvent` | Binance Adapter   | Order Manager                     |
+| `PositionState`       | Position Manager  | Risk Engine / Observation Builder |
+| `PortfolioState`      | Portfolio Manager | Risk Engine / Observation Builder |
+| `ControlState`        | Control Manager   | Trading Agent / Risk Engine       |
+| `ExecutionAuditEvent` | Componentes D03   | Event Store                       |
+
+Um contrato de autorização de risco deverá incluir, no mínimo, identificador da intenção, versão da política, limites autorizados, referência ao estado utilizado e prazo de validade.
+
+Para evitar condições de corrida, a execução também deverá realizar uma última verificação de autoridade e validade da autorização imediatamente antes do envio.
+
+## 5. Risk Engine — Políticas de risco
+
+Recomendo organizar as políticas em quatro níveis, com parâmetros configuráveis e versionados.
+
+   Nível 1 — Capital e portfólio
+      Limites de capital alocado, exposição total, concentração por ativo, margem disponível e perdas acumuladas.
+
+   Nível 2 — Operação individual
+      Dimensionamento da posição, risco por trade, alavancagem máxima, distância do stop, relação risco-retorno e custo estimado.
+
+   Nível 3 — Condições de mercado
+      Spread, volatilidade, liquidez, slippage estimado, funding, atualização dos dados e condições excepcionais.
+
+   Nível 4 — Segurança operacional
+      Drawdown, perdas diárias, divergência de posições, indisponibilidade da corretora, falhas repetidas e circuit breakers.
+
+### Parâmetros que precisam existir
+
+| Parâmetro                  | Comportamento proposto                                   |
+| -------------------------- | -------------------------------------------------------- |
+| Capital máximo operacional | Limita o capital disponível para trading                 |
+| Risco máximo por operação  | Restringe perda planejada por posição                    |
+| Exposição máxima           | Considera posições e ordens pendentes                    |
+| Alavancagem máxima         | Define teto permitido por mercado                        |
+| Perda máxima diária        | Bloqueia novas operações ao atingir o limite             |
+| Drawdown máximo            | Aciona bloqueio e política de recuperação                |
+| Proteção obrigatória       | Exige mecanismo de saída/proteção definido               |
+| Limite de ordens           | Evita excesso de operações e duplicidades                |
+| Qualidade dos dados        | Bloqueia novas entradas quando o estado estiver inválido |
+
+Não proponho aprovar percentuais numéricos nesta etapa. Valores como risco por trade, alavancagem e drawdown máximo dependerão de uma política operacional formal, validada em simulação e paper trading.
+
+Os limites de risco devem ser tratados como restrições rígidas, não apenas como penalidades da Reward Function.
+
+### Decisão do Risk Engine
+
+   APPROVED
+      Dentro dos limites
+   ADJUSTED
+      Quantidade ou proteção ajustada
+   REJECTED
+      Operação bloqueada
+
+Em qualquer resultado, o sistema registra a política aplicada, os limites avaliados e a justificativa.
+
+Um ponto fundamental: reduzir risco e aumentar risco são operações diferentes. Em emergência, o sistema deve permitir caminhos restritos para cancelar ordens de abertura e reduzir exposições, sem liberar novas posições ou contornar verificações de segurança essenciais.
+
+## 6. Execution Engine — Gestão das ordens
+
+O Execution Engine será responsável por traduzir uma intenção autorizada em operações concretas na Binance.
+
+### Máquina de estados proposta
+
+   CREATED
+      ↓
+   SUBMITTING
+      ↓
+   ACKNOWLEDGED / OPEN
+      ↓
+   FILLED
+      Preenchida
+   PARTIALLY_FILLED
+      Parcial
+      ↓
+   CANCELED
+   EXPIRED
+   REJECTED
+
+Diagrama simplificado: ordens parcialmente preenchidas podem receber novos fills, ser canceladas ou expirar. Estados locais e estados da corretora deverão ser mapeados separadamente.
+
+Além desses estados, recomendo um estado interno `UNKNOWN / RECONCILIATION_REQUIRED` quando houver incerteza sobre o resultado de um envio.
+
+Uma falha de timeout não significa que a ordem falhou. Antes de reenviar, o sistema deverá consultar a Binance usando os identificadores da ordem e reconciliar o resultado, evitando ordens duplicadas.
+
+### Responsabilidades adicionais
+
+- Controle de `clientOrderId` e correlação entre intenção, autorização e ordem.
+- Suporte a ordens Market, Limit e ordens de proteção compatíveis com cada mercado.
+- Validação de filtros e precisão antes do envio.
+- Acompanhamento de fills parciais e taxas.
+- Cancelamento e substituição controlados.
+- Reconexão de streams e recuperação de eventos.
+- Reconciliação após falhas, reinícios ou perda de conectividade.
+
+A escolha entre ordens Market, Limit e ordens condicionais não deve ser fixa para todas as situações. O tipo de ordem deverá respeitar a política de execução e as características da operação.
+
+## 7. Position & Portfolio Manager
+
+Este componente precisa manter uma representação confiável do patrimônio e das posições, tanto para o agente quanto para o Risk Engine.
+
+### Estados gerenciados
+
+| Estado               | Informações                                                              |
+| -------------------- | ------------------------------------------------------------------------ |
+| Position State       | Símbolo, direção, quantidade, preço médio, stop, PnL, alavancagem        |
+| Portfolio State      | Patrimônio, saldos, capital disponível, exposição e resultados           |
+| Margin State         | Margem utilizada, disponível, modo de margem e indicadores de liquidação |
+| Order Exposure       | Ordens pendentes que podem alterar a exposição                           |
+| Reconciliation State | Última conciliação, divergências e confiabilidade do estado              |
+
+### Fonte de verdade
+
+A Binance é a referência externa para saldos, posições e ordens efetivamente reconhecidos pela corretora. O Trade System mantém o estado interno derivado de eventos e snapshots, com histórico auditável.
+
+Em caso de divergência, não devemos simplesmente sobrescrever os dados internos e continuar operando.
+
+Proponho o seguinte comportamento:
+
+1. Identificar e registrar a divergência.
+2. Bloquear novas operações que aumentem exposição no escopo afetado.
+3. Consultar snapshots e eventos da Binance.
+4. Reconciliar ordens, fills, posições e saldos.
+5. Corrigir o estado interno com trilha de auditoria.
+6. Retomar a operação somente após validação da consistência.
+
+### Spot e Futuros
+
+Os estados precisam considerar diferenças importantes.
+
+| Característica      | Spot                               | USDⓈ-M Futures          |
+| ------------------- | ---------------------------------- | ----------------------- |
+| Posição comprada    | Saldo do ativo                     | Posição LONG            |
+| Posição vendida     | Venda do saldo disponível          | Posição SHORT           |
+| Alavancagem         | Não aplicável ao Spot convencional | Configurável e limitada |
+| Margem e liquidação | Não aplicável ao Spot convencional | Essencial               |
+| Funding Rate        | Não aplicável                      | Aplicável               |
+| Modos de posição    | Saldos de ativos                   | One-way / Hedge Mode    |
+
+Para o MVP, recomendo One-way Mode em Futuros, com uma posição líquida por símbolo, para reduzir a complexidade de reconciliação e de treinamento do agente.
+
+Essa é uma decisão proposta, não uma configuração já aprovada.
+
+## 8. Control Manager — Intervenção humana
+
+A intervenção manual que discutimos anteriormente passa a ser parte formal da arquitetura.
+
+### Modos operacionais
+
+   AUTO
+      O agente pode propor operações, que serão submetidas automaticamente às políticas de risco e execução.
+
+   SUPERVISED
+      O agente continua propondo operações, mas ações definidas pela política exigem aprovação humana antes de prosseguir.
+
+   MANUAL
+      O operador assume o controle. O agente pode continuar observando e produzindo decisões em modo sombra, mas não executa operações.
+
+   EMERGENCY LOCK
+      Estado de bloqueio de novas exposições, acionado por operador ou mecanismo de segurança. Procedimentos de redução e proteção continuam disponíveis conforme política.
+
+A pausa operacional poderá ser representada por uma condição de bloqueio dentro do modo atual. Ela não deverá desligar automaticamente a proteção de posições abertas.
+
+### Ações manuais previstas
+
+| Ação                            | Comportamento                                              |
+| ------------------------------- | ---------------------------------------------------------- |
+| Pausar agente                   | Bloqueia novas entradas automáticas                        |
+| Assumir controle                | Transfere autoridade para o operador                       |
+| Reduzir posição                 | Solicita redução sujeita às verificações de segurança      |
+| Fechar posição                  | Solicita encerramento controlado                           |
+| Ajustar Stop Loss / Take Profit | Altera proteção dentro das regras autorizadas              |
+| Cancelar ordens                 | Cancela ordens selecionadas ou ordens de abertura          |
+| Ativar emergência               | Bloqueia novas exposições e inicia procedimentos definidos |
+| Retomar AUTO                    | Exige reconciliação e revalidação antes da retomada        |
+
+### Fluxo de intervenção
+
+   Operador solicita intervenção
+               ↓
+   Control Manager assume autoridade
+               ↓
+   Bloqueia novas intenções automáticas
+               ↓
+   Risk Engine valida ação manual
+               ↓
+   Execution Engine executa e confirma
+               ↓
+   Reconciliar → Validar → Retomar
+
+A retomada automática nunca deve ocorrer apenas porque o operador fechou o painel ou perdeu a conexão.
+
+## 9. Falhas, circuit breakers e recuperação
+
+Uma operação 24×7 exige políticas explícitas para falhas previsíveis.
+
+| Evento                    | Resposta proposta                                                  |
+| ------------------------- | ------------------------------------------------------------------ |
+| Market Data desatualizado | Bloquear novas entradas dependentes dos dados                      |
+| Perda de WebSocket        | Reconectar, recuperar eventos e reconciliar                        |
+| Timeout no envio de ordem | Estado incerto; consultar antes de reenviar                        |
+| Posição divergente        | Bloquear aumento de exposição e reconciliar                        |
+| Limite de perda atingido  | Suspender novas entradas e acionar política de proteção            |
+| Falha do modelo de IA     | Bloquear novas intenções; manter gestão de risco independente      |
+| Indisponibilidade Binance | Bloquear envios impossíveis, alertar e reconciliar ao restabelecer |
+| Reinício do Trade System  | Restaurar estado e reconciliar antes de habilitar novas entradas   |
+| Emergência manual         | Revogar autoridade da IA e aplicar procedimento de emergência      |
+
+Kill Switch não significa necessariamente liquidar tudo a mercado. Proponho distinguir três procedimentos:
+
+- `BLOCK_NEW_EXPOSURE`: impede novas exposições.
+- `CANCEL_OPENING_ORDERS`: tenta cancelar ordens que possam ampliar exposição.
+- `CONTROLLED_FLATTEN`: tenta reduzir ou encerrar posições conforme política específica.
+
+O último procedimento é mais agressivo e deve exigir critérios próprios. Mesmo com uma solicitação de emergência, não é possível garantir encerramento imediato se a Binance estiver indisponível ou se não houver liquidez suficiente.
+
+Para Futuros, a proteção deve privilegiar mecanismos de saída suportados pela corretora, quando disponíveis e adequados. Proteções exclusivamente locais podem deixar posições desprotegidas durante uma falha de conectividade.
+
+## 10. Decisões arquiteturais propostas
+
+Seguindo a numeração já aprovada nos Domínios 01 e 02, proponho as decisões ADR-017 a ADR-028.
+
+## Checklist — Domínio 03
+
+Risco, Execução e Controle Operacional
+
+## 0/12
+
+Decisões avaliadas
+
+Arquitetura do domínio
+
+ADR-017
+
+Separar logicamente Risk Engine, Execution Engine, Position & Portfolio Manager e Control Manager.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Autoridade operacional
+
+ADR-018
+
+Todas as intenções, automáticas ou manuais, passam por controle de autoridade e avaliação de risco.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Políticas de risco
+
+ADR-019
+
+Adotar políticas versionadas em quatro níveis: portfólio, operação, mercado e segurança operacional.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Dimensionamento e proteção
+
+ADR-020
+
+O Risk Engine controla limites de quantidade, exposição, alavancagem e proteção; a IA não possui autoridade irrestrita.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Execução centralizada
+
+ADR-021
+
+Somente o Execution Engine envia ordens pelo Binance Adapter, com deduplicação, rastreabilidade e reconciliação.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Gestão de posições
+
+ADR-022
+
+Position & Portfolio Manager mantém estado financeiro interno, reconciliado com a Binance, incluindo ordens pendentes.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Exibir as outras 6 decisões
+
+Observações ou ajustes (opcional)
+
+Aprovar todasLimpar
+
+Consolidar validação do Domínio 03&#x20;
+
+## 11. Pendências técnicas identificadas
+
+Estas pendências não precisam ser resolvidas para aprovar a arquitetura conceitual, mas serão obrigatórias para a especificação e implantação segura.
+
+| ID  | Pendência                                                  | Responsável                        |
+| --- | ---------------------------------------------------------- | ---------------------------------- |
+| P19 | Política quantitativa de risco e limites por mercado       | Risk Engine                        |
+| P20 | Cálculo de tamanho, margem, exposição e risco por operação | Risk Engine                        |
+| P21 | Tipos de ordens e filtros específicos Binance Spot/Futures | Execution Engine                   |
+| P22 | Máquina de estados completa e regras de idempotência       | Execution Engine                   |
+| P23 | Contratos e frequência de reconciliação                    | Position & Portfolio Manager       |
+| P24 | Fórmulas de PnL, taxas, funding e patrimônio               | Position & Portfolio Manager       |
+| P25 | Configuração de margem, alavancagem e One-way Mode         | Position Manager / Binance Adapter |
+| P26 | Permissões, autenticação e confirmação de intervenções     | Control Manager                    |
+| P27 | Regras de aprovação em SUPERVISED e retomada em AUTO       | Control Manager                    |
+| P28 | Critérios e procedimentos de emergência                    | Risk / Control / Execution         |
+| P29 | Recuperação de falhas, timeout e estados incertos          | Execution Engine                   |
+| P30 | Estratégia de proteção e encerramento em indisponibilidade | Risk / Execution                   |
+| P31 | Contratos de eventos e trilha de auditoria                 | Observability                      |
+| P32 | Testes de integração, falhas e recuperação operacional     | QA / Engenharia                    |
+
+## 12. Critérios de validação da implementação
+
+Além das ADRs, recomendo registrar estes critérios como condições futuras de aceite técnico.
+
+   Critérios de segurança operacional
+   Nenhuma ordem automática é enviada sem autorização de risco válida.
+   Uma intervenção manual revoga a autoridade automática no escopo correspondente.
+   Timeouts e reinícios não provocam reenvio cego de ordens.
+   Divergências financeiras bloqueiam novas exposições no escopo afetado.
+   Uma posição pode continuar protegida mesmo com o agente pausado, dentro das capacidades disponíveis.
+   Ordens e fills são reconciliados após reconexão.
+   Todos os comandos e resultados possuem rastreabilidade.
+   Retomada AUTO exige validação do estado operacional.
+
+Checklist de planejamento dos testes de aceite. Marcar um item não significa que o requisito já foi implementado ou testado.
+
+## 13. Próximo domínio
+
+## Domínio 04 — Plataforma de Operações e Observabilidade
+
+Próxima etapa proposta
+
+Após a aprovação do Domínio 03, sugiro validar a interface operacional e os mecanismos de supervisão:
+
+- Admin & Operations Portal: administração, configuração e governança.
+- Operations Viewer: gráfico TradingView, decisões do agente, posições e resultados.
+- Manual Trading Console: controles de intervenção integrados ao Control Manager.
+- Monitoring & Alerts: saúde dos serviços, riscos, incidentes e notificações.
+- Strategy Replay & Analytics: reprodução histórica e análise das operações.
+
+Resultado esperado: aprovar como o operador humano observará, supervisionará e intervirá no Trade System com segurança.
+
+Recomendação arquitetural: aprovar as 12 ADRs propostas, mantendo os limites quantitativos de risco, a política de emergência e os detalhes dos contratos de execução como pendências obrigatórias antes de qualquer operação com capital real.
+
+Com isso, teremos os três domínios centrais — Dados, Inteligência Artificial e Risco/Execução — conceitualmente definidos, formando a base do Trade System V1.
+
+=======
+
+# TRADE SYSTEM — Arquitetura Conceitual V1
+
+Registro de Validação Arquitetural · D03
+
+Aprovado
+
+Domínio 03 — Risco, Execução e Controle Operacional
+
+Consolidamos as 12 decisões arquiteturais do Domínio 03, sem ressalvas ou solicitações de alteração.
+
+Com esta aprovação, o Trade System V1 estabelece formalmente a arquitetura responsável por controlar a exposição financeira, autorizar operações, executar ordens na Binance, gerenciar posições e permitir intervenção humana.
+
+# 12/12
+ADRs aprovadas
+
+# 4
+Componentes principais
+
+# 0
+Ressalvas
+
+Identificação: TS-ARCH-D03-V1.0 · Data: 10/11/2026 · Estado: Baseline conceitual aprovada
+
+## 1. Decisões arquiteturais consolidadas
+
+| ID      | Decisão                     | Definição aprovada                                                                                |
+| ------- | --------------------------- | ------------------------------------------------------------------------------------------------- |
+| ADR-017 | Arquitetura do domínio      | Quatro componentes lógicos independentes: Risk, Execution, Position & Portfolio e Control Manager |
+| ADR-018 | Autoridade operacional      | Intenções automáticas e manuais passam por controle de autoridade e avaliação de risco            |
+| ADR-019 | Políticas de risco          | Políticas versionadas em quatro níveis: portfólio, operação, mercado e segurança                  |
+| ADR-020 | Dimensionamento e proteção  | Risk Engine controla exposição, quantidade, alavancagem e proteção                                |
+| ADR-021 | Execução centralizada       | Somente Execution Engine encaminha ordens ao Binance Adapter                                      |
+| ADR-022 | Gestão de posições          | Estado financeiro interno reconciliado com a Binance, incluindo ordens pendentes                  |
+| ADR-023 | Configuração de Futuros     | One-way Mode no MVP; Hedge Mode reservado para evolução                                           |
+| ADR-024 | Modos de controle           | AUTO, SUPERVISED e MANUAL, com bloqueio de emergência                                             |
+| ADR-025 | Intervenção manual          | Pausa, redução, fechamento, ajustes de proteção, cancelamento e retomada auditáveis               |
+| ADR-026 | Circuit breakers            | Bloqueio de exposição, cancelamento de ordens de abertura e encerramento controlado               |
+| ADR-027 | Tratamento de falhas        | Fail-safe para entradas, reconciliação e recuperação antes da retomada                            |
+| ADR-028 | Auditoria e observabilidade | Rastreabilidade ponta a ponta das decisões e operações                                            |
+
+Status: ADR-017 a ADR-028 aprovadas e incorporadas à baseline conceitual V1.
+
+## 2. Arquitetura conceitual aprovada
+
+   Trading Agent
+      Trading Intent
+   Operador Humano
+      Manual Intent
+         ↓
+   Control Manager
+      Autoridade · Modos · Prioridade humana
+         ↓
+   Risk Engine
+   Políticas · Dimensionamento · Autorização
+         ↓
+   Execution Engine
+   Ordens · Fills · Cancelamentos · Recuperação
+         ↓
+   Binance Exchange Adapter
+   Spot / USDⓈ-M Futures
+         ↓ ^
+   Position & Portfolio Manager
+      Posições · Capital · Margem · PnL · Reconciliação
+
+   Event Store & Observability
+      Trilha de auditoria de todos os componentes
+
+Fluxo lógico. O Risk Engine também consulta Position, Portfolio e Risk State antes de autorizar operações.
+
+### Princípio de segurança aprovado
+
+Nenhuma operação que aumente exposição poderá ser executada sem uma autorização de risco válida.
+
+As operações de proteção e redução de risco terão caminhos específicos de emergência, mas continuarão sujeitas a verificações essenciais de identidade, autoridade, consistência e segurança.
+
+## 3. Componentes e responsabilidades
+
+   D03-C01 — Risk Engine
+      Aplica políticas de risco, controla exposição e alavancagem, dimensiona posições, define requisitos de proteção e autoriza, ajusta ou rejeita operações.
+   Entrega: RiskDecision e estado de risco atualizado.
+
+   D03-C02 — Execution Engine
+      Gerencia o ciclo de vida das ordens, envio à Binance, confirmações, fills parciais, cancelamentos, idempotência e recuperação de estados incertos.
+   Entrega: ordens e eventos de execução rastreáveis.
+
+   D03-C03 — Position & Portfolio Manager
+      Mantém o estado das posições, patrimônio, margem, ordens pendentes e resultados, conciliando o estado interno com os registros da Binance.
+   Entrega: Position State, Portfolio State e Reconciliation State.
+
+   D03-C04 — Control Manager
+      Gerencia autoridade operacional, modos de controle, intervenções manuais, pausas, emergências e retomadas controladas.
+   Entrega: Control State e decisões de autorização operacional.
+
+## 4. Políticas operacionais estabelecidas
+
+### Gestão de risco
+
+As políticas serão organizadas em quatro níveis:
+
+| Nível                 | Escopo                                                        |
+| --------------------- | ------------------------------------------------------------- |
+| Capital e portfólio   | Patrimônio, exposição, concentração e perdas acumuladas       |
+| Operação individual   | Quantidade, risco por trade, alavancagem e proteção           |
+| Condições de mercado  | Spread, liquidez, volatilidade, funding e qualidade dos dados |
+| Segurança operacional | Drawdown, falhas, divergências e circuit breakers             |
+
+Os limites quantitativos permanecem pendentes de especificação. A aprovação arquitetural não autoriza, por si só, operações com capital real.
+
+### Modos operacionais
+
+   AUTO
+      Agente autorizado a propor operações automaticamente, sujeito ao Risk Engine.
+
+   SUPERVISED
+      Operações selecionadas exigem aprovação humana.
+
+   MANUAL
+      Operador assume autoridade; agente pode continuar produzindo decisões sem executá-las.
+
+   EMERGENCY LOCK
+      Bloqueio de novas exposições e ativação de procedimentos de proteção.
+
+### Tratamento de falhas
+
+Ficam estabelecidas as seguintes regras conceituais:
+
+- Falhas de comunicação ou estados inconsistentes bloqueiam novas entradas no escopo afetado.
+- Uma ordem com resultado desconhecido deve ser reconciliada antes de qualquer tentativa de reenvio.
+- Reinícios não podem gerar execução duplicada de intenções anteriores.
+- O agente pausado não interrompe automaticamente os mecanismos independentes de proteção.
+- A retomada automática exige validação de autoridade, integridade dos dados e reconciliação financeira.
+- Todas as intervenções e exceções devem gerar eventos auditáveis.
+
+## 5. Pendências técnicas consolidadas
+
+As 14 pendências identificadas na validação permanecem abertas.
+
+| ID  | Pendência                                                  | Responsável                        |
+| --- | ---------------------------------------------------------- | ---------------------------------- |
+| P19 | Política quantitativa de risco e limites por mercado       | Risk Engine                        |
+| P20 | Cálculo de tamanho, margem, exposição e risco por operação | Risk Engine                        |
+| P21 | Tipos de ordens e filtros específicos Binance Spot/Futures | Execution Engine                   |
+| P22 | Máquina de estados completa e regras de idempotência       | Execution Engine                   |
+| P23 | Contratos e frequência de reconciliação                    | Position & Portfolio Manager       |
+| P24 | Fórmulas de PnL, taxas, funding e patrimônio               | Position & Portfolio Manager       |
+| P25 | Configuração de margem, alavancagem e One-way Mode         | Position Manager / Binance Adapter |
+| P26 | Permissões, autenticação e confirmação de intervenções     | Control Manager                    |
+| P27 | Regras de aprovação em SUPERVISED e retomada AUTO          | Control Manager                    |
+| P28 | Critérios e procedimentos de emergência                    | Risk / Control / Execution         |
+| P29 | Recuperação de falhas, timeout e estados incertos          | Execution Engine                   |
+| P30 | Proteção e encerramento durante indisponibilidade          | Risk / Execution                   |
+| P31 | Contratos de eventos e trilha de auditoria                 | Observability                      |
+| P32 | Testes de integração, falhas e recuperação operacional     | QA / Engenharia                    |
+
+### Critérios obrigatórios antes de operar em LIVE
+
+Além das pendências, recomendo estabelecer um gate formal de implantação com evidências de que:
+
+1. Os limites de risco foram definidos, testados e aprovados.
+2. Ordens e posições são reconciliadas corretamente.
+3. O sistema suporta fills parciais, timeouts e reinícios.
+4. Os mecanismos de proteção funcionam sem depender da inferência do agente.
+5. A intervenção manual tem prioridade e está auditada.
+6. O ambiente de Paper Trading passou pelos critérios de aceitação.
+7. A operação LIVE pode ser interrompida e recuperada com segurança.
+
+Nenhum desses testes é considerado concluído nesta etapa; são condições futuras de liberação.
+
+## 6. Situação consolidada da arquitetura V1
+
+## Progresso arquitetural
+
+D01 — Integração e Dados
+   6/6
+
+D02 — Inteligência Artificial
+   10/10
+
+D03 — Risco e Execução
+   12/12
+
+# 28
+ADRs aprovadas
+
+# 10
+Componentes principais
+
+# 32
+Pendências técnicas
+
+Os 10 componentes correspondem aos 3 do D01, 3 do D02 e 4 do D03. As 32 pendências estão registradas para a engenharia, sem ressalvas arquiteturais em aberto.
+
+## 7. Próximo domínio — Plataforma de Operações e Observabilidade
+
+## Domínio 04 — Operations Platform & Observability
+
+Próxima validação arquitetural
+
+Este domínio definirá como o operador humano acompanha, administra, analisa e intervém nas operações do Trade System.
+
+| Componente                  | Responsabilidade                                                |
+| --------------------------- | --------------------------------------------------------------- |
+| Admin & Operations Portal   | Administração, configurações, governança e acompanhamento       |
+| Operations Viewer           | Gráficos TradingView, decisões do agente, posições e resultados |
+| Manual Trading Console      | Comandos de intervenção integrados ao Control Manager           |
+| Monitoring & Alerts         | Saúde operacional, incidentes, métricas e notificações          |
+| Strategy Replay & Analytics | Reprodução histórica, avaliação e análise de operações          |
+
+A validação também deverá estabelecer permissões, contratos de dados para o frontend, atualização em tempo real, auditoria das ações humanas e mecanismos de confirmação para operações críticas.
+
+Iniciar validação do Domínio;
+
+Conclusão: o Domínio 03 está aprovado como TS-ARCH-D03-V1.0, consolidando as ADR-017 a ADR-028. Com os três primeiros domínios aprovados, temos a base conceitual do ciclo operacional: observar o mercado → decidir com IA → controlar o risco → executar → gerenciar posições → registrar resultados.
+
+A próxima etapa é validar a camada de supervisão, visualização e interação humana, completando a visão operacional do Trade System V1.

@@ -1,0 +1,1268 @@
+# I00-FEAT-014.md
+## TRADE SYSTEM V1 — Evidence & G0 Preparation
+
+**Document ID:** I00-FEAT-014  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-14  
+**Primary Epic:** TS-EP-01 — Engineering Foundation  
+**Related Epic:** TS-EP-02 — Data & Event Foundation  
+**Primary Domain:** D07 — Engineering, Quality & Validation  
+**Supporting Domains:** D05 / D06  
+**Functional Owner:** Engineering Governance & Quality  
+**Technical Owner:** TBD  
+**QA Owner:** TBD  
+**Gate Authority:** TBD — conforme governança aprovada  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 / V1.0 — APPROVED  
+**Epic Baselines:** TS-EP-01 e TS-EP-02 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Evidence Template:** TS-DOC-TPL-EVB-001 — APPROVED  
+**Gate Checklist Template:** TS-DOC-TPL-GATE-001 — APPROVED  
+**Documentation Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Approval Reference:** PENDING  
+**Domain:** D07, com apoio de D05 e D06.  
+**Owner:** Engineering Governance & Quality, conforme responsabilidade funcional acima.  
+**Source References:** [anexo original](../governance/history/I00-FEAT-014/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md) e [fontes oficiais](../referencias/originais/)  
+**Related ADRs:** referências da seção 2.  
+**Related Components:** escopo da seção 2 e [matriz DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** critérios de I00 da seção 5 e lacunas das seções 14 e 25.  
+**Dependencies:** [catálogo I00](../increments/I00-FEATURE-CATALOG.md), [TS-EP-01](../epics/TS-EP-01.md), [TS-EP-02](../epics/TS-EP-02.md), templates de [Evidência](../governance/templates/EVIDENCE-BUNDLE-TEMPLATE.md) e [Gate](../governance/templates/GATE-CHECKLIST-TEMPLATE.md) e dependências da seção 21.  
+**Acceptance Criteria:** seções 23, 26 e 27, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-17
+
+---
+
+## 1. Objetivo
+
+### 1.1 Objetivo principal
+
+Estabelecer um processo controlado para reunir, identificar, verificar e apresentar as evidências técnicas e documentais do incremento I00, preparando um pacote de avaliação do Gate G0 sem antecipar sua decisão.
+
+### 1.2 Necessidade atendida
+
+O TRADE SYSTEM V1 exige comprovação verificável de suas capacidades antes da progressão entre incrementos.
+
+A existência de código, testes ou documentos isolados não é suficiente para demonstrar conformidade.
+
+Sem uma preparação estruturada, poderão ocorrer:
+
+- Critérios de aceite sem evidências.
+- Relatórios associados à versão incorreta.
+- Testes declarados como executados sem comprovação.
+- Artefatos sem integridade verificável.
+- Lacunas bloqueantes omitidas.
+- Resultados FAIL ou INCONCLUSIVE apresentados como PASS.
+- Aprovações documentais confundidas com aceites técnicos.
+- Divergências entre Features e incremento.
+- Gate aprovado sem autoridade competente.
+- Progressão indevida para capacidades financeiras.
+
+### 1.3 Resultado demonstrável
+
+A implementação deverá permitir:
+
+1. Inventariar os critérios I00-AC01–12.
+2. Identificar as Features responsáveis por cada critério.
+3. Localizar as Test Specifications aplicáveis.
+4. Associar resultados de execução.
+5. Identificar artefatos e evidências.
+6. Verificar a integridade dos arquivos.
+7. Verificar compatibilidade de versões e ambientes.
+8. Classificar cobertura e pendências.
+9. Identificar lacunas bloqueantes.
+10. Consolidar o Evidence Bundle do I00.
+11. Preparar o checklist de G0.
+12. Produzir relatório de prontidão para avaliação.
+13. Preservar a decisão de Gate como ato separado.
+14. Impedir declaração indevida de autorização LIVE.
+
+### 1.4 Declaração da Feature
+
+**Como** responsável pela governança de engenharia do TRADE SYSTEM V1,  
+**quero** um pacote de evidências íntegro, completo e rastreável,  
+**para** permitir uma avaliação formal e fundamentada do incremento I00 e do Gate G0.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines aplicáveis
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001 / V1.0.
+- TS-EP-01 / V1.0.
+- TS-EP-02 / V1.0.
+- TS-I00-FEAT-CAT-001 / V1.0.
+- I00-FEAT-001–013 / V1.0.
+- TS-DOC-STD-V1.0.
+- TS-DOC-REG-001.
+- TS-DOC-GAP-001.
+- TS-DOC-TRC-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+- TS-DOC-TPL-TEST-001.
+- TS-DOC-TPL-EVB-001.
+- TS-DOC-TPL-GATE-001.
+
+As baselines estão aprovadas documentalmente nesta conversa. A presença dos arquivos e sua sincronização com o repositório ainda não foram verificadas.
+
+### 2.2 ADRs
+
+As decisões arquiteturais e técnicas aplicáveis deverão ser reconciliadas com os registros originais.
+
+**ADR Traceability:** UNVERIFIED.
+
+### 2.3 Domínios
+
+| Domínio | Responsabilidade |
+|---|---|
+| D07 | Qualidade, evidências, rastreabilidade e preparação do Gate |
+| D05 | Evidências de persistência, transações e eventos |
+| D06 | Evidências de infraestrutura, segurança, CI/CD e observabilidade |
+
+### 2.4 Autoridade
+
+A equipe responsável pela preparação das evidências não receberá, por essa atividade, autoridade para aprovar G0.
+
+### 2.5 Gate G0
+
+**G0 Status:** NOT_EVALUATED.
+
+Os critérios normativos específicos de G0 deverão ser consultados no registro original aprovado antes de sua classificação como VERIFIED.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Inventário de critérios de aceite.
+- Inventário de Test Specifications.
+- Inventário de execuções.
+- Catálogo de evidências.
+- Manifesto de integridade.
+- Identificação de builds e commits.
+- Associação de versões.
+- Classificação de resultados.
+- Verificação de completude.
+- Verificação de consistência.
+- Análise de lacunas.
+- Consolidação do Evidence Bundle.
+- Preparação do checklist G0.
+- Relatório de prontidão.
+- Registro de recomendações técnicas.
+- Preparação para revisão humana.
+- Auditoria do processo.
+
+### 3.2 Excluído
+
+- Implementação das Features anteriores.
+- Execução automática de todos os testes.
+- Criação de evidências fictícias.
+- Aprovação automática de Features.
+- Encerramento automático de lacunas.
+- Aprovação de TS-EP-01 ou TS-EP-02.
+- Aprovação automática do incremento I00.
+- Aprovação automática de G0.
+- Autorização de LIVE.
+- Implantação financeira produtiva.
+- Operações reais na Binance.
+
+### 3.3 Fronteiras
+
+**I00-FEAT-011:** produz resultados de CI/CD.
+
+**I00-FEAT-012:** mantém a governança documental e a rastreabilidade.
+
+**I00-FEAT-013:** produz resultados de validação de falhas e recuperação.
+
+**I00-FEAT-014:** consolida, verifica e apresenta as evidências.
+
+**Gate Authority:** avalia e decide formalmente sobre G0, conforme processo aprovado.
+
+---
+
+## 4. Princípios de governança das evidências
+
+### EV-GOV-01 — Evidência real
+
+Nenhuma evidência poderá ser declarada existente sem artefato verificável.
+
+### EV-GOV-02 — Origem identificável
+
+Cada evidência deverá identificar sua origem.
+
+### EV-GOV-03 — Versão consistente
+
+A evidência deverá corresponder à versão de código, contrato ou documento avaliada.
+
+### EV-GOV-04 — Execução rastreável
+
+Resultados técnicos deverão possuir referência de execução.
+
+### EV-GOV-05 — Integridade
+
+A integridade dos artefatos deverá ser verificável.
+
+### EV-GOV-06 — Cobertura explícita
+
+Critérios sem evidência deverão permanecer identificados.
+
+### EV-GOV-07 — Falhas preservadas
+
+Resultados FAIL, BLOCKED ou INCONCLUSIVE não poderão ser ocultados.
+
+### EV-GOV-08 — Separação de decisões
+
+Document Approval, Implementation Acceptance e Gate Approval permanecerão distintos.
+
+### EV-GOV-09 — Lacunas controladas
+
+Lacunas bloqueantes não poderão ser encerradas por inferência.
+
+### EV-GOV-10 — Autoridade humana
+
+A decisão de G0 dependerá de autoridade formal.
+
+### EV-GOV-11 — Segregação
+
+As evidências deverão respeitar TRAINING/PAPER/LIVE.
+
+### EV-GOV-12 — LIVE não autorizado
+
+Nenhuma evidência ou decisão documental do I00 poderá habilitar LIVE.
+
+Os identificadores EV-GOV-01–12 são propostos para esta Feature e não constituem novas ADRs.
+
+---
+
+## 5. Inventário de critérios do I00
+
+O incremento possui doze critérios superiores registrados na baseline.
+
+| ID | Tema | Verificação esperada |
+|---|---|---|
+| I00-AC01 | Build reproduzível | Execução reproduzível do build |
+| I00-AC02 | Dependências fixadas | Lockfile e instalação consistente |
+| I00-AC03 | Contratos versionados e testados | Schemas e testes de contrato |
+| I00-AC04 | Migrations reproduzíveis | Reconstrução e evolução de schema |
+| I00-AC05 | Outbox atômica | Commit e rollback conjuntos |
+| I00-AC06 | Idempotência | Ausência de efeitos duplicados indevidos |
+| I00-AC07 | Ordenação | Preservação de sequência quando exigida |
+| I00-AC08 | Resiliência | Falhas e recuperação verificadas |
+| I00-AC09 | Telemetria | Logs, métricas, traces e correlação |
+| I00-AC10 | LIVE inacessível | Isolamento demonstrado |
+| I00-AC11 | Rastreabilidade | Vínculos normativos e técnicos |
+| I00-AC12 | Evidências verificáveis | Evidence Bundle íntegro |
+
+**Importante:** esta tabela utiliza a síntese documental registrada para I00. A redação normativa integral deverá ser reconciliada com a fonte autoritativa antes de uma avaliação formal.
+
+### 5.1 Cobertura
+
+Cada critério deverá possuir referência a:
+
+- Feature responsável.
+- Teste ou procedimento de verificação.
+- Execução.
+- Resultado.
+- Evidência.
+- Estado de conformidade.
+
+### 5.2 Critérios não atendidos
+
+Deverão permanecer explicitamente pendentes.
+
+### 5.3 Critérios não verificáveis
+
+Deverão ser classificados como INCONCLUSIVE, BLOCKED ou NOT_EVALUATED, conforme a causa e a taxonomia aplicável.
+
+---
+
+## 6. Mapa de responsabilidades por Feature
+
+| Feature | Responsabilidade principal | Contribuição ao Evidence Bundle |
+|---|---|---|
+| FEAT-001 | Monorepo Bootstrap | Estrutura e build |
+| FEAT-002 | Python Toolchain & Quality | Dependências e verificações |
+| FEAT-003 | Versioned Contracts | Schemas e compatibilidade |
+| FEAT-004 | PostgreSQL & Migrations | Persistência e migrations |
+| FEAT-005 | Transactional Outbox | Atomicidade |
+| FEAT-006 | Event Dispatcher | Publicação e recuperação |
+| FEAT-007 | Idempotent Consumers | Deduplicação e efeitos |
+| FEAT-008 | Foundation API | Interfaces e validação |
+| FEAT-009 | Security & Environment Isolation | Segurança e bloqueio LIVE |
+| FEAT-010 | Observability Foundation | Logs, métricas e traces |
+| FEAT-011 | CI/CD Foundation | Pipelines e relatórios |
+| FEAT-012 | Documentation & Traceability | Governança e vínculos |
+| FEAT-013 | Failure & Recovery Validation | Cenários de resiliência |
+| FEAT-014 | Evidence & G0 Preparation | Consolidação e checklist |
+
+### 6.1 Ownership
+
+Cada evidência deverá possuir responsável por sua produção e verificação.
+
+### 6.2 Dependências cruzadas
+
+Um critério poderá depender de evidências de múltiplas Features.
+
+### 6.3 Duplicidade
+
+A mesma evidência poderá sustentar diferentes critérios quando tecnicamente pertinente, desde que a relação seja explícita.
+
+### 6.4 Limite
+
+A presença de uma Feature no mapa não significa que esteja implementada.
+
+---
+
+## 7. Estrutura do Evidence Bundle
+
+### 7.1 Objetivo
+
+Reunir os artefatos necessários à avaliação do incremento em um conjunto identificável.
+
+### 7.2 Organização conceitual
+
+```text
+docs/
+└── evidence/
+    └── I00/
+        ├── manifest/
+        ├── architecture/
+        ├── features/
+        ├── contracts/
+        ├── tests/
+        ├── ci/
+        ├── security/
+        ├── observability/
+        ├── resilience/
+        ├── traceability/
+        ├── gaps/
+        └── gate/
+```
+
+**Structure Status:** PROPOSED / NOT_INSPECTED.
+
+### 7.3 Manifesto principal
+
+O pacote deverá possuir identificação própria.
+
+### 7.4 Referências
+
+As evidências deverão ser referenciadas por identificadores e caminhos canônicos.
+
+### 7.5 Imutabilidade
+
+Após a consolidação de uma versão submetida à avaliação, alterações deverão produzir nova versão ou revisão controlada.
+
+### 7.6 Histórico
+
+Versões anteriores deverão permanecer rastreáveis.
+
+### 7.7 Template
+
+A estrutura definitiva deverá seguir TS-DOC-TPL-EVB-001.
+
+---
+
+## 8. Metadados das evidências
+
+Cada evidência deverá permitir identificar, conforme aplicabilidade:
+
+- Evidence ID.
+- Evidence Type.
+- Description.
+- Source Artifact.
+- Source Version.
+- Feature ID.
+- Acceptance Criterion ID.
+- Test Specification ID.
+- Test Execution ID.
+- Build ID.
+- Commit SHA.
+- Environment.
+- Execution Timestamp.
+- Producer.
+- Reviewer.
+- Result.
+- Artifact Location.
+- Integrity Reference.
+- Verification Status.
+
+### 8.1 Campos obrigatórios
+
+A obrigatoriedade deverá ser definida por tipo de evidência.
+
+### 8.2 Consistência
+
+Metadados incompatíveis deverão impedir a declaração de verificação concluída.
+
+### 8.3 Dados ausentes
+
+Campos necessários e ausentes deverão permanecer identificados como lacunas.
+
+### 8.4 Segurança
+
+Metadados não poderão expor credenciais ou informações sensíveis indevidas.
+
+---
+
+## 9. Manifesto de integridade
+
+### 9.1 Objetivo
+
+Permitir verificar se os artefatos apresentados correspondem aos arquivos efetivamente produzidos.
+
+### 9.2 Conteúdo
+
+O manifesto deverá identificar:
+
+- Artifact ID.
+- Localização.
+- Tamanho, quando aplicável.
+- Hash criptográfico.
+- Versão.
+- Origem.
+- Timestamp.
+- Referência de execução.
+
+### 9.3 Algoritmo
+
+O algoritmo de hash deverá ser definido na especificação técnica, utilizando opção criptográfica aprovada.
+
+### 9.4 Verificação
+
+A integridade deverá ser verificada sobre os bytes efetivos dos artefatos.
+
+### 9.5 Divergência
+
+Uma divergência deverá invalidar a verificação de integridade até resolução.
+
+### 9.6 Limites
+
+Um hash válido comprova correspondência de conteúdo, mas não comprova, isoladamente, que um teste foi corretamente executado ou que seu resultado é verdadeiro.
+
+---
+
+## 10. Verificação de evidências
+
+### 10.1 Existência
+
+Confirmar que o artefato referenciado existe.
+
+### 10.2 Acessibilidade
+
+Confirmar que o revisor autorizado consegue acessá-lo.
+
+### 10.3 Identidade
+
+Confirmar a correspondência com o Evidence ID.
+
+### 10.4 Versão
+
+Confirmar a compatibilidade com a baseline avaliada.
+
+### 10.5 Execução
+
+Confirmar a associação com a execução correspondente.
+
+### 10.6 Integridade
+
+Verificar o manifesto e os hashes.
+
+### 10.7 Conteúdo
+
+Verificar que o artefato contém a informação necessária ao critério.
+
+### 10.8 Resultado
+
+Confirmar que o resultado declarado corresponde ao registro efetivo.
+
+### 10.9 Ambiente
+
+Confirmar que a execução ocorreu no ambiente permitido.
+
+### 10.10 Reprodutibilidade
+
+Confirmar que existe contexto suficiente para repetir a verificação quando exigido.
+
+### 10.11 Classificação
+
+Uma evidência somente poderá ser considerada VERIFIED após as verificações aplicáveis.
+
+---
+
+## 11. Estados das evidências
+
+### 11.1 PLANNED
+
+Evidência prevista, ainda não produzida.
+
+### 11.2 PRODUCED
+
+Artefato produzido, ainda não integralmente verificado.
+
+### 11.3 IN_REVIEW
+
+Artefato submetido à revisão.
+
+### 11.4 VERIFIED
+
+Artefato cuja existência, integridade e pertinência foram verificadas.
+
+### 11.5 REJECTED
+
+Artefato considerado inadequado ou inválido.
+
+### 11.6 SUPERSEDED
+
+Artefato substituído por nova versão.
+
+### 11.7 MISSING
+
+Artefato obrigatório não localizado.
+
+### 11.8 Taxonomia
+
+Os estados acima são propostos e deverão ser reconciliados com o padrão documental aprovado.
+
+### 11.9 Regra
+
+PLANNED, PRODUCED e IN_REVIEW não equivalem a VERIFIED.
+
+---
+
+## 12. Classificação dos critérios de aceite
+
+### 12.1 PASS
+
+Critério comprovado por execução e evidência suficientes.
+
+### 12.2 FAIL
+
+Critério não atendido.
+
+### 12.3 INCONCLUSIVE
+
+Evidência insuficiente ou resultado indeterminado.
+
+### 12.4 BLOCKED
+
+Dependência bloqueante impede avaliação.
+
+### 12.5 NOT_EVALUATED
+
+Critério ainda não avaliado.
+
+### 12.6 NOT_APPLICABLE
+
+Somente poderá ser utilizado mediante justificativa e aprovação conforme política aplicável.
+
+### 12.7 Regra de consolidação
+
+Um critério não poderá ser considerado PASS quando houver evidência obrigatória ausente, inválida ou incompatível.
+
+### 12.8 Exceções
+
+Exceções deverão seguir Change Control e a autoridade aplicável.
+
+---
+
+## 13. Completude e cobertura
+
+### 13.1 Objetivo
+
+Identificar quais critérios possuem comprovação suficiente e quais permanecem pendentes.
+
+### 13.2 Cobertura documental
+
+Verificar presença dos artefatos normativos exigidos.
+
+### 13.3 Cobertura de testes
+
+Verificar associação entre critérios e Test Specifications.
+
+### 13.4 Cobertura de execução
+
+Verificar que os testes obrigatórios foram executados.
+
+### 13.5 Cobertura de evidências
+
+Verificar que os resultados possuem artefatos verificáveis.
+
+### 13.6 Cobertura de rastreabilidade
+
+Verificar vínculos entre fontes normativas, entregáveis e resultados.
+
+### 13.7 Percentuais
+
+Indicadores quantitativos poderão ser calculados, mas não substituirão critérios bloqueantes.
+
+### 13.8 Criticidade
+
+Uma única pendência bloqueante poderá impedir readiness, independentemente do percentual geral de cobertura.
+
+### 13.9 Relatório
+
+O relatório deverá identificar o estado de cada critério e a justificativa.
+
+---
+
+## 14. Gestão de lacunas e bloqueios
+
+### 14.1 Fonte
+
+O Gap Register será a fonte de referência para lacunas documentais.
+
+### 14.2 Lacunas existentes
+
+DOC-GAP-001–008 permanecem OPEN no histórico desta sequência.
+
+### 14.3 Reconciliação
+
+O conteúdo original de cada lacuna deverá ser verificado antes de classificação ou atualização.
+
+### 14.4 Bloqueios técnicos
+
+Falhas de implementação, testes ou evidências deverão ser registradas no mecanismo apropriado.
+
+### 14.5 Impacto
+
+Cada bloqueio deverá identificar os critérios e artefatos afetados.
+
+### 14.6 Resolução
+
+Uma lacuna somente poderá ser encerrada mediante comprovação e aprovação aplicáveis.
+
+### 14.7 Transparência
+
+O Evidence Bundle deverá incluir a relação de lacunas e bloqueios ainda abertos.
+
+### 14.8 Limite
+
+A preparação do pacote não autoriza o encerramento automático de lacunas.
+
+---
+
+## 15. Preparação do Gate G0
+
+### 15.1 Objetivo
+
+Organizar os elementos necessários para que a autoridade competente avalie o Gate G0.
+
+### 15.2 Fonte normativa
+
+Os critérios de G0 deverão ser obtidos do registro original aprovado.
+
+### 15.3 Checklist
+
+O checklist deverá seguir TS-DOC-TPL-GATE-001.
+
+### 15.4 Elementos mínimos propostos
+
+- Identificação do Gate.
+- Baseline do incremento.
+- Critérios normativos aplicáveis.
+- Features relacionadas.
+- Estado de implementação.
+- Resultados dos testes.
+- Evidências verificadas.
+- Lacunas e bloqueios.
+- Riscos residuais.
+- Parecer técnico.
+- Responsáveis.
+- Decisão formal.
+- Condições e restrições.
+
+### 15.5 Estados de preparação
+
+Poderão ser utilizados estados como:
+
+- NOT_STARTED.
+- IN_PREPARATION.
+- READY_FOR_REVIEW.
+- BLOCKED.
+
+A taxonomia definitiva deverá seguir o padrão aprovado.
+
+### 15.6 Estado de decisão
+
+O estado de preparação não deverá ser confundido com o estado formal de G0.
+
+### 15.7 Autoridade
+
+A decisão caberá exclusivamente à autoridade definida na governança.
+
+### 15.8 Situação atual
+
+**Gate G0: NOT_EVALUATED.**
+
+Nenhuma aprovação é presumida.
+
+---
+
+## 16. Relatório de prontidão para G0
+
+### 16.1 Objetivo
+
+Apresentar uma visão consolidada e auditável da situação do I00.
+
+### 16.2 Conteúdo
+
+O relatório deverá contemplar:
+
+1. Identificação do incremento.
+2. Baseline documental.
+3. Versões de implementação.
+4. Estado das Features.
+5. Estado dos critérios I00-AC01–12.
+6. Cobertura de testes.
+7. Resultados de execução.
+8. Estado das evidências.
+9. Lacunas abertas.
+10. Riscos residuais.
+11. Restrições de segurança.
+12. Pendências de aprovação.
+13. Recomendação técnica fundamentada.
+14. Referências do Evidence Bundle.
+
+### 16.3 Recomendação técnica
+
+A equipe poderá recomendar submissão à avaliação ou apontar impedimentos.
+
+### 16.4 Limite
+
+Uma recomendação favorável não constitui aprovação de G0.
+
+### 16.5 Divergências
+
+Informações conflitantes deverão ser explicitadas.
+
+---
+
+## 17. Segurança e segregação
+
+### 17.1 Ambientes
+
+As evidências deverão preservar a identificação TRAINING/PAPER/LIVE.
+
+### 17.2 I00
+
+Somente execuções controladas e autorizadas poderão sustentar o pacote.
+
+### 17.3 LIVE
+
+Não poderão existir evidências de execução financeira LIVE produzidas pelo I00.
+
+### 17.4 Credenciais
+
+Segredos não poderão constar em artefatos de evidência.
+
+### 17.5 Controle de acesso
+
+O Evidence Bundle deverá possuir permissões compatíveis com sua classificação.
+
+### 17.6 Integridade
+
+Alterações não autorizadas deverão ser detectáveis.
+
+### 17.7 Autorização
+
+O pacote não poderá habilitar capacidades financeiras.
+
+### 17.8 Autoridade financeira
+
+Os invariantes Control → Risk → Execution permanecerão preservados.
+
+---
+
+## 18. Integração com CI/CD e observabilidade
+
+### 18.1 CI/CD
+
+Os resultados deverão ser associados aos workflows, runs, commits e builds.
+
+### 18.2 Testes
+
+As Test Specifications deverão identificar os critérios correspondentes.
+
+### 18.3 Resiliência
+
+Os resultados FR-001–026 deverão ser incorporados conforme aplicabilidade e execução.
+
+### 18.4 Observabilidade
+
+Logs, métricas e traces deverão ser associados quando necessários à comprovação.
+
+### 18.5 Persistência
+
+Evidências de banco e eventos deverão permitir verificar o estado autoritativo.
+
+### 18.6 Segurança
+
+Resultados de isolamento e bloqueio LIVE deverão possuir comprovação técnica.
+
+### 18.7 Governança
+
+As referências deverão ser reconciliadas com Registry, Traceability Matrix, Approval Register e Change Log.
+
+### 18.8 Limite
+
+A existência de logs ou resultados de pipeline não implica conformidade sem revisão de seu conteúdo e pertinência.
+
+---
+
+## 19. Comportamento esperado
+
+### 19.1 Evidência válida
+
+**Given:** artefato existente, íntegro e associado ao critério correto.
+
+**When:** a verificação for concluída.
+
+**Then:** a evidência poderá receber estado VERIFIED.
+
+### 19.2 Evidência ausente
+
+**Given:** critério com evidência obrigatória não localizada.
+
+**When:** a consolidação ocorrer.
+
+**Then:** o critério não poderá ser classificado como PASS.
+
+### 19.3 Versão incompatível
+
+**Given:** evidência produzida para versão diferente da baseline avaliada.
+
+**When:** a compatibilidade for verificada.
+
+**Then:** a divergência deverá ser sinalizada e tratada.
+
+### 19.4 Integridade inválida
+
+**Given:** hash incompatível com o artefato.
+
+**When:** a verificação ocorrer.
+
+**Then:** a evidência deverá ser rejeitada ou bloqueada até resolução.
+
+### 19.5 Teste FAIL
+
+**Given:** teste obrigatório com resultado FAIL.
+
+**When:** o Evidence Bundle for consolidado.
+
+**Then:** o resultado deverá permanecer explícito e impedir declaração indevida de conformidade.
+
+### 19.6 Teste não executado
+
+**Given:** Test Specification sem execução.
+
+**When:** a cobertura for calculada.
+
+**Then:** o teste não poderá ser contabilizado como executado com sucesso.
+
+### 19.7 Lacuna bloqueante
+
+**Given:** lacuna aberta que impede verificação obrigatória.
+
+**When:** a prontidão for avaliada.
+
+**Then:** o relatório deverá identificar o impedimento.
+
+### 19.8 Documentação aprovada sem código
+
+**Given:** Feature documentalmente aprovada sem implementação verificada.
+
+**When:** seu estado for consolidado.
+
+**Then:** não poderá ser apresentada como implementada ou aceita.
+
+### 19.9 Pacote completo
+
+**Given:** evidências e critérios devidamente verificados.
+
+**When:** o pacote for preparado.
+
+**Then:** poderá ser submetido à autoridade de G0, sem aprovação automática.
+
+### 19.10 Gate não avaliado
+
+**Given:** pacote ainda não submetido à decisão formal.
+
+**When:** o estado do Gate for consultado.
+
+**Then:** G0 deverá permanecer NOT_EVALUATED.
+
+---
+
+## 20. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação |
+|---|---|---|
+| Integridade | Artefatos verificáveis | Manifestos e hashes |
+| Rastreabilidade | Evidência vinculada ao critério | Matriz de referências |
+| Auditabilidade | Origem e revisão identificáveis | Metadados e registros |
+| Reprodutibilidade | Execução reconstruível | Manifestos de ambiente |
+| Completude | Ausências identificadas | Relatório de cobertura |
+| Consistência | Versões compatíveis | Testes de baseline |
+| Segurança | Dados sensíveis protegidos | Verificação de exposição |
+| Governança | Decisões segregadas | Testes de estados |
+| Confiabilidade | Resultados não mascarados | Testes negativos |
+| Manutenibilidade | Estrutura padronizada | Revisão documental |
+
+Limiares quantitativos deverão ser definidos e aprovados quando aplicáveis.
+
+---
+
+## 21. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| TS-INC-I00-001 | Baseline do incremento | APPROVED |
+| TS-EP-01 | Épico principal | APPROVED |
+| TS-EP-02 | Épico relacionado | APPROVED |
+| I00-FEAT-001–013 | Features fornecedoras | APPROVED documentalmente |
+| TS-DOC-TPL-EVB-001 | Template de evidências | APPROVED |
+| TS-DOC-TPL-GATE-001 | Template de Gate | APPROVED |
+| TS-DOC-TRC-001 | Traceability Matrix | APPROVED documentalmente |
+| TS-DOC-GAP-001 | Gap Register | APPROVED documentalmente |
+| TS-DOC-APR-001 | Approval Register | APPROVED documentalmente |
+| TS-DOC-CHG-001 | Change Log | APPROVED documentalmente |
+| Critérios originais G0 | Fonte normativa | UNVERIFIED |
+| Resultados de CI/CD | Evidência técnica | NOT_VERIFIED |
+| Resultados de testes | Evidência técnica | NOT_EXECUTED / NOT_VERIFIED |
+| Artefatos de build | Evidência técnica | NOT_VERIFIED |
+| Repositório | Fonte técnica | NOT_INSPECTED |
+| Gate Authority | Governança | TBD |
+| Owners | Governança | TBD |
+
+### 21.1 Histórias técnicas
+
+Os vínculos com TS-ST-001–024 deverão ser confirmados contra o backlog original.
+
+**Story Mapping:** PENDING.
+
+Nenhum Story ID será atribuído por inferência.
+
+---
+
+## 22. Estratégia de testes
+
+### 22.1 Inventário
+
+Verificar presença e identificação dos critérios do incremento.
+
+### 22.2 Identidade
+
+Verificar unicidade de Evidence IDs.
+
+### 22.3 Metadados
+
+Verificar campos obrigatórios.
+
+### 22.4 Existência
+
+Verificar localização dos artefatos.
+
+### 22.5 Integridade
+
+Verificar hashes e manifestos.
+
+### 22.6 Versões
+
+Verificar correspondência com a baseline.
+
+### 22.7 Execuções
+
+Verificar vínculo entre resultados e Test Execution IDs.
+
+### 22.8 Cobertura
+
+Verificar associação entre critérios, testes e evidências.
+
+### 22.9 Resultados negativos
+
+Verificar que FAIL e INCONCLUSIVE não sejam tratados como PASS.
+
+### 22.10 Ausências
+
+Verificar identificação de evidências obrigatórias não produzidas.
+
+### 22.11 Lacunas
+
+Verificar propagação de bloqueios.
+
+### 22.12 Segurança
+
+Verificar ausência de segredos e dados sensíveis indevidos.
+
+### 22.13 Gate
+
+Verificar separação entre preparação e aprovação.
+
+### 22.14 Regressão
+
+Verificar comportamento após alteração de baseline.
+
+### 22.15 Reprodutibilidade
+
+Verificar informações necessárias à repetição de execuções.
+
+### 22.16 End-to-End
+
+Verificar a cadeia:
+
+**Critério I00 → Feature → Test Specification → Execução → Resultado → Evidência → Verificação → Evidence Bundle → Checklist G0.**
+
+Nenhum teste deverá executar operações financeiras reais.
+
+---
+
+## 23. Critérios de aceite
+
+Os critérios abaixo são propostos para o aceite da implementação de I00-FEAT-014.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| FEAT014-AC01 | Inventário I00-AC01–12 consolidado | Matriz de critérios |
+| FEAT014-AC02 | Responsabilidades por Feature identificadas | Mapa de ownership |
+| FEAT014-AC03 | Evidence Bundle estruturado | Inventário de artefatos |
+| FEAT014-AC04 | Evidence IDs únicos e rastreáveis | Testes de identidade |
+| FEAT014-AC05 | Metadados obrigatórios validados | Relatório de metadados |
+| FEAT014-AC06 | Integridade de artefatos verificável | Manifesto e hashes |
+| FEAT014-AC07 | Versões e builds compatíveis | Testes de baseline |
+| FEAT014-AC08 | Resultados vinculados a execuções | Matriz de execução |
+| FEAT014-AC09 | Critérios associados a evidências | Relatório de cobertura |
+| FEAT014-AC10 | Evidências ausentes identificadas | Testes negativos |
+| FEAT014-AC11 | FAIL e INCONCLUSIVE preservados | Testes de classificação |
+| FEAT014-AC12 | Lacunas bloqueantes explicitadas | Relatório de lacunas |
+| FEAT014-AC13 | Segurança e isolamento preservados | Testes de segurança |
+| FEAT014-AC14 | Resultados CI/CD e resiliência integrados | Relatório de integração |
+| FEAT014-AC15 | Checklist G0 preparado | Checklist versionado |
+| FEAT014-AC16 | Critérios normativos G0 reconciliados | Matriz de fontes |
+| FEAT014-AC17 | Relatório de prontidão disponível | Relatório consolidado |
+| FEAT014-AC18 | Decisão de Gate segregada | Testes de governança |
+| FEAT014-AC19 | Rastreabilidade bidirecional verificada | Traceability Matrix |
+| FEAT014-AC20 | Pacote de evidências reproduzível | Manifesto de ambiente |
+| FEAT014-AC21 | Histórico de revisão preservado | Approval/Change Register |
+| FEAT014-AC22 | Evidências de verificação da própria Feature disponíveis | Evidence Bundle I00 |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+### 23.1 Critérios superiores relacionados
+
+- I00-AC01–12 — conjunto integral de critérios do incremento.
+- TS-EP-01 — critérios aplicáveis de qualidade, evidências e governança.
+- TS-EP-02 — critérios aplicáveis de persistência, eventos e recuperação.
+- G0 — critérios específicos pendentes de reconciliação com a fonte normativa.
+
+A aprovação desta Feature não representa atendimento automático desses critérios.
+
+---
+
+## 24. Evidências esperadas
+
+| Referência provisória | Evidência |
+|---|---|
+| EV-FEAT014-01 | Inventário I00-AC01–12 |
+| EV-FEAT014-02 | Mapa de ownership |
+| EV-FEAT014-03 | Estrutura do Evidence Bundle |
+| EV-FEAT014-04 | Testes de identidade |
+| EV-FEAT014-05 | Relatório de metadados |
+| EV-FEAT014-06 | Manifesto de integridade |
+| EV-FEAT014-07 | Verificação de versões |
+| EV-FEAT014-08 | Matriz de execuções |
+| EV-FEAT014-09 | Relatório de cobertura |
+| EV-FEAT014-10 | Testes de evidências ausentes |
+| EV-FEAT014-11 | Testes de classificação |
+| EV-FEAT014-12 | Relatório de lacunas |
+| EV-FEAT014-13 | Verificação de segurança |
+| EV-FEAT014-14 | Integração CI/CD e resiliência |
+| EV-FEAT014-15 | Checklist G0 |
+| EV-FEAT014-16 | Reconciliação normativa G0 |
+| EV-FEAT014-17 | Relatório de prontidão |
+| EV-FEAT014-18 | Testes de segregação de decisão |
+| EV-FEAT014-19 | Matriz de rastreabilidade |
+| EV-FEAT014-20 | Manifesto de reprodutibilidade |
+| EV-FEAT014-21 | Histórico de revisão |
+| EV-FEAT014-22 | Evidências de validação da FEAT-014 |
+
+Os identificadores são provisórios e deverão ser reconciliados com a convenção oficial de Evidence Bundle.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 25. Riscos e lacunas
+
+### 25.1 Lacunas existentes
+
+DOC-GAP-001–008 permanecem OPEN no histórico documental.
+
+Os conteúdos originais deverão ser consultados antes de qualquer alteração ou encerramento.
+
+### 25.2 Riscos específicos
+
+- Evidence Bundle incompleto.
+- Critérios sem testes.
+- Testes sem execução.
+- Execuções sem artefatos verificáveis.
+- Evidências associadas à versão incorreta.
+- Hashes incompatíveis.
+- Resultados negativos omitidos.
+- Lacunas bloqueantes não propagadas.
+- Fontes normativas G0 não recuperadas.
+- Owners não definidos.
+- Aprovações documentais confundidas com aceites técnicos.
+- Relatório de prontidão interpretado como aprovação de Gate.
+- Divergência entre documentação e repositório.
+- Exposição de segredos.
+- Evidências de ambiente incompatível.
+- Autorização LIVE indevida.
+
+### 25.3 Tratamento
+
+Os riscos deverão ser classificados, associados a responsáveis e vinculados às verificações aplicáveis.
+
+Nenhuma lacuna será encerrada automaticamente pela aprovação desta Feature.
+
+---
+
+## 26. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. Fontes normativas aplicáveis estiverem verificadas.
+3. Owners e Gate Authority estiverem definidos.
+4. Critérios I00-AC01–12 estiverem reconciliados.
+5. Critérios específicos G0 estiverem recuperados.
+6. Mapa de responsabilidades estiver aprovado.
+7. Template de Evidence Bundle estiver disponível.
+8. Estrutura do pacote estiver definida.
+9. Metadados obrigatórios estiverem formalizados.
+10. Política de integridade estiver aprovada.
+11. Estados de evidências estiverem definidos.
+12. Política de classificação estiver aprovada.
+13. Regras de cobertura estiverem especificadas.
+14. Tratamento de lacunas estiver definido.
+15. Checklist G0 estiver especificado.
+16. Relatório de prontidão estiver definido.
+17. Critérios de aceite estiverem testáveis.
+18. Testes e evidências esperadas estiverem especificados.
+19. Segurança e isolamento estiverem definidos.
+20. Lacunas bloqueantes estiverem resolvidas.
+21. Revisão documental estiver registrada.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação desta especificação não altera automaticamente esse estado.
+
+---
+
+## 27. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- O mecanismo de consolidação estiver implementado.
+- Os critérios FEAT014-AC01–AC22 estiverem atendidos.
+- As evidências existentes forem verificadas.
+- As evidências ausentes forem identificadas.
+- A integridade dos artefatos estiver demonstrada.
+- A compatibilidade de versões estiver validada.
+- A cobertura de critérios estiver demonstrada.
+- As lacunas e bloqueios estiverem corretamente propagados.
+- O checklist G0 estiver preparado.
+- Os critérios normativos G0 estiverem reconciliados.
+- O relatório de prontidão estiver disponível.
+- A decisão de Gate permanecer segregada.
+- A segurança e o isolamento estiverem preservados.
+- A rastreabilidade estiver atualizada.
+- As evidências da própria Feature estiverem verificadas.
+- A autoridade competente registrar o aceite da Feature.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite da FEAT-014 não significa, por si só, que I00 esteja aceito ou que G0 tenha sido aprovado.
+
+---
+
+## 28. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-01 → I00-FEAT-014 → História → Critério → Teste → Execução → Evidência → Checklist G0**
+
+### Estados iniciais
+
+| Relação | Estado |
+|---|---|
+| Epic Link | VERIFIED documentalmente |
+| Work Package Link | VERIFIED documentalmente |
+| Feature Catalog Link | VERIFIED documentalmente |
+| Related Feature Links | VERIFIED documentalmente |
+| Evidence Template Link | VERIFIED documentalmente |
+| Gate Template Link | VERIFIED documentalmente |
+| Story Link | PENDING |
+| ADR Links | UNVERIFIED |
+| Component Links | UNVERIFIED |
+| Requirement Links | PARTIALLY_UNVERIFIED |
+| G0 Normative Criteria | UNVERIFIED |
+| Test Specifications | PLANNED |
+| Test Executions | NOT_EXECUTED / NOT_VERIFIED |
+| Evidence Links | PLANNED |
+| Repository Synchronization | NOT_VERIFIED |
+
+VERIFIED documentalmente não comprova implementação, execução de testes ou aprovação de Gate.
+
+---
+
+## 29. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-17 | PENDING | Especificação inicial Evidence & G0 Preparation | PENDING |
+
+---
+
+## 30. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-014 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** a definir após aprovação desta Feature e avaliação da sequência documental pendente.
+
+**Restriction:** não avançar, não avaliar G0 e não habilitar LIVE antes da aprovação e dos procedimentos formais aplicáveis.
+
+## 31. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/I00-FEAT-014/IN-REVIEW.txt) está arquivado. A especificação permanece **IN_REVIEW**, com aprovação **PENDING**. As classificações iniciais do anexo pertencem à proposta submetida.
+
+O [Evidence Bundle I00 RC1](../evidence/releases/i00-rc1/README.md) já tem [aceite registrado para I00-14 e AC12 no seu recorte original](../governance/DOC-07-RC1-ACCEPTANCE.md). O [registro mestre de I00](../backlog/registro-mestre-i00.md) mantém o vínculo do pacote à baseline técnica.
+
+As validações restantes de AC02, AC07 e AC09 e a decisão humana de G0 seguem no [dossiê de G0](../governance/G0-REVIEW-DOSSIER.md). O aceite consolidado da implementação da Feature permanece pendente. G0 segue em revisão e LIVE permanece indisponível.

@@ -1,0 +1,886 @@
+# TS-EP-02.md
+## TRADE SYSTEM V1 — Data & Event Foundation
+
+**Document ID:** TS-EP-02  
+**Document Type:** Epic Specification  
+**Version:** 1.0  
+**Status:** APPROVED  
+**Primary Increment:** I00  
+**Primary Domain:** D05 — Data, Events & Audit  
+**Supporting Domains:** D06 — Infrastructure, Security & DevOps; D07 — Engineering, Quality & Validation  
+**Functional Owner:** Data & Event Architecture  
+**Technical Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 — APPROVED  
+**Epic Template:** TS-DOC-TPL-EPIC-001 — APPROVED  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Related Epic:** TS-EP-01 — APPROVED  
+**Approval Reference:** [16/11/2026 · aprovação sem ressalvas](../governance/history/TS-EP-02/APPROVAL.md)  
+**Domain:** D05, com apoio de D06 e D07  
+**Increment:** [I00](../increments/I00-INCREMENT.md)  
+**Owner:** Data & Event Architecture, conforme responsabilidade funcional indicada acima.  
+**Source References:** [anexo original](../governance/history/TS-EP-02/IN-REVIEW.txt), [fontes oficiais](../referencias/originais/) e [backlog I00](../02-I00-BACKLOG.md)  
+**Related ADRs:** [decisões técnicas do I00](../05-ADRS-TECNICAS.md) e referências da seção 2.  
+**Related Components:** seção 2 e [DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** seções 8, 18 e 21.  
+**Dependencies:** [especificação do I00](../increments/I00-INCREMENT.md), [TS-EP-01](TS-EP-01.md), [template de Épico](../governance/templates/EPIC-TEMPLATE.md) e dependências da seção 20.  
+**Acceptance Criteria:** seções 18, 23 e 24, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-16
+
+---
+
+## 1. Objetivo do épico
+
+### 1.1 Objetivo
+
+Estabelecer a infraestrutura fundamental de dados e eventos do TRADE SYSTEM V1, garantindo persistência confiável, integridade transacional, processamento idempotente, recuperação controlada e rastreabilidade das operações internas.
+
+### 1.2 Necessidade atendida
+
+O sistema utilizará múltiplos componentes responsáveis por produzir, processar e consumir informações.
+
+Esses componentes deverão compartilhar eventos e estados sem comprometer:
+
+- Integridade dos dados.
+- Consistência transacional.
+- Identidade e causalidade dos eventos.
+- Idempotência dos efeitos.
+- Ordenação quando exigida.
+- Recuperação após falhas.
+- Segregação de ambientes.
+- Auditoria ponta a ponta.
+
+### 1.3 Resultado esperado
+
+Ao final da implementação do épico, deverá ser possível demonstrar:
+
+1. PostgreSQL configurado e versionado.
+2. Migrations reproduzíveis.
+3. Modelo inicial de persistência de eventos.
+4. Transactional Outbox.
+5. Atomicidade entre alterações de estado e registros Outbox aplicáveis.
+6. Event Dispatcher.
+7. Publicação confiável de eventos.
+8. Consumidores idempotentes.
+9. Ordenação por agregado, quando exigida.
+10. Recuperação após falhas.
+11. Observabilidade do processamento.
+12. Evidências verificáveis de conformidade.
+
+### 1.4 Valor para o sistema
+
+O épico fornecerá a base de confiabilidade para os futuros fluxos de:
+
+- Aquisição e processamento de dados de mercado.
+- Atualização do Market State.
+- Processamento de sinais de IA.
+- Decisões de controle e risco.
+- Execução e reconciliação de ordens.
+- Gestão de posições e portfólio.
+- Auditoria e Strategy Replay.
+
+Essas capacidades futuras não fazem parte da implementação do I00.
+
+### 1.5 Critério de sucesso
+
+O épico será considerado concluído quando seus critérios de aceite forem atendidos, os testes obrigatórios executados, as evidências verificadas e o aceite humano competente registrado.
+
+O aceite do épico não substituirá o aceite do incremento I00 ou a homologação do gate G0.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines aplicáveis
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-DOC-STD-V1.0.
+- TS-DOC-REG-001.
+- TS-DOC-GAP-001.
+- TS-DOC-TRC-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+- TS-DOC-TPL-EPIC-001.
+
+### 2.2 Decisões arquiteturais
+
+A arquitetura aprovada estabelece:
+
+- PostgreSQL como persistência autoritativa inicial.
+- Transactional Outbox.
+- Contratos versionados.
+- Processamento idempotente.
+- Auditoria e correlação de eventos.
+- Recuperação controlada.
+- Segregação TRAINING/PAPER/LIVE.
+- Monorepo modular com isolamento seletivo de processos.
+
+As ADRs individuais relacionadas deverão ser verificadas contra os registros originais.
+
+**Estado dos vínculos individuais:** UNVERIFIED.
+
+### 2.3 Domínios envolvidos
+
+| Domínio | Responsabilidade |
+|---|---|
+| D05 | Persistência, eventos, Outbox, Dispatcher e consumidores |
+| D06 | Infraestrutura, configuração, isolamento e observabilidade |
+| D07 | Contratos, testes, qualidade e evidências |
+
+### 2.4 Componentes
+
+A baseline arquitetural prevê seis componentes lógicos no domínio D05, identificados na faixa D05-C01–D05-C06.
+
+A associação individual desses componentes às entregas do épico deverá ser reconciliada com o catálogo arquitetural original.
+
+Não será presumido que todos os seis componentes estejam integralmente implementados no I00.
+
+### 2.5 Fluxos relacionados
+
+Os fluxos F01–F10 deverão ser avaliados conforme suas dependências de persistência, publicação, consumo, auditoria e recuperação.
+
+A implementação de mecanismos fundamentais não representa conclusão dos fluxos financeiros de ponta a ponta.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Configuração inicial do PostgreSQL.
+- SQLAlchemy 2.
+- Alembic.
+- Modelos de persistência necessários ao I00.
+- Transactional Outbox.
+- Event Dispatcher.
+- Controle de publicação.
+- Consumidores idempotentes.
+- Controle de ordenação quando aplicável.
+- Tratamento de retries.
+- Recuperação após falhas.
+- Auditoria técnica de eventos.
+- Testes de integração e resiliência.
+- Evidências de conformidade.
+
+### 3.2 Excluído
+
+- Integração operacional completa com a Binance.
+- Persistência definitiva de ordens reais.
+- Gestão operacional de posições.
+- Market Data Pipeline completo.
+- Feature Store de mercado.
+- Treinamento e inferência de IA.
+- Motor de risco financeiro.
+- Motor de execução de ordens.
+- Strategy Replay completo.
+- Arquitetura distribuída baseada obrigatoriamente em Kafka.
+- Cluster Kubernetes.
+- Operação PAPER qualificada.
+- Operação LIVE.
+
+### 3.3 Fronteira com TS-EP-01
+
+O TS-EP-01 fornece capacidades compartilhadas de:
+
+- Toolchain.
+- Organização do monorepo.
+- Contratos.
+- Configuração.
+- Segurança.
+- Observabilidade.
+- CI/CD.
+- Governança documental.
+
+O TS-EP-02 implementará os mecanismos específicos de persistência e processamento de eventos.
+
+O ownership final das interfaces deverá ser definido nas especificações de Feature e contrato.
+
+---
+
+## 4. Stack técnica
+
+| Responsabilidade | Tecnologia aprovada |
+|---|---|
+| Persistência | PostgreSQL 17 |
+| ORM | SQLAlchemy 2 |
+| Migrations | Alembic |
+| Linguagem | Python 3.12+ |
+| Validação | Pydantic v2 |
+| Contratos | JSON Schema |
+| Testes | pytest |
+| Property-Based Testing | Hypothesis |
+| Ambiente local | Docker Compose |
+| Observabilidade | OpenTelemetry e logs JSON |
+| CI | GitHub Actions |
+| Mensageria inicial | PostgreSQL Transactional Outbox |
+
+As versões exatas deverão ser fixadas durante a implementação.
+
+Kafka e Kubernetes não são dependências obrigatórias do I00.
+
+---
+
+## 5. Features propostas
+
+As seguintes Features foram identificadas no documento I00-INCREMENT.md.
+
+| Feature ID | Nome | Responsabilidade |
+|---|---|---|
+| I00-FEAT-004 | PostgreSQL & Migrations | Persistência e evolução do schema |
+| I00-FEAT-005 | Transactional Outbox | Registro transacional de eventos |
+| I00-FEAT-006 | Event Dispatcher | Processamento e publicação |
+| I00-FEAT-007 | Idempotent Consumers | Deduplicação e processamento seguro |
+| I00-FEAT-013 | Failure & Recovery Validation | Validação de falhas e recuperação |
+
+**Estado das Features:** PROPOSED.
+
+As especificações individuais deverão ser formalizadas posteriormente.
+
+O vínculo com o épico não implica aprovação automática do detalhamento técnico de cada Feature.
+
+---
+
+## 6. Pacotes de trabalho
+
+| Work Package | Entrega |
+|---|---|
+| I00-04 | PostgreSQL & Migrations |
+| I00-05 | Transactional Outbox |
+| I00-06 | Event Dispatcher |
+| I00-07 | Idempotent Consumers |
+| I00-13 | Failure & Recovery Tests |
+| I00-14 | Evidence Bundle — participação |
+
+O pacote I00-14 é transversal ao TS-EP-01 e ao TS-EP-02.
+
+A propriedade e as dependências definitivas deverão ser registradas no planejamento de execução.
+
+---
+
+## 7. Histórias técnicas
+
+Os vínculos iniciais propostos incluem:
+
+| Story ID | Capacidade | Estado do vínculo |
+|---|---|---|
+| TS-ST-003 | PostgreSQL & Transactional Outbox | APPROVED |
+| TS-ST-004 | Dispatcher & Idempotent Consumers | APPROVED |
+
+As descrições originais deverão ser verificadas no backlog aprovado.
+
+As demais capacidades poderão exigir refinamento ou novas histórias formalmente registradas.
+
+Nenhum novo Story ID será criado neste documento.
+
+---
+
+## 8. Requisitos e pendências
+
+### 8.1 Origem
+
+O projeto possui 106 pendências arquiteturais aprovadas, P01–P106.
+
+O domínio D05 está associado à faixa P48–P64 no inventário consolidado.
+
+Essa associação por domínio não comprova vínculos individuais entre cada pendência e o TS-EP-02.
+
+### 8.2 Tratamento
+
+Para cada pendência aplicável será necessário:
+
+- Recuperar sua descrição original.
+- Identificar a ADR relacionada.
+- Confirmar o componente responsável.
+- Identificar a Feature.
+- Associar a história.
+- Definir critério de aceite.
+- Associar testes e evidências.
+
+### 8.3 Estado inicial
+
+**Requirement Traceability:** INCOMPLETE.
+
+Lacunas relacionadas: DOC-GAP-003, DOC-GAP-004 e DOC-GAP-005.
+
+---
+
+## 9. Modelo de persistência
+
+### 9.1 PostgreSQL
+
+O PostgreSQL deverá armazenar os estados e registros necessários aos mecanismos de fundação.
+
+### 9.2 Evolução de schema
+
+Alterações estruturais deverão utilizar migrations versionadas.
+
+### 9.3 Integridade
+
+Os modelos deverão preservar:
+
+- Chaves primárias.
+- Restrições de unicidade.
+- Integridade referencial.
+- Integridade transacional.
+- Identificação de registros.
+- Controle de concorrência quando necessário.
+
+### 9.4 Ownership
+
+A responsabilidade pela escrita de cada entidade deverá ser explícita.
+
+### 9.5 Auditoria
+
+Alterações relevantes deverão possuir informações suficientes para investigação e correlação.
+
+### 9.6 Migração
+
+O procedimento de evolução deverá permitir reprodução em ambiente controlado.
+
+As políticas específicas de reversão e migração de dados deverão ser detalhadas na Feature correspondente.
+
+---
+
+## 10. Transactional Outbox
+
+### 10.1 Objetivo
+
+Garantir que a alteração de estado e o registro do evento a publicar sejam persistidos atomicamente quando fizerem parte da mesma transação de negócio.
+
+### 10.2 Comportamento esperado
+
+1. Receber uma operação válida.
+2. Validar as pré-condições.
+3. Iniciar a transação.
+4. Persistir a alteração de estado aplicável.
+5. Persistir o registro Outbox correspondente.
+6. Confirmar a transação.
+7. Disponibilizar o registro para publicação posterior.
+
+### 10.3 Invariante principal
+
+Não deverá existir confirmação de uma alteração de estado que exija publicação de evento sem o respectivo registro Outbox persistido na mesma transação.
+
+### 10.4 Falha antes do commit
+
+A transação deverá ser revertida conforme a semântica transacional.
+
+### 10.5 Falha após o commit
+
+O registro Outbox persistido deverá permanecer disponível para processamento posterior.
+
+### 10.6 Limites
+
+A Outbox não garante, isoladamente, entrega exatamente uma vez ao consumidor.
+
+A arquitetura deverá assumir possibilidade de repetição e exigir idempotência nos consumidores.
+
+---
+
+## 11. Event Dispatcher
+
+### 11.1 Objetivo
+
+Processar registros Outbox pendentes e encaminhar eventos aos destinos definidos.
+
+### 11.2 Responsabilidades
+
+- Identificar registros elegíveis.
+- Controlar tentativas.
+- Publicar eventos.
+- Registrar resultados.
+- Preservar correlação.
+- Permitir recuperação.
+- Evitar perda silenciosa de eventos.
+
+### 11.3 Semântica de entrega
+
+A semântica inicial proposta é **at-least-once**, sujeita à confirmação na especificação do Dispatcher.
+
+Consequentemente, um evento poderá ser entregue mais de uma vez.
+
+### 11.4 Falha durante publicação
+
+O sistema deverá distinguir publicação confirmada, falha conhecida e resultado desconhecido, conforme as garantias do transporte utilizado.
+
+### 11.5 Recuperação
+
+Registros elegíveis não concluídos deverão poder ser reprocessados sem perda de rastreabilidade.
+
+### 11.6 Concorrência
+
+O Dispatcher deverá impedir processamento concorrente indevido do mesmo registro, conforme mecanismo técnico aprovado.
+
+### 11.7 Ordenação
+
+Quando a ordem por agregado for exigida, o mecanismo deverá preservar a sequência aplicável.
+
+Os detalhes de locking, leasing, retries e backoff deverão ser definidos na Feature e nos contratos correspondentes.
+
+---
+
+## 12. Consumidores idempotentes
+
+### 12.1 Objetivo
+
+Impedir que mensagens repetidas provoquem duplicação indevida de efeitos.
+
+### 12.2 Identificação
+
+Cada mensagem deverá possuir identidade estável e adequada à deduplicação.
+
+### 12.3 Comportamento esperado
+
+- Primeira entrega válida: processar conforme contrato.
+- Entrega duplicada: não repetir efeitos já confirmados.
+- Falha parcial: preservar capacidade de recuperação.
+- Mensagem inválida: rejeitar conforme política.
+- Mensagem fora de ordem: aplicar regra de sequência quando exigida.
+
+### 12.4 Atomicidade do efeito
+
+Quando necessário, a marcação de processamento e a alteração de estado deverão possuir consistência transacional apropriada.
+
+### 12.5 Limites
+
+A idempotência deverá ser demonstrada por testes.
+
+Não será suficiente manter apenas um registro de mensagem recebida sem comprovar a ausência de efeitos duplicados.
+
+---
+
+## 13. Contratos relacionados
+
+| Contrato | Relação com o épico |
+|---|---|
+| CommandEnvelope.v1 | Identificação e validação de comandos |
+| EventEnvelope.v1 | Estrutura e semântica dos eventos |
+| ErrorEnvelope.v1 | Erros e rejeições |
+| OutboxRecord.v1 | Persistência e publicação transacional |
+| HealthStatus.v1 | Estado operacional dos componentes |
+
+Os contratos deverão especificar, conforme aplicabilidade:
+
+- Identificadores.
+- Versões.
+- Produtores e consumidores.
+- Correlação.
+- Causalidade.
+- Timestamps.
+- Idempotência.
+- Ordenação.
+- Erros.
+- Segurança.
+- Compatibilidade.
+
+**Contract Readiness:** NOT_READY.
+
+A definição detalhada dos schemas deverá seguir o CONTRACT-TEMPLATE.md aprovado.
+
+---
+
+## 14. Segurança e segregação
+
+### 14.1 Ambientes
+
+Os mecanismos deverão respeitar a segregação TRAINING/PAPER/LIVE.
+
+### 14.2 Identidade
+
+Os componentes deverão utilizar identidades e permissões compatíveis com suas responsabilidades.
+
+### 14.3 Isolamento
+
+Dados e eventos de ambientes distintos não poderão ser misturados de forma não autorizada.
+
+### 14.4 Segredos
+
+Credenciais deverão permanecer fora dos registros de eventos e logs.
+
+### 14.5 Falha segura
+
+Falhas de autorização ou configuração crítica deverão impedir processamento não autorizado.
+
+### 14.6 Restrições financeiras
+
+O épico não implementará execução de ordens financeiras.
+
+Nenhum evento deverá ser interpretado como autorização suficiente para operar na Binance.
+
+### 14.7 LIVE
+
+LIVE permanecerá inacessível no I00.
+
+---
+
+## 15. Observabilidade e auditoria
+
+### 15.1 Logs
+
+Os componentes deverão registrar eventos relevantes de processamento, rejeição, falha e recuperação.
+
+### 15.2 Métricas
+
+As métricas aplicáveis poderão incluir:
+
+- Registros Outbox pendentes.
+- Tentativas de publicação.
+- Falhas de publicação.
+- Idade dos registros pendentes.
+- Mensagens processadas.
+- Duplicidades detectadas.
+- Erros de consumo.
+- Latência de processamento.
+- Eventos bloqueados.
+- Recuperações realizadas.
+
+### 15.3 Traces
+
+Deverá ser possível correlacionar uma operação aos registros Outbox, publicações e consumos correspondentes.
+
+### 15.4 Auditoria
+
+O sistema deverá preservar informações suficientes para reconstruir o processamento.
+
+### 15.5 Alertas
+
+As condições de alerta e seus limiares deverão ser definidos e aprovados nas especificações técnicas.
+
+Não serão presumidos valores quantitativos.
+
+---
+
+## 16. Requisitos não funcionais
+
+| Categoria | Requisito | Método de verificação |
+|---|---|---|
+| Integridade | Estado e Outbox atomicamente persistidos | Testes transacionais |
+| Confiabilidade | Recuperação de publicações pendentes | Testes de falha |
+| Idempotência | Ausência de efeitos duplicados | Testes de repetição |
+| Ordenação | Sequência preservada quando exigida | Testes por agregado |
+| Auditabilidade | Processamento rastreável | Logs e eventos |
+| Segurança | Isolamento entre ambientes | Testes de autorização |
+| Reprodutibilidade | Schema e ambiente versionados | Migrations e CI |
+| Observabilidade | Diagnóstico de falhas | Métricas e traces |
+| Manutenibilidade | Componentes com responsabilidades explícitas | Revisão arquitetural |
+
+Métricas e limiares específicos deverão ser formalizados antes de serem utilizados como critérios de aceite.
+
+---
+
+## 17. Estratégia de testes
+
+### 17.1 Testes de persistência
+
+Verificar:
+
+- Criação e integridade das entidades.
+- Restrições de unicidade.
+- Integridade referencial.
+- Migrations.
+- Reprodutibilidade do schema.
+
+### 17.2 Testes transacionais
+
+Verificar:
+
+- Commit atômico.
+- Rollback.
+- Falha antes do commit.
+- Falha após o commit.
+- Consistência entre estado e Outbox.
+
+### 17.3 Testes do Dispatcher
+
+Verificar:
+
+- Seleção de registros elegíveis.
+- Publicação.
+- Retry.
+- Recuperação.
+- Concorrência.
+- Ordenação aplicável.
+
+### 17.4 Testes de consumidores
+
+Verificar:
+
+- Primeira entrega.
+- Entrega duplicada.
+- Falha parcial.
+- Reinício.
+- Mensagem inválida.
+- Sequência de eventos.
+
+### 17.5 Testes de resiliência
+
+Simular interrupções e falhas em ambiente controlado.
+
+### 17.6 Testes de segurança
+
+Verificar isolamento, permissões e ausência de acesso LIVE.
+
+### 17.7 Testes end-to-end
+
+Verificar o fluxo:
+
+**Operação controlada → Persistência → Outbox → Dispatcher → Consumidor → Estado/Auditoria.**
+
+Nenhum teste executará ordens financeiras reais.
+
+---
+
+## 18. Critérios de aceite do épico
+
+Os critérios abaixo são propostos para aceite do TS-EP-02 e deverão ser vinculados aos critérios I00-AC01–I00-AC12 aplicáveis.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| EP02-AC01 | PostgreSQL configurado e reproduzível | Ambiente e testes |
+| EP02-AC02 | Migrations versionadas e verificadas | Relatórios de migração |
+| EP02-AC03 | Integridade transacional demonstrada | Testes de commit/rollback |
+| EP02-AC04 | Transactional Outbox atômica | Testes transacionais |
+| EP02-AC05 | Dispatcher processa registros elegíveis | Testes de integração |
+| EP02-AC06 | Falhas de publicação são recuperáveis | Testes de resiliência |
+| EP02-AC07 | Consumidores são idempotentes | Testes de duplicidade |
+| EP02-AC08 | Ordenação aplicável é preservada | Testes por agregado |
+| EP02-AC09 | Eventos e processamento são auditáveis | Logs e traces |
+| EP02-AC10 | Isolamento e restrições LIVE demonstrados | Testes de segurança |
+| EP02-AC11 | Contratos de eventos e Outbox conformes | Testes de contrato |
+| EP02-AC12 | Evidências verificáveis e rastreáveis | Evidence Bundle I00 |
+
+**Estado dos critérios:** PROPOSED / NOT_EVALUATED.
+
+Esses critérios complementam, mas não substituem, I00-AC01–I00-AC12.
+
+A aprovação deste documento valida a especificação e a proposta de critérios, não sua execução.
+
+---
+
+## 19. Evidências esperadas
+
+O TS-EP-02 deverá contribuir para o Evidence Bundle I00 com:
+
+- Identidade do build.
+- Versões de banco e migrations.
+- Relatórios de integração.
+- Testes de atomicidade.
+- Testes de Outbox.
+- Testes do Dispatcher.
+- Testes de idempotência.
+- Testes de ordenação.
+- Testes de falha e recuperação.
+- Evidências de observabilidade.
+- Evidências de isolamento.
+- Manifesto de integridade.
+- Matriz de rastreabilidade.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 20. Dependências
+
+### 20.1 Dependências de TS-EP-01
+
+- Monorepo.
+- Toolchain.
+- Contratos versionados.
+- Configuração.
+- Segurança.
+- Observabilidade.
+- CI/CD.
+
+### 20.2 Dependências internas
+
+- PostgreSQL antes dos testes de persistência.
+- Migrations antes da validação do schema.
+- Modelo Outbox antes da publicação.
+- Dispatcher antes dos testes de integração de entrega.
+- Consumidores antes da validação end-to-end.
+- Contratos e fixtures antes dos testes correspondentes.
+
+### 20.3 Dependências externas
+
+- Infraestrutura local de containers.
+- Ambiente Python.
+- Repositório Git.
+- Ferramentas de CI.
+- Fontes arquiteturais originais.
+
+### 20.4 Paralelismo
+
+Especificações, fixtures e testes poderão ser preparados em paralelo quando suas dependências estiverem definidas.
+
+---
+
+## 21. Riscos e lacunas
+
+| Gap ID | Impacto no épico |
+|---|---|
+| DOC-GAP-003 | ADRs individuais não verificadas |
+| DOC-GAP-004 | Registros técnicos ADR-089–098 pendentes |
+| DOC-GAP-005 | Rastreabilidade incompleta |
+| DOC-GAP-006 | Features e histórias não refinadas |
+| DOC-GAP-007 | Arquivos do repositório não auditados |
+| DOC-GAP-008 | Owners e referências a complementar |
+
+DOC-GAP-001 e DOC-GAP-002 permanecem no registro global e deverão ser avaliados caso seja confirmada dependência com este épico.
+
+A aprovação do TS-EP-02 não encerra nenhuma lacuna.
+
+---
+
+## 22. Planejamento de evolução
+
+A sequência lógica proposta é:
+
+1. Verificar baselines e ADRs.
+2. Confirmar componentes e requisitos.
+3. Refinar Features.
+4. Confirmar histórias.
+5. Especificar modelos de persistência.
+6. Especificar contratos.
+7. Definir critérios e testes.
+8. Avaliar Documentation Readiness.
+9. Implementar somente histórias autorizadas.
+10. Executar testes.
+11. Produzir evidências.
+12. Solicitar aceite do épico.
+
+O trabalho deverá respeitar as dependências técnicas e a governança de mudanças.
+
+---
+
+## 23. Epic Documentation Readiness
+
+O épico estará documentalmente pronto quando:
+
+- Escopo aprovado.
+- ADRs aplicáveis verificadas.
+- Componentes identificados.
+- Requisitos rastreáveis.
+- Features formalizadas.
+- Histórias identificadas.
+- Modelos de persistência especificados.
+- Contratos definidos.
+- Critérios de aceite verificáveis.
+- Testes especificados.
+- Dependências identificadas.
+- Lacunas bloqueantes resolvidas.
+
+**Documentation Readiness:** NOT_READY.
+
+Justificativa: permanecem fontes, vínculos, contratos e especificações individuais pendentes de verificação.
+
+---
+
+## 24. Epic Implementation Acceptance
+
+O TS-EP-02 poderá ser aceito quando:
+
+1. As capacidades obrigatórias estiverem implementadas.
+2. As Features previstas estiverem aceitas.
+3. Os critérios EP02-AC01–EP02-AC12 estiverem atendidos.
+4. Os testes obrigatórios tiverem sido executados.
+5. A integridade transacional estiver demonstrada.
+6. A idempotência estiver comprovada.
+7. A recuperação estiver verificada.
+8. A segurança e a segregação estiverem preservadas.
+9. As evidências estiverem validadas.
+10. A rastreabilidade estiver atualizada.
+11. As lacunas bloqueantes estiverem resolvidas.
+12. A autoridade competente registrar o aceite.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite do épico não representa homologação de G0.
+
+---
+
+## 25. Gate G0 — Engineering Ready
+
+O TS-EP-02 contribui para os critérios do G0 relacionados a:
+
+- Persistência.
+- Migrations.
+- Atomicidade.
+- Outbox.
+- Dispatcher.
+- Idempotência.
+- Ordenação.
+- Recuperação.
+- Auditoria.
+- Segurança.
+- Evidências.
+
+A homologação de G0 dependerá também do TS-EP-01 e da avaliação integral do I00.
+
+**Gate G0:** NOT_EVALUATED.
+
+**LIVE Authorization:** NOT_AUTHORIZED.
+
+---
+
+## 26. Rastreabilidade
+
+A matriz deverá relacionar:
+
+**ADR → Componente → Pendência → TS-EP-02 → Feature → História → Contrato → Teste → Evidência**
+
+Vínculos individuais ainda não verificados permanecerão PROPOSED ou UNVERIFIED.
+
+Nenhuma relação poderá ser declarada VERIFIED sem fonte.
+
+---
+
+## 27. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-16 | PENDING | Especificação inicial TS-EP-02 | PENDING |
+| 1.0 | 2026-11-16 | N/A | Aprovação da especificação documental sem alteração do escopo | [16/11/2026 · aprovação sem ressalvas](../governance/history/TS-EP-02/APPROVAL.md) |
+
+---
+
+## 28. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | TS-EP-02 |
+| Version | 1.0 |
+| Approval Category | DOC |
+| Decision | APPROVED · especificação documental |
+| Approved By | Usuário no chat de governança |
+| Approval Reference | [16/11/2026 · aprovação sem ressalvas](../governance/history/TS-EP-02/APPROVAL.md) |
+| Conditions | Sem ressalvas |
+| Date | 2026-11-16 |
+
+---
+
+**Document Status:** APPROVED  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEATURE-CATALOG.md — PROPOSED
+
+**Próxima etapa:** aguardar o conteúdo do I00-FEATURE-CATALOG.md.
+
+## 29. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/TS-EP-02/IN-REVIEW.txt) está arquivado. A versão documental **1.0** foi aprovada em 16/11/2026. O histórico preserva a [revisão local anterior à aprovação](../governance/history/TS-EP-02/REVISAO-LOCAL-IN-REVIEW.txt). As propostas de Features e os vínculos por verificar conservam os estados do texto submetido.
+
+A seção 19 descreve as evidências esperadas para o épico. O [registro mestre de I00](../backlog/registro-mestre-i00.md) e o [dossiê de G0](../governance/G0-REVIEW-DOSSIER.md) mantêm as evidências já registradas e os bloqueios em acompanhamento, incluindo I00-AC07. O [aceite do Evidence Bundle RC1](../governance/DOC-07-RC1-ACCEPTANCE.md) conserva o recorte de I00-14 e AC12. O aceite consolidado do épico permanece pendente. G0 segue em revisão e LIVE permanece indisponível.
+
+
+### Decisão de vínculos de histórias — 17/11/2026
+
+O usuário aprovou nesta conversa os vínculos de escopo das histórias TS-ST-001–004 conforme o catálogo de Features. Registro aplicado às referências correspondentes neste documento.

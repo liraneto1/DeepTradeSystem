@@ -1,0 +1,400 @@
+# INCREMENT-TEMPLATE.md
+## TRADE SYSTEM V1 — Increment Specification Template
+
+**Document ID:** TS-DOC-TPL-INC-001  
+**Version:** 1.0  
+**Status:** APPROVED  
+**Domain:** GLOBAL / D07  
+**Applicable Increments:** I00–I09  
+**Owner:** Architecture & Documentation Governance  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Document Registry:** TS-DOC-REG-001 — APPROVED  
+**Gap Register:** TS-DOC-GAP-001 — APPROVED  
+**Traceability Matrix:** TS-DOC-TRC-001 — APPROVED  
+**Approval Register:** TS-DOC-APR-001 — APPROVED  
+**Change Log:** TS-DOC-CHG-001 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Approval Reference:** [16/11/2026 · aprovação sem ressalvas](../history/TS-DOC-TPL-INC-001/APPROVAL.md)  
+**Increment:** I00–I09, conforme aplicabilidade  
+**Source References:** [anexo original](../history/TS-DOC-TPL-INC-001/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../TS-DOC-STD-V1.0.md) e [baselines e fontes oficiais](../../referencias/originais/)  
+**Related ADRs:** preencher por incremento nas especificações derivadas, conforme seção 3.2.  
+**Related Components:** preencher por incremento, conforme seção 3.3.  
+**Related Requirements/Pendências:** preencher por incremento, conforme seções 8.5, 13 e 20.  
+**Dependencies:** documentos de governança indicados acima e fontes aplicáveis a cada incremento.  
+**Acceptance Criteria:** seções 13 e 17–19 orientam o preenchimento dos critérios e das decisões do incremento.  
+**Last Updated:** 2026-11-16
+
+---
+
+# TEMPLATE — INCREMENT SPECIFICATION
+
+> Instrução de utilização: substituir os campos entre colchetes pelas informações do incremento. Não inventar requisitos, decisões, resultados ou evidências. Campos ainda não definidos deverão permanecer como TBD, acompanhados de referência à lacuna correspondente.
+
+## 1. Identificação
+
+| Campo | Valor |
+|---|---|
+| Increment ID | [IXX] |
+| Increment Name | [Nome] |
+| Specification ID | [IXX-INCREMENT] |
+| Version | [Versão] |
+| Status | [DRAFT / IN_REVIEW / APPROVED / SUPERSEDED] |
+| Architecture Baseline | TS-ARCH-GLOBAL-V1.0 |
+| Engineering Baseline | [Referência aplicável] |
+| Domain Owners | [Domínios responsáveis] |
+| Functional Owner | [Responsável] |
+| Planned Release | [Identificador ou TBD] |
+| Approval Reference | [Referência ou PENDING] |
+| Last Updated | [Data] |
+
+## 2. Objetivo do incremento
+
+### 2.1 Objetivo
+
+[Descrever o resultado principal esperado.]
+
+### 2.2 Problema ou necessidade
+
+[Identificar a necessidade técnica ou funcional que justifica o incremento.]
+
+### 2.3 Resultado demonstrável
+
+[Descrever o comportamento, capacidade ou entrega que poderá ser demonstrada ao final.]
+
+### 2.4 Critério de sucesso
+
+[Definir como será verificado o atendimento ao objetivo.]
+
+## 3. Contexto arquitetural
+
+### 3.1 Baselines aplicáveis
+
+[Relacionar baselines e versões.]
+
+### 3.2 ADRs aplicáveis
+
+[Relacionar decisões que governam o incremento.]
+
+### 3.3 Componentes envolvidos
+
+[Relacionar IDs dos componentes.]
+
+### 3.4 Fluxos relacionados
+
+[Relacionar F01–F10 conforme aplicabilidade.]
+
+### 3.5 Restrições arquiteturais
+
+[Registrar invariantes e decisões que não podem ser violados.]
+
+## 4. Escopo
+
+### 4.1 Incluído
+
+[Relacionar capacidades, entregas e responsabilidades incluídas.]
+
+### 4.2 Excluído
+
+[Relacionar explicitamente o que não será implementado.]
+
+### 4.3 Premissas
+
+[Premissas verificáveis ou a confirmar.]
+
+### 4.4 Restrições
+
+[Limitações técnicas, financeiras, operacionais ou regulatórias aplicáveis.]
+
+### 4.5 Critérios de alteração de escopo
+
+[Definir quando uma alteração exigirá Change Request.]
+
+## 5. Épicos e Features
+
+| Epic ID | Feature ID | Nome | Owner | Status | Referência |
+|---|---|---|---|---|---|
+| [TS-EP-XX] | [IXX-FEAT-NNN] | [Nome] | [Owner] | [Status] | [Documento] |
+
+Épicos compartilhados entre incrementos deverão manter seus IDs originais.
+
+As Features deverão possuir identificação única e escopo verificável.
+
+## 6. Histórias técnicas
+
+| Story ID | Feature ID | Descrição | Prioridade | Status | Critérios de aceite |
+|---|---|---|---|---|---|
+| [TS-ST-NNN] | [IXX-FEAT-NNN] | [Descrição] | [Prioridade] | [Status] | [Referência] |
+
+As histórias deverão cumprir a Definition of Ready antes de entrar em desenvolvimento.
+
+## 7. Entregáveis
+
+| Deliverable ID | Entrega | Artefato | Critério de conclusão |
+|---|---|---|---|
+| [IXX-DEL-NNN] | [Nome] | [Caminho/referência] | [Critério] |
+
+Entregáveis deverão ser demonstráveis e vinculados a histórias ou critérios de aceite.
+
+## 8. Dependências
+
+### 8.1 Dependências internas
+
+[Relacionar componentes, contratos, histórias e serviços necessários.]
+
+### 8.2 Dependências entre incrementos
+
+[Relacionar incrementos anteriores ou posteriores.]
+
+### 8.3 Dependências externas
+
+[Relacionar fornecedores, infraestrutura, APIs ou aprovações externas.]
+
+### 8.4 Caminho crítico lógico
+
+[Descrever a sequência de dependências que condiciona a entrega.]
+
+### 8.5 Bloqueios conhecidos
+
+[Relacionar lacunas ou impedimentos com IDs verificáveis.]
+
+## 9. Contratos e interfaces
+
+| Contract ID | Versão | Producer | Consumer | História relacionada | Status |
+|---|---|---|---|---|---|
+| [Contract] | [Version] | [Producer] | [Consumer] | [Story] | [Status] |
+
+Os contratos deverão referenciar a especificação autoritativa.
+
+Não duplicar schemas completos neste documento quando já existirem em repositório próprio.
+
+## 10. Dados e persistência
+
+### 10.1 Entidades de dados
+
+[Relacionar entidades e responsabilidades.]
+
+### 10.2 Modelos de persistência
+
+[Referenciar modelos, schemas e migrations.]
+
+### 10.3 Integridade e consistência
+
+[Definir invariantes e requisitos transacionais.]
+
+### 10.4 Retenção e auditoria
+
+[Definir requisitos aplicáveis.]
+
+### 10.5 Migração e compatibilidade
+
+[Definir regras de evolução.]
+
+## 11. Segurança e governança
+
+### 11.1 Identidade e autorização
+
+[Definir atores, permissões e políticas.]
+
+### 11.2 Segregação de ambientes
+
+[Definir TRAINING/PAPER/LIVE conforme aplicabilidade.]
+
+### 11.3 Gestão de segredos
+
+[Definir controles e responsabilidades.]
+
+### 11.4 Invariantes críticos
+
+[Relacionar regras de segurança e risco.]
+
+### 11.5 Restrições operacionais
+
+[Definir ações permitidas e proibidas.]
+
+### 11.6 Autorizações necessárias
+
+[Relacionar aprovações e gates.]
+
+## 12. Estratégia de testes
+
+| Test Type | Escopo | Critério | Referência |
+|---|---|---|---|
+| Unit | [Escopo] | [Critério] | [Test ID] |
+| Contract | [Escopo] | [Critério] | [Test ID] |
+| Integration | [Escopo] | [Critério] | [Test ID] |
+| Property-Based | [Escopo] | [Critério] | [Test ID] |
+| End-to-End | [Escopo] | [Critério] | [Test ID] |
+| Resilience | [Escopo] | [Critério] | [Test ID] |
+| Security | [Escopo] | [Critério] | [Test ID] |
+
+Tipos não aplicáveis deverão ser justificados.
+
+## 13. Critérios de aceite do incremento
+
+| Acceptance ID | Critério | Método de verificação | Evidência necessária |
+|---|---|---|---|
+| [IXX-ACNN] | [Critério] | [Método] | [Evidence ID] |
+
+Cada critério deverá ser verificável e possuir evidência associada antes do aceite final.
+
+## 14. Evidence Bundle
+
+### 14.1 Identificação
+
+- Evidence Bundle ID: [ID]
+- Increment: [IXX]
+- Build ID: [ID]
+- Git Commit: [Hash]
+- Environment: [Ambiente]
+- Contract Versions: [Referências]
+- Test Run IDs: [Referências]
+- Approval Reference: [Referência]
+
+### 14.2 Evidências obrigatórias
+
+[Relacionar os resultados e relatórios exigidos.]
+
+### 14.3 Integridade
+
+[Definir mecanismos de verificação de integridade.]
+
+### 14.4 Pendências de evidência
+
+[Relacionar evidências ainda não produzidas.]
+
+## 15. Riscos e lacunas
+
+| Risk/Gap ID | Descrição | Severidade | Impacto | Tratamento | Status |
+|---|---|---|---|---|---|
+| [ID] | [Descrição] | [Nível] | [Impacto] | [Ação] | [Status] |
+
+Lacunas bloqueantes deverão ser resolvidas antes das atividades dependentes.
+
+## 16. Planejamento de execução
+
+### 16.1 Work Packages
+
+[Relacionar pacotes de trabalho.]
+
+### 16.2 Sequência de execução
+
+[Definir ordem lógica.]
+
+### 16.3 Trilhas paralelas
+
+[Definir trabalhos independentes.]
+
+### 16.4 Estimativas
+
+[Registrar esforço somente quando fundamentado.]
+
+### 16.5 Marcos
+
+[Definir resultados intermediários demonstráveis.]
+
+### 16.6 Responsabilidades
+
+[Definir owners e aprovadores.]
+
+## 17. Documentation Readiness
+
+O incremento estará documentalmente pronto para iniciar as histórias selecionadas quando:
+
+- O escopo estiver aprovado.
+- Os épicos e Features estiverem identificados.
+- As histórias selecionadas estiverem READY.
+- As ADRs aplicáveis estiverem referenciadas.
+- Os contratos necessários estiverem especificados.
+- Os critérios de aceite estiverem verificáveis.
+- Os testes esperados estiverem definidos.
+- As dependências estiverem identificadas.
+- As lacunas bloqueantes estiverem resolvidas.
+- As restrições de segurança estiverem preservadas.
+
+**Documentation Readiness Status:** [NOT_READY / READY_WITH_CONDITIONS / READY]
+
+**Approval Reference:** [Referência]
+
+## 18. Implementation Acceptance
+
+O incremento poderá ser aceito quando:
+
+- As entregas obrigatórias estiverem concluídas.
+- As histórias previstas estiverem aceitas.
+- Os testes obrigatórios tiverem sido executados.
+- Os critérios de aceite estiverem atendidos.
+- O Evidence Bundle estiver completo.
+- Os riscos residuais estiverem avaliados.
+- As lacunas bloqueantes estiverem encerradas.
+- As alterações estiverem registradas.
+- As aprovações exigidas estiverem documentadas.
+
+**Implementation Acceptance Status:** [NOT_EVALUATED / REJECTED / APPROVED_WITH_CONDITIONS / APPROVED]
+
+## 19. Gates e promoção
+
+### 19.1 Gate aplicável
+
+[Identificar G0–G5 ou N/A.]
+
+### 19.2 Critérios obrigatórios
+
+[Referenciar os critérios do gate.]
+
+### 19.3 Evidências
+
+[Relacionar Evidence Bundle.]
+
+### 19.4 Autoridade de aprovação
+
+[Definir responsável.]
+
+### 19.5 Decisão
+
+[PENDING / APPROVED / REJECTED / DEFERRED]
+
+O aceite do incremento não substitui automaticamente a aprovação do gate.
+
+A aprovação de qualquer documento, história ou incremento não constitui autorização LIVE.
+
+## 20. Rastreabilidade
+
+O incremento deverá manter vínculos entre:
+
+**ADR → Componente → Pendência → Épico → Feature → História → Contrato → Teste → Evidência**
+
+A Traceability Matrix deverá identificar vínculos confirmados, propostos, pendentes e não aplicáveis.
+
+Nenhuma relação sem fonte poderá ser declarada VERIFIED.
+
+## 21. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| [Versão] | [Data] | [ID] | [Descrição] | [Referência] |
+
+## 22. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | [IXX-INCREMENT] |
+| Version | [Versão] |
+| Approval Category | INC / DOC, conforme finalidade |
+| Decision | [Resultado] |
+| Approved By | [Autoridade] |
+| Approval Reference | [Referência] |
+| Conditions | [Condições] |
+| Date | [Data] |
+
+---
+
+**Template Status:** APPROVED  
+**Template Approval:** [16/11/2026 · aprovação sem ressalvas](../history/TS-DOC-TPL-INC-001/APPROVAL.md)  
+**Next Artifact:** EPIC-TEMPLATE.md  
+**Próxima etapa:** aguardar o conteúdo do EPIC-TEMPLATE.md.
+
+## Histórico da revisão do template
+
+A versão **1.0** foi aprovada em 16/11/2026. O histórico preserva a [revisão local anterior à aprovação](../history/TS-DOC-TPL-INC-001/REVISAO-LOCAL-IN-REVIEW.txt). O [template de Incremento anterior](INCREMENTO.md) mantém sua aprovação original. A [aprovação comunicada do Approval Register](../history/TS-DOC-APR-001/APPROVAL.md) está registrada e a conferência do seu texto integral no checkout segue pendente.
+
+A publicação deste template para revisão é uma atividade documental. [G0](../G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

@@ -1,0 +1,340 @@
+# Trade System — Validação Arquitetural V1
+
+Domínio 01 · Integração e Dados de Mercado
+
+Vamos iniciar pelo Market Data & Intelligence, que será a base de informação para os agentes de IA, o gerenciamento de risco, o treinamento dos modelos e a visualização das operações.
+
+A proposta é validar três componentes:
+
+1. Market Data Engine: aquisição, normalização, armazenamento e distribuição dos dados.
+2. Feature Engine: transformação dos dados brutos em indicadores e características do mercado.
+3. Market State Engine: consolidação do estado que será disponibilizado ao Trading Agent.
+
+Minha recomendação é manter esses três componentes separados logicamente, mesmo que inicialmente sejam implementados em um único serviço.
+
+## 1. Arquitetura conceitual do domínio
+
+  Fontes de Dados
+    Binance
+    Blockchain
+    Mercado
+        ↓
+  01. Market Data Engine
+    REST / WebSocket
+    Normalização
+    Validação / Qualidade
+    Persistência / Eventos
+        ↓
+  02. Feature Engine
+    Price Action
+    Smart Money
+    Indicadores
+    Volatilidade
+    Order Flow
+    Estrutura
+        ↓
+  03. Market State Engine
+    Estado consolidado, sincronizado e versionado
+        ↓
+  Trading Agent
+  Risk Engine
+  TradingView
+
+O fluxo acima representa o caminho principal dos dados. Na implementação, os componentes também poderão consumir eventos diretamente da camada de dados, sem depender de uma cadeia estritamente sequencial.
+
+## 2. Market Data Engine — O que vamos coletar?
+
+Minha proposta inicial é organizar os dados em quatro grupos.
+
+| Grupo                 | Dados                                                 | Prioridade      |
+| --------------------- | ----------------------------------------------------- | --------------- |
+| Market Data           | OHLCV, trades, volume, preços e order book            | P0              |
+| Derivatives Data      | Funding Rate, Open Interest, Mark Price e Index Price | P0 para Futuros |
+| Account Data          | Saldos, ordens, execuções, posições e margem          | P0              |
+| External Intelligence | Blockchain, sentimento e macroeconomia                | P2              |
+
+Os dados de conta serão adquiridos pelos adapters da corretora, mas a responsabilidade pelo estado financeiro consolidado continuará com o futuro Position & Portfolio Manager.
+
+Para a primeira integração, usaremos BTCUSDT na Binance Spot e USDⓈ-M Futures. Os dois mercados terão identificação independente, pois seus preços, regras e eventos não são necessariamente iguais.
+
+### Estratégia de aquisição
+
+| Método           | Uso                                                          |
+| ---------------- | ------------------------------------------------------------ |
+| REST             | Histórico, recuperação de lacunas, snapshots e reconciliação |
+| WebSocket        | Atualizações de candles, trades, book e eventos de conta     |
+| PostgreSQL       | Persistência operacional e histórico inicial                 |
+| Eventos internos | Distribuição das atualizações para outros componentes        |
+
+O armazenamento precisará preservar timestamps de origem, timestamps de recebimento, mercado, símbolo, origem do dado e estado de qualidade.
+
+## 3. Feature Engine — Como interpretar o mercado?
+
+Aqui entra boa parte da inteligência quantitativa que fornecerá informações ao agente.
+
+Proponho seis famílias de features.
+
+  01 Price & Momentum
+    OHLC, retornos, momentum, médias móveis, RSI e ATR
+
+  02 Market Structure
+    HH, HL, LH, LL, tendência, consolidação e rompimentos
+
+  03 Smart Money Concepts
+    BOS, CHoCH, Order Blocks, FVG e zonas de liquidez
+
+  04 Volume & Order Flow
+    Volume relativo, agressão estimada, desequilíbrio e profundidade
+
+  05 Volatility & Regime
+    Volatilidade realizada, regime de mercado e expansão/contração
+
+  06 Derivatives Context
+    Funding Rate, Open Interest, Mark Price e métricas de futuros
+
+Decisão importante: as regras para identificar BOS, CHoCH, Order Blocks e FVG precisam ser formalizadas matematicamente e versionadas. Esses conceitos admitem diferentes interpretações; não podemos deixar sua identificação depender de uma avaliação visual subjetiva.
+
+Também precisamos garantir que cada feature utilize somente informações que já estavam disponíveis no instante da decisão, evitando vazamento de dados futuros durante treinamento e backtesting.
+
+## 4. Market State Engine — O que o agente recebe?
+
+O Market State será uma representação estruturada do contexto de mercado em determinado instante.
+
+Exemplo conceitual:
+```
+{
+  "symbol": "BTCUSDT",
+  "market": "USD_M_FUTURES",
+  "timestamp": "2026-11-10T12:00:00Z",
+  "timeframe": "5m",
+  "price": {
+    "close": 103250.0,
+    "return": 0.0021
+  },
+  "structure": {
+    "trend": "BULLISH",
+    "last_bos": "BULLISH",
+    "last_choch": null
+  },
+  "volatility": {
+    "atr": 420.5,
+    "regime": "MEDIUM"
+  },
+  "derivatives": {
+    "funding_rate": 0.0001,
+    "open_interest": 82500
+  },
+  "data_quality": {
+    "valid": true,
+    "complete": true
+  }
+}
+```
+
+Valores fictícios apenas para ilustrar o contrato de dados.
+
+O Trading Agent também precisará receber `Position State`, `Portfolio State` e `Risk State`. Minha recomendação é que esses estados sejam mantidos em domínios próprios e combinados em uma Trading Observation no momento da inferência.
+
+Isso evita misturar o estado do mercado com informações particulares de uma conta ou posição.
+
+## 5. Timeframes — Proposta para validação
+
+Sugiro manter o modelo multi-timeframe, com decisões inicialmente a cada fechamento de candle de 5 minutos.
+
+| Timeframe | Responsabilidade                         |
+| --------- | ---------------------------------------- |
+| 1m        | Microestrutura e refinamento operacional |
+| 5m        | Timeframe principal de decisão           |
+| 15m       | Confirmação de estrutura                 |
+| 1h        | Tendência e regime de mercado            |
+
+O agente poderá receber informações dos quatro períodos, mas o fechamento do candle de 5 minutos será o gatilho inicial para avaliar uma nova decisão.
+
+Isso não significa que o Risk Engine ou o Position Manager funcionarão apenas a cada cinco minutos. A proteção e o acompanhamento das posições precisam ocorrer continuamente.
+
+## 6. Requisitos de qualidade e segurança dos dados
+
+Antes de disponibilizar uma observação para a IA, o sistema deverá verificar:
+
+- Integridade e sequência dos candles.
+- Ausência de duplicidades e lacunas não tratadas.
+- Sincronização dos timestamps.
+- Atualidade dos dados em relação ao limite definido.
+- Consistência entre símbolo, mercado e timeframe.
+- Disponibilidade das features obrigatórias.
+- Identificação de dados provisórios versus candles fechados.
+
+Se um conjunto de dados crítico estiver inválido, o sistema não deverá gerar novas entradas com base nele. A proteção de posições existentes continuará por mecanismos independentes.
+
+## 7. Decisões arquiteturais para aprovação
+
+Separei as decisões que considero mais importantes nesta etapa.
+
+## Validação do Domínio 01
+
+0/6 decisões
+
+1\. Separação dos componentes
+Market Data, Feature Engine e Market State serão componentes lógicos independentes.
+Aprovar
+Revisar
+
+2\. Escopo inicial
+BTCUSDT, Binance Spot e USDⓈ-M Futures. Outras fontes ficam para evolução.
+Aprovar
+Revisar
+
+3\. Timeframe principal
+Decisões a cada candle fechado de 5m, com contexto 1m, 15m e 1h.
+Aprovar
+Revisar
+
+4\. Features de mercado
+Incluir Price Action, Smart Money, volatilidade, volume, order flow e dados de futuros.
+Aprovar
+Revisar
+
+5\. Persistência
+PostgreSQL inicialmente, com possibilidade de especializar séries temporais e eventos.
+Aprovar
+Revisar
+
+6\. Trading Observation
+Separar Market State dos estados de posição, portfólio e risco.
+Aprovar
+Revisar
+
+Observações ou ajustes (opcional)
+
+Minha recomendação: aprovar essas seis decisões como baseline conceitual do Domínio 01. Elas definem a estrutura necessária sem antecipar detalhes de implementação, como schemas, filas, serviços e endpoints.
+
+Após a validação, avançaremos para o Domínio 02 — Inteligência Artificial, detalhando os contratos entre Agente Pesquisa, Agente Operação e Learning Engine, incluindo o ambiente de Deep Reinforcement Learning.
+
+
+=======
+
+# TRADE SYSTEM — Arquitetura Conceitual V1
+
+Registro de Validação Arquitetural · D01
+Aprovado
+
+Domínio 01 — Integração e Dados de Mercado
+
+Consolidamos oficialmente as seis decisões arquiteturais do primeiro domínio do Trade System, sem ressalvas ou solicitações de alteração.
+
+# 6/6
+Decisões aprovadas
+
+# 3
+Componentes principais
+
+# 0
+Ressalvas na aprovação
+
+Identificação: TS-ARCH-D01-V1.0 · Data: 10/11/2026 · Estado: Baseline conceitual aprovada
+
+## 1. Decisões consolidadas
+
+| ID      | Decisão                   | Definição aprovada                                                                |
+| ------- | ------------------------- | --------------------------------------------------------------------------------- |
+| ADR-001 | Separação dos componentes | Market Data, Feature Engine e Market State como componentes lógicos independentes |
+| ADR-002 | Escopo inicial            | BTCUSDT, Binance Spot e USDⓈ-M Futures                                            |
+| ADR-003 | Timeframes                | Decisão principal em 5m; contexto em 1m, 15m e 1h                                 |
+| ADR-004 | Features                  | Price Action, Smart Money, volatilidade, volume, order flow e derivativos         |
+| ADR-005 | Persistência              | PostgreSQL inicialmente, com possibilidade de especialização                      |
+| ADR-006 | Trading Observation       | Market State separado de Position State, Portfolio State e Risk State             |
+
+Essas decisões ficam estabelecidas como referência para o detalhamento técnico dos demais domínios.
+
+## 2. Arquitetura conceitual aprovada
+
+Fontes de Dados
+  Binance
+    Spot / Futures
+  Blockchain
+    Evolução
+  Mercado
+    Evolução
+        ↓
+Market Data Engine
+  Captura · Normalização · Validação · Distribuição
+        ↓
+Feature Engine
+  Indicadores · Price Action · SMC · Order Flow
+        ↓
+Market State Engine
+  Estado de mercado consolidado e versionado
+        ↓
+Trading Observation
+  Market State
+  Position State
+  Portfolio State
+  Risk State
+Contrato consolidado para inferência do agente
+        ↓
+Trading Agent — Agente 02
+  Fluxo lógico simplificado. Position, Portfolio e Risk State serão fornecidos por seus respectivos domínios.
+
+## 3. Responsabilidades aprovadas
+
+  D01-C01 — Market Data Engine
+    Responsável pela aquisição histórica e em tempo real, normalização, integridade, sincronização temporal e disponibilização de dados.
+  Entrega principal: dados confiáveis e rastreáveis para os componentes consumidores.
+
+  D01-C02 — Feature Engine
+    Responsável por calcular e versionar indicadores quantitativos, estruturas de mercado, Smart Money Concepts e demais características.
+  Entrega principal: features reproduzíveis para treinamento, backtesting e inferência.
+
+  D01-C03 — Market State Engine
+    Responsável por consolidar as features disponíveis em um instante, verificando consistência e qualidade.
+  Entrega principal: Market State estruturado para consumo pelos agentes e serviços de risco.
+
+## 4. Pendências para o detalhamento técnico
+
+A aprovação conceitual não significa que todos os detalhes técnicos estejam definidos. As seguintes decisões permanecem abertas.
+
+| ID  | Pendência                                                | Quando resolver     |
+| --- | -------------------------------------------------------- | ------------------- |
+| P01 | Inventário de endpoints Binance Spot/Futures             | Especificação D01   |
+| P02 | Schemas, contratos e versionamento dos dados             | Engenharia D01      |
+| P03 | Regras matemáticas de BOS, CHoCH, OB e FVG               | Feature Engineering |
+| P04 | Frequência e retenção dos dados de order book            | Engenharia D01      |
+| P05 | Política de lacunas, dados atrasados e recuperação       | Engenharia D01      |
+| P06 | Estrutura PostgreSQL e eventual extensão temporal        | Engenharia de Dados |
+| P07 | Definição exata do vetor de observação                   | Domínio 02          |
+| P08 | Política de versionamento e disponibilidade das features | Domínios 01 e 02    |
+
+Essas pendências não bloqueiam a aprovação do Domínio 01, mas precisarão ser resolvidas antes da implementação dos componentes correspondentes.
+
+## 5. Próximo domínio — Inteligência Artificial
+
+## Domínio 02 — AI & Learning Engine
+
+Próxima etapa da validação arquitetural
+
+Neste domínio validaremos a arquitetura e as responsabilidades dos três componentes principais:
+
+Agente 01 — Research & Market Intelligence
+  Pesquisa oportunidades, analisa ativos e regimes de mercado, produzindo contexto e recomendações. Sua implementação completa poderá ocorrer após o MVP do Agente 02.
+
+Agente 02 — Trading Agent
+  Responsável pela política de decisão operacional: abrir, manter, reduzir ou encerrar posições. Será o foco inicial do desenvolvimento de IA.
+
+Learning Engine
+  Ambiente de Reinforcement Learning, treinamento PPO/SAC, simulação, backtesting, avaliação, comparação e versionamento de modelos.
+
+### Questões arquiteturais que validaremos
+
+  1. Modelo de decisão: quais ações o agente poderá executar e quais parâmetros ele deverá definir.
+  2. Trading Observation: como o agente receberá Market, Position, Portfolio e Risk State.
+  3. Trading Environment: como simularemos o mercado, as execuções e as recompensas.
+  4. Reward Function: como equilibrar retorno líquido, risco, custos e preservação de capital.
+  5. Arquitetura de modelos: PPO, SAC e estratégias baseline, sem escolher antecipadamente um vencedor.
+  6. Ciclo de aprendizado: como treinar, avaliar, aprovar e implantar novas versões sem comprometer o ambiente operacional.
+
+Resultado esperado: aprovar a Arquitetura Conceitual do Domínio 02 e estabelecer os contratos entre os agentes, o Learning Engine e os demais componentes do Trade System.
+
+Registro da validação
+
+O Domínio 01 está consolidado como baseline conceitual V1.0, com seis decisões aprovadas e oito pendências técnicas identificadas.
+

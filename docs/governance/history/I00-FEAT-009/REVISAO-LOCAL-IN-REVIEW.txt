@@ -1,0 +1,1050 @@
+# I00-FEAT-009.md
+## TRADE SYSTEM V1 — Security & Environment Isolation
+
+**Document ID:** I00-FEAT-009  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-09  
+**Primary Epic:** TS-EP-01 — Engineering Foundation  
+**Primary Domain:** D06 — Infrastructure, Security & DevOps  
+**Supporting Domains:** D03 / D05 / D07  
+**Functional Owner:** Security & Infrastructure Architecture  
+**Technical Owner:** TBD  
+**Security Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 / V1.0 — APPROVED  
+**Epic Baseline:** TS-EP-01 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Approval Reference:** PENDING  
+**Domain:** D06, com apoio de D03, D05 e D07  
+**Owner:** Security & Infrastructure Architecture, conforme responsabilidade funcional acima.  
+**Source References:** [anexo original](../governance/history/I00-FEAT-009/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md) e [fontes oficiais](../referencias/originais/)  
+**Related ADRs:** referências da seção 2.  
+**Related Components:** seção 2 e [matriz DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** AC10 e referências das seções 21, 23 e 26.  
+**Dependencies:** [catálogo I00](../increments/I00-FEATURE-CATALOG.md), [TS-EP-01](../epics/TS-EP-01.md), [template de Feature](../governance/templates/FEATURE-TEMPLATE.md) e dependências da seção 19.  
+**Acceptance Criteria:** seções 21, 24 e 25, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-17
+
+---
+
+## 1. Objetivo
+
+### 1.1 Objetivo principal
+
+Estabelecer os controles mínimos de segurança e isolamento necessários para desenvolver, testar e validar a fundação do TRADE SYSTEM V1 sem permitir acesso não autorizado a dados, serviços, credenciais ou capacidades financeiras.
+
+### 1.2 Necessidade atendida
+
+O sistema deverá operar futuramente com múltiplos ambientes, componentes automatizados e agentes de inteligência artificial.
+
+Uma configuração incorreta poderá causar:
+
+- Acesso ao ambiente errado.
+- Exposição de credenciais.
+- Utilização indevida de permissões.
+- Comunicação entre ambientes segregados.
+- Processamento de eventos fora do contexto autorizado.
+- Acesso acidental a serviços financeiros reais.
+- Execução de comandos sem autorização.
+- Ausência de auditoria sobre decisões críticas.
+
+### 1.3 Resultado demonstrável
+
+A implementação deverá demonstrar:
+
+1. Identificação explícita do ambiente.
+2. Validação de configuração antes da execução.
+3. Separação de identidades e permissões.
+4. Proteção de segredos.
+5. Ausência de credenciais LIVE no I00.
+6. Bloqueio de conexões e operações LIVE.
+7. Isolamento de dados e eventos.
+8. Rejeição de ações não autorizadas.
+9. Ausência de bypass do fluxo Control → Risk → Execution.
+10. Auditoria de decisões de segurança.
+11. Testes negativos e de isolamento.
+12. Evidências verificáveis.
+
+### 1.4 Declaração da Feature
+
+**Como** responsável pela segurança do TRADE SYSTEM V1,  
+**quero** controles verificáveis de identidade, configuração, autorização e isolamento,  
+**para** impedir operações não autorizadas e preservar a segregação entre ambientes.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-01.
+- TS-EP-02.
+- TS-I00-FEAT-CAT-001.
+- TS-DOC-STD-V1.0.
+- TS-DOC-TRC-001.
+- TS-DOC-GAP-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+
+### 2.2 Decisões arquiteturais aplicáveis
+
+A arquitetura aprovada estabelece:
+
+- Segregação TRAINING/PAPER/LIVE.
+- Autorização humana para habilitação futura de LIVE.
+- Centralização das decisões de risco e execução.
+- Rastreabilidade ponta a ponta.
+- Fail-closed para falhas críticas.
+- Contratos versionados.
+- Auditoria de eventos e decisões.
+- Separação entre especificação, implementação e homologação.
+
+Os vínculos com ADR-001–098 deverão ser reconciliados com os textos originais.
+
+**ADR Traceability:** UNVERIFIED.
+
+### 2.3 Responsabilidades por domínio
+
+| Domínio | Responsabilidade |
+|---|---|
+| D06 | Segurança, infraestrutura, configuração e isolamento |
+| D03 | Preservação da autoridade de risco e execução |
+| D05 | Isolamento de dados, eventos e persistência |
+| D07 | Testes, evidências e conformidade |
+
+### 2.4 Componentes
+
+Os IDs específicos dos componentes deverão ser confirmados no catálogo original dos 33 componentes.
+
+**Component Mapping:** UNVERIFIED.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Identidade do ambiente.
+- Configuração segura.
+- Validação de variáveis.
+- Proteção de segredos.
+- Política inicial de identidades de serviço.
+- Controle de permissões.
+- Princípio do menor privilégio.
+- Isolamento lógico e operacional.
+- Restrições de rede e destinos.
+- Bloqueio de LIVE.
+- Validação de autorização.
+- Proteção de logs e evidências.
+- Auditoria de decisões de segurança.
+- Testes de isolamento.
+- Testes negativos.
+- Integração com observabilidade.
+
+### 3.2 Excluído
+
+- Ativação de LIVE.
+- Provisionamento de credenciais financeiras reais.
+- Execução de ordens Binance.
+- Motor financeiro de risco.
+- Autorização operacional de estratégias.
+- Implementação completa de IAM corporativo.
+- Implantação de infraestrutura produtiva.
+- Gestão de incidentes produtivos completa.
+- Homologação de G0 ou gates posteriores.
+
+### 3.3 Fronteiras
+
+**I00-FEAT-001:** organização do monorepo.
+
+**I00-FEAT-002:** configuração das ferramentas de engenharia.
+
+**I00-FEAT-003:** contratos versionados.
+
+**I00-FEAT-004–007:** mecanismos de persistência e eventos sujeitos aos controles de isolamento.
+
+**I00-FEAT-008:** aplicação de controles na Foundation API.
+
+**I00-FEAT-009:** política e mecanismos fundamentais de segurança.
+
+**I00-FEAT-010:** telemetria compartilhada.
+
+**I00-FEAT-011:** verificações de segurança no CI/CD.
+
+---
+
+## 4. Modelo de ambientes
+
+### 4.1 TRAINING
+
+Ambiente destinado a treinamento, simulações e desenvolvimento de modelos, conforme autorizações específicas.
+
+Não poderá utilizar recursos financeiros LIVE.
+
+### 4.2 PAPER
+
+Ambiente destinado à simulação de operações sem execução financeira real.
+
+A utilização futura da testnet deverá observar as políticas específicas de credenciais, conectividade e execução simulada.
+
+### 4.3 LIVE
+
+Ambiente destinado exclusivamente a operações financeiras reais, sujeito a autorização futura e gates específicos.
+
+**LIVE não será disponibilizado no I00.**
+
+### 4.4 Identificação obrigatória
+
+Todo processo que dependa do ambiente deverá possuir contexto explícito e validado.
+
+### 4.5 Configuração ausente
+
+A ausência de identificação obrigatória deverá impedir inicialização ou execução da capacidade dependente.
+
+### 4.6 Ambiente desconhecido
+
+Valores desconhecidos ou inválidos deverão ser rejeitados.
+
+### 4.7 Alteração de ambiente
+
+A alteração do contexto operacional não poderá ocorrer silenciosamente durante uma execução.
+
+---
+
+## 5. Matriz de permissões do I00
+
+| Capacidade | TRAINING | PAPER | LIVE |
+|---|---|---|---|
+| Desenvolvimento e testes locais | Permitido sob controle | Permitido sob controle | Proibido |
+| Persistência de dados sintéticos | Permitido | Permitido | Proibido |
+| Testes de contratos | Permitido | Permitido | Proibido |
+| Publicação de eventos de teste | Permitido | Permitido | Proibido |
+| API de diagnóstico | Permitido | Permitido | Proibido |
+| Execução de ordens financeiras reais | Proibido | Proibido | Proibido |
+| Credenciais LIVE | Proibido | Proibido | Proibido |
+| Conexão com infraestrutura financeira LIVE | Proibido | Proibido | Proibido |
+
+**Observação:** permitido sob controle não significa que a capacidade já esteja implementada ou homologada.
+
+O uso de PAPER deverá permanecer restrito às capacidades efetivamente autorizadas para o I00.
+
+---
+
+## 6. Invariantes de segurança
+
+### SEC-INV-01 — Ambiente explícito
+
+Nenhuma operação dependente de ambiente poderá prosseguir sem contexto válido.
+
+### SEC-INV-02 — LIVE inacessível
+
+Nenhum componente do I00 poderá acessar recursos operacionais LIVE.
+
+### SEC-INV-03 — Ausência de credenciais LIVE
+
+Credenciais financeiras LIVE não poderão ser carregadas, utilizadas ou armazenadas pelo I00.
+
+### SEC-INV-04 — Menor privilégio
+
+Identidades deverão possuir somente as permissões necessárias.
+
+### SEC-INV-05 — Isolamento de dados
+
+Dados de ambientes diferentes não poderão ser combinados ou modificados de maneira não autorizada.
+
+### SEC-INV-06 — Isolamento de eventos
+
+Comandos e eventos deverão respeitar seu contexto de origem e destino.
+
+### SEC-INV-07 — Autorização explícita
+
+Validade estrutural de comando ou evento não constitui autorização.
+
+### SEC-INV-08 — Autoridade financeira
+
+Nenhum componente poderá contornar Control → Risk → Execution.
+
+### SEC-INV-09 — Falha segura
+
+Ausência de permissão, configuração inválida ou falha crítica deverá resultar em bloqueio.
+
+### SEC-INV-10 — Auditoria
+
+Decisões relevantes de autorização e rejeição deverão ser rastreáveis.
+
+Os identificadores SEC-INV-01–10 são propostos para esta Feature, não novos identificadores de ADR.
+
+---
+
+## 7. Configuração segura
+
+### 7.1 Fonte de configuração
+
+As fontes autorizadas deverão ser identificadas e documentadas.
+
+### 7.2 Validação
+
+Parâmetros obrigatórios deverão ser validados antes de disponibilizar a capacidade dependente.
+
+### 7.3 Valores padrão
+
+Valores padrão não poderão habilitar LIVE ou permissões financeiras.
+
+### 7.4 Imutabilidade operacional
+
+Configurações críticas deverão permanecer estáveis durante a execução, salvo procedimento aprovado.
+
+### 7.5 Configuração por ambiente
+
+Os valores deverão ser segregados conforme o contexto.
+
+### 7.6 Erros
+
+Falhas de configuração deverão produzir diagnóstico seguro.
+
+### 7.7 Registro
+
+A identificação da configuração efetiva deverá ser auditável sem revelar segredos.
+
+### 7.8 Alterações
+
+Mudanças materiais deverão seguir Change Control.
+
+---
+
+## 8. Gestão de segredos
+
+### 8.1 Princípio
+
+Segredos não poderão ser incluídos no código-fonte nem nos documentos normativos.
+
+### 8.2 Repositório
+
+Arquivos versionados deverão conter apenas exemplos sem valores sensíveis.
+
+### 8.3 Injeção
+
+Segredos necessários aos ambientes controlados deverão ser disponibilizados por mecanismo autorizado.
+
+### 8.4 Escopo
+
+Cada segredo deverá possuir finalidade e ambiente definidos.
+
+### 8.5 Exposição
+
+Logs, traces, mensagens de erro e evidências deverão evitar divulgação de valores sensíveis.
+
+### 8.6 Rotação
+
+O procedimento de substituição deverá ser documentado quando aplicável.
+
+### 8.7 Revogação
+
+Credenciais comprometidas ou indevidas deverão poder ser desabilitadas por processo autorizado.
+
+### 8.8 LIVE
+
+Nenhum segredo LIVE deverá ser necessário ou permitido para executar o I00.
+
+---
+
+## 9. Identidades e permissões
+
+### 9.1 Identidade de serviço
+
+Componentes deverão possuir identidade compatível com sua responsabilidade.
+
+### 9.2 Identidade humana
+
+Ações administrativas deverão permitir atribuição ao responsável autorizado.
+
+### 9.3 Menor privilégio
+
+Permissões excessivas deverão ser evitadas.
+
+### 9.4 Separação de responsabilidades
+
+Ações críticas poderão exigir distinção entre quem solicita, aprova e executa, conforme a governança aplicável.
+
+### 9.5 Acesso ao banco
+
+Permissões operacionais e de alteração de schema deverão ser diferenciadas quando exigido.
+
+### 9.6 Acesso à API
+
+Endpoints protegidos deverão exigir autenticação e autorização apropriadas.
+
+### 9.7 Acesso a eventos
+
+Produtores e consumidores deverão respeitar as permissões de publicação e consumo.
+
+### 9.8 Identidades desconhecidas
+
+Deverão ser rejeitadas quando a operação exigir identidade válida.
+
+### 9.9 Estado
+
+O mecanismo específico de autenticação e o modelo de permissões deverão ser formalizados no refinamento técnico.
+
+---
+
+## 10. Isolamento de dados e persistência
+
+### 10.1 Separação
+
+A configuração deverá impedir conexões cruzadas não autorizadas entre ambientes.
+
+### 10.2 Identidade do banco
+
+Cada conexão deverá ser compatível com o contexto operacional autorizado.
+
+### 10.3 Dados de teste
+
+Deverão ser utilizados dados sintéticos ou devidamente autorizados.
+
+### 10.4 Migrations
+
+Migrations do I00 não poderão ser aplicadas a bancos LIVE.
+
+### 10.5 Outbox
+
+Registros Outbox deverão preservar o ambiente de origem.
+
+### 10.6 Consumidores
+
+Eventos de ambiente incompatível deverão ser rejeitados.
+
+### 10.7 Auditoria
+
+Rejeições e tentativas de acesso cruzado deverão ser registradas.
+
+### 10.8 Recuperação
+
+Procedimentos de recuperação deverão preservar o isolamento.
+
+---
+
+## 11. Isolamento de rede e destinos
+
+### 11.1 Destinos autorizados
+
+Componentes deverão utilizar apenas destinos compatíveis com o ambiente.
+
+### 11.2 Bloqueio LIVE
+
+Destinos financeiros LIVE deverão permanecer inacessíveis no I00 por controles verificáveis, não apenas por convenção documental.
+
+### 11.3 Configuração de endpoints
+
+Endereços e identificadores de serviço deverão ser controlados por ambiente.
+
+### 11.4 Redirecionamentos
+
+Redirecionamentos ou alterações de destino não poderão contornar as restrições de ambiente.
+
+### 11.5 Dependências externas
+
+A necessidade de comunicação externa deverá ser justificada e aprovada.
+
+### 11.6 Falhas
+
+Falhas de resolução, autorização ou conectividade deverão resultar em comportamento seguro.
+
+### 11.7 Evidência
+
+O bloqueio deverá ser demonstrado em testes controlados, sem uso de credenciais ou operações reais.
+
+---
+
+## 12. Autorização de comandos e eventos
+
+### 12.1 Comandos
+
+Um CommandEnvelope estruturalmente válido não constitui autorização de execução.
+
+### 12.2 Eventos
+
+Um EventEnvelope válido não constitui autorização para realizar efeitos financeiros.
+
+### 12.3 Validação de contexto
+
+Componentes deverão verificar o ambiente e a identidade aplicáveis.
+
+### 12.4 Controle de acesso
+
+Permissões deverão ser avaliadas no ponto de execução responsável.
+
+### 12.5 Rejeição
+
+Comandos ou eventos não autorizados deverão ser rejeitados sem efeito indevido.
+
+### 12.6 Auditoria
+
+Decisões de autorização deverão preservar correlação.
+
+### 12.7 Idempotência
+
+Repetições não poderão contornar verificações de autorização.
+
+### 12.8 Falha segura
+
+Na ausência de evidência suficiente de autorização, a operação deverá ser bloqueada.
+
+---
+
+## 13. Autoridade de risco e execução
+
+### 13.1 Princípio arquitetural
+
+A arquitetura financeira futura deverá preservar a cadeia:
+
+**Control → Risk → Execution**
+
+### 13.2 Agentes de IA
+
+Agentes não poderão possuir autoridade independente para contornar os controles centrais.
+
+### 13.3 Interfaces
+
+Nenhuma interface do I00 poderá enviar ordens reais.
+
+### 13.4 Eventos
+
+Eventos não poderão ser tratados como autorização suficiente para execução financeira.
+
+### 13.5 Configuração
+
+Feature flags ou parâmetros não poderão habilitar LIVE no I00.
+
+### 13.6 Autorização futura
+
+A habilitação de LIVE dependerá de processo formal, gates aplicáveis e autorização humana explícita.
+
+### 13.7 Limite
+
+Esta Feature estabelece restrições de fundação, mas não implementa o motor financeiro de risco.
+
+---
+
+## 14. Integração com Foundation API
+
+### 14.1 Autenticação
+
+Interfaces protegidas deverão exigir autenticação conforme a política aplicável.
+
+### 14.2 Autorização
+
+O acesso deverá respeitar permissões e ambiente.
+
+### 14.3 Health
+
+Endpoints de saúde deverão evitar exposição de informações sensíveis.
+
+### 14.4 Version
+
+Metadados de build deverão ser limitados aos campos autorizados.
+
+### 14.5 Erros
+
+Falhas deverão utilizar respostas seguras e contratos aprovados.
+
+### 14.6 OpenAPI
+
+A exposição de documentação interativa deverá respeitar o ambiente.
+
+### 14.7 LIVE
+
+Nenhuma rota poderá habilitar execução financeira real.
+
+---
+
+## 15. Integração com CI/CD
+
+### 15.1 Verificações obrigatórias
+
+O pipeline deverá incorporar verificações de segurança aplicáveis.
+
+### 15.2 Segredos
+
+Credenciais não poderão ser publicadas em logs ou artefatos.
+
+### 15.3 Ambientes
+
+Os jobs deverão possuir permissões e destinos compatíveis com sua finalidade.
+
+### 15.4 Permissões
+
+Identidades de automação deverão seguir o menor privilégio.
+
+### 15.5 Falhas
+
+Violações críticas deverão impedir a aprovação do pipeline.
+
+### 15.6 Deploy
+
+O I00 não terá pipeline de implantação LIVE.
+
+### 15.7 Ownership
+
+A implementação do pipeline pertence à I00-FEAT-011.
+
+---
+
+## 16. Observabilidade e auditoria
+
+### 16.1 Eventos relevantes
+
+Deverão ser observáveis:
+
+- Falhas de configuração.
+- Tentativas de acesso não autorizado.
+- Rejeições de ambiente.
+- Falhas de autenticação.
+- Falhas de autorização.
+- Bloqueios de LIVE.
+- Alterações administrativas permitidas.
+- Erros críticos de segurança.
+
+### 16.2 Correlação
+
+Registros deverão preservar identificadores de correlação quando disponíveis.
+
+### 16.3 Proteção
+
+Dados sensíveis não poderão ser expostos em logs e traces.
+
+### 16.4 Integridade
+
+Evidências deverão possuir identificação e mecanismos de integridade aplicáveis.
+
+### 16.5 Alertas
+
+Condições críticas deverão ser identificáveis para alerta e investigação.
+
+### 16.6 Limiares
+
+Valores quantitativos deverão ser aprovados nas especificações técnicas.
+
+### 16.7 Ownership
+
+A infraestrutura compartilhada de telemetria pertence à I00-FEAT-010.
+
+---
+
+## 17. Comportamento esperado
+
+### 17.1 Ambiente válido
+
+**Given:** configuração autorizada para ambiente controlado.
+
+**When:** o componente inicializar.
+
+**Then:** poderá disponibilizar somente capacidades permitidas.
+
+### 17.2 Ambiente ausente
+
+**Given:** ausência de identificação obrigatória do ambiente.
+
+**When:** a inicialização for avaliada.
+
+**Then:** a capacidade dependente deverá permanecer bloqueada.
+
+### 17.3 Ambiente desconhecido
+
+**Given:** valor de ambiente não reconhecido.
+
+**When:** a configuração for validada.
+
+**Then:** deverá ocorrer rejeição explícita.
+
+### 17.4 Configuração LIVE
+
+**Given:** configuração que aponta para recursos LIVE.
+
+**When:** um componente I00 tentar utilizá-la.
+
+**Then:** a operação deverá ser bloqueada.
+
+### 17.5 Credencial LIVE
+
+**Given:** credencial financeira LIVE disponibilizada indevidamente.
+
+**When:** a configuração for avaliada.
+
+**Then:** a credencial não poderá ser utilizada pelo componente I00, e a condição deverá ser sinalizada com segurança.
+
+### 17.6 Acesso cruzado
+
+**Given:** evento PAPER direcionado a consumidor TRAINING sem autorização de transferência.
+
+**When:** o consumidor validar o contexto.
+
+**Then:** o evento deverá ser rejeitado.
+
+### 17.7 Comando sem autorização
+
+**Given:** comando estruturalmente válido sem permissão efetiva.
+
+**When:** o componente responsável avaliar a solicitação.
+
+**Then:** a ação deverá ser bloqueada.
+
+### 17.8 Falha crítica
+
+**Given:** impossibilidade de validar autorização obrigatória.
+
+**When:** a operação for solicitada.
+
+**Then:** o sistema deverá falhar de maneira segura.
+
+---
+
+## 18. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação |
+|---|---|---|
+| Segurança | Acesso restrito por identidade | Testes de autorização |
+| Isolamento | Separação de ambientes | Testes de configuração |
+| Confidencialidade | Proteção de segredos | Verificação de exposição |
+| Integridade | Contexto validado | Testes negativos |
+| Auditabilidade | Decisões rastreáveis | Logs e evidências |
+| Confiabilidade | Falha segura | Testes de falha |
+| Reprodutibilidade | Configuração controlada | Testes em ambiente limpo |
+| Manutenibilidade | Políticas explícitas | Revisão técnica |
+| Testabilidade | Controles verificáveis | Testes automatizados |
+| Governança | LIVE não autorizado | Revisão de gates |
+
+Os limiares quantitativos permanecerão TBD até aprovação.
+
+---
+
+## 19. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| I00-FEAT-001 | Monorepo | APPROVED documentalmente |
+| I00-FEAT-002 | Toolchain | APPROVED documentalmente |
+| I00-FEAT-003 | Contratos | APPROVED documentalmente |
+| I00-FEAT-004 | Persistência | APPROVED documentalmente |
+| I00-FEAT-008 | Foundation API | APPROVED documentalmente |
+| TS-EP-01 | Épico | APPROVED |
+| TS-I00-FEAT-CAT-001 | Catálogo | APPROVED |
+| Política de identidades | Segurança | TBD |
+| Política de segredos | Segurança | TBD |
+| Matriz de permissões detalhada | Segurança | TBD |
+| Estratégia de isolamento técnico | Engenharia | TBD |
+| ADRs individuais | Fonte normativa | UNVERIFIED |
+| Componentes | Fonte arquitetural | UNVERIFIED |
+| Repositório | Fonte técnica | NOT_INSPECTED |
+| Owners | Governança | TBD |
+
+### 19.1 Dependências posteriores
+
+- I00-FEAT-010 — Observability Foundation.
+- I00-FEAT-011 — CI/CD Foundation.
+- I00-FEAT-013 — Failure & Recovery Validation.
+- I00-FEAT-014 — Evidence & G0 Preparation.
+
+### 19.2 Histórias técnicas
+
+O vínculo com histórias TS-ST-001–024 deverá ser confirmado contra o backlog original.
+
+**Story Mapping:** PENDING.
+
+Nenhum Story ID será criado ou atribuído por inferência.
+
+---
+
+## 20. Estratégia de testes
+
+### 20.1 Validação de ambiente
+
+Testar configurações válidas, ausentes, desconhecidas e incompatíveis.
+
+### 20.2 Bloqueio LIVE
+
+Verificar que recursos LIVE permaneçam inacessíveis em ambiente controlado, sem utilizar credenciais financeiras reais.
+
+### 20.3 Gestão de segredos
+
+Verificar ausência de segredos em arquivos versionados, logs e evidências.
+
+### 20.4 Autenticação
+
+Verificar rejeição de identidades inválidas nas interfaces protegidas.
+
+### 20.5 Autorização
+
+Verificar permissões permitidas e negadas.
+
+### 20.6 Isolamento de dados
+
+Verificar bloqueio de conexões cruzadas indevidas.
+
+### 20.7 Isolamento de eventos
+
+Verificar rejeição de eventos de ambiente incompatível.
+
+### 20.8 Foundation API
+
+Verificar proteção de endpoints e respostas.
+
+### 20.9 Fail-closed
+
+Simular ausência ou falha dos mecanismos de autorização obrigatórios.
+
+### 20.10 Auditoria
+
+Verificar registros de rejeição e correlação.
+
+### 20.11 Regressão
+
+Verificar que mudanças de configuração não removam restrições aprovadas.
+
+### 20.12 Property-Based
+
+Verificar invariantes de configuração e permissões quando aplicável.
+
+### 20.13 Testes de integração
+
+Verificar a aplicação dos controles entre API, persistência e eventos de teste.
+
+### 20.14 Limites
+
+Nenhum teste deverá acessar contas financeiras reais, enviar ordens ou habilitar LIVE.
+
+---
+
+## 21. Critérios de aceite
+
+Os critérios abaixo são propostos para aceite da implementação de I00-FEAT-009.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| FEAT009-AC01 | Ambiente identificado explicitamente | Testes de configuração |
+| FEAT009-AC02 | Configurações inválidas rejeitadas | Testes negativos |
+| FEAT009-AC03 | LIVE inacessível no I00 | Testes de isolamento |
+| FEAT009-AC04 | Ausência de credenciais LIVE | Verificação de configuração |
+| FEAT009-AC05 | Segredos protegidos | Relatório de segurança |
+| FEAT009-AC06 | Identidades de serviço controladas | Testes de identidade |
+| FEAT009-AC07 | Menor privilégio aplicado | Testes de permissões |
+| FEAT009-AC08 | Dados segregados por ambiente | Testes de persistência |
+| FEAT009-AC09 | Eventos segregados por ambiente | Testes de consumo |
+| FEAT009-AC10 | Destinos não autorizados bloqueados | Testes de conectividade controlada |
+| FEAT009-AC11 | Comandos sem autorização rejeitados | Testes de autorização |
+| FEAT009-AC12 | Falhas críticas seguem fail-closed | Testes de falha |
+| FEAT009-AC13 | Foundation API respeita controles | Testes HTTP |
+| FEAT009-AC14 | Ausência de bypass financeiro | Testes de invariantes |
+| FEAT009-AC15 | Logs não expõem segredos | Verificação de observabilidade |
+| FEAT009-AC16 | Decisões de segurança auditáveis | Logs e traces |
+| FEAT009-AC17 | Rastreabilidade consistente | Matriz verificada |
+| FEAT009-AC18 | Evidências verificáveis | Evidence Bundle I00 |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+### 21.1 Critérios superiores relacionados
+
+- EP01-AC05 — Segregação de ambientes.
+- EP01-AC06 — LIVE inacessível.
+- EP01-AC07 — Observabilidade.
+- I00-AC10 — LIVE inacessível.
+- I00-AC11 — Rastreabilidade.
+- I00-AC12 — Evidências verificáveis.
+
+Os vínculos deverão ser reconciliados com a Traceability Matrix.
+
+---
+
+## 22. Evidências esperadas
+
+| Referência provisória | Evidência |
+|---|---|
+| EV-FEAT009-01 | Matriz de ambientes |
+| EV-FEAT009-02 | Testes de configuração |
+| EV-FEAT009-03 | Testes de bloqueio LIVE |
+| EV-FEAT009-04 | Verificação de credenciais |
+| EV-FEAT009-05 | Relatório de segredos |
+| EV-FEAT009-06 | Testes de identidade |
+| EV-FEAT009-07 | Testes de permissões |
+| EV-FEAT009-08 | Testes de isolamento de dados |
+| EV-FEAT009-09 | Testes de isolamento de eventos |
+| EV-FEAT009-10 | Testes de destinos |
+| EV-FEAT009-11 | Testes de autorização |
+| EV-FEAT009-12 | Testes fail-closed |
+| EV-FEAT009-13 | Testes Foundation API |
+| EV-FEAT009-14 | Testes de invariantes financeiros |
+| EV-FEAT009-15 | Verificação de logs |
+| EV-FEAT009-16 | Auditoria de decisões |
+| EV-FEAT009-17 | Matriz de rastreabilidade |
+| EV-FEAT009-18 | Manifesto de integridade |
+
+Os identificadores são provisórios e deverão ser reconciliados com a convenção oficial de Evidence Bundle.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 23. Riscos e lacunas
+
+| Referência | Risco ou lacuna | Tratamento |
+|---|---|---|
+| DOC-GAP-003 | ADRs individuais não verificadas | Conferir fontes |
+| DOC-GAP-004 | ADRs técnicas não formalizadas integralmente | Recuperar registros |
+| DOC-GAP-005 | Rastreabilidade incompleta | Confirmar vínculos |
+| DOC-GAP-006 | Histórias da Feature não reconciliadas | Verificar backlog |
+| DOC-GAP-007 | Repositório não auditado | Inspecionar antes de implementar |
+| DOC-GAP-008 | Owners pendentes | Formalizar responsabilidades |
+
+### 23.1 Riscos técnicos
+
+- Ambiente incorreto.
+- Credenciais em arquivos versionados.
+- Permissões excessivas.
+- Conexão cruzada.
+- Publicação de eventos em destino incorreto.
+- Validação de autorização insuficiente.
+- Configuração permissiva por padrão.
+- Falha de isolamento após reinício.
+- Exposição de informações em logs.
+- Bypass de controles financeiros.
+- Ativação acidental de LIVE.
+- Evidências insuficientes de bloqueio.
+
+### 23.2 Tratamento
+
+Os riscos deverão ser classificados e associados a decisões, histórias, testes e evidências.
+
+A aprovação desta Feature não encerra automaticamente lacunas.
+
+---
+
+## 24. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. ADRs aplicáveis estiverem verificadas.
+3. Componentes e owners estiverem confirmados.
+4. Política de ambientes estiver formalizada.
+5. Matriz de permissões estiver aprovada.
+6. Modelo de identidades estiver especificado.
+7. Política de segredos estiver definida.
+8. Estratégia de isolamento estiver aprovada.
+9. Destinos autorizados estiverem identificados.
+10. Regras de autorização estiverem especificadas.
+11. Bloqueio LIVE estiver tecnicamente definido.
+12. Tratamento fail-closed estiver especificado.
+13. Integrações com API, dados e eventos estiverem definidas.
+14. Histórias relacionadas estiverem refinadas.
+15. Critérios de aceite estiverem testáveis.
+16. Estratégia de testes estiver aprovada.
+17. Evidências estiverem especificadas.
+18. Lacunas bloqueantes estiverem resolvidas.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação desta especificação não altera automaticamente esse estado.
+
+---
+
+## 25. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- Os controles de ambiente estiverem implementados.
+- Os critérios FEAT009-AC01–AC18 estiverem atendidos.
+- As permissões estiverem verificadas.
+- A proteção de segredos estiver demonstrada.
+- O isolamento de dados e eventos estiver validado.
+- LIVE estiver comprovadamente inacessível.
+- As falhas críticas seguirem fail-closed.
+- A ausência de bypass financeiro estiver demonstrada.
+- Os testes obrigatórios tiverem sido executados.
+- As evidências estiverem validadas.
+- A rastreabilidade estiver atualizada.
+- As lacunas bloqueantes estiverem resolvidas.
+- A autoridade competente registrar o aceite.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite desta Feature não substitui o aceite do TS-EP-01, I00 ou G0.
+
+---
+
+## 26. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-01 → I00-FEAT-009 → História → Teste → Evidência**
+
+### Estados iniciais
+
+| Relação | Estado |
+|---|---|
+| Epic Link | VERIFIED documentalmente |
+| Work Package Link | VERIFIED documentalmente |
+| Feature Catalog Link | VERIFIED documentalmente |
+| Related Feature Links | VERIFIED documentalmente |
+| Story Link | PENDING |
+| ADR Links | UNVERIFIED |
+| Component Links | UNVERIFIED |
+| Requirement Links | UNVERIFIED |
+| Test Links | PLANNED |
+| Evidence Links | PLANNED |
+
+VERIFIED documentalmente não comprova implementação.
+
+---
+
+## 27. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-17 | PENDING | Especificação inicial Security & Environment Isolation | PENDING |
+
+---
+
+## 28. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-009 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEAT-010.md — Observability Foundation
+
+**Restriction:** não avançar antes da aprovação desta Feature.
+
+## 29. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/I00-FEAT-009/IN-REVIEW.txt) está arquivado. A especificação permanece **IN_REVIEW**, com aprovação **PENDING**.
+
+O [registro mestre do I00](../backlog/registro-mestre-i00.md) vincula o pacote I00-09 ao AC10. A [evidência histórica de isolamento](../evidence/I00-09-isolamento.md) registra testes de configuração fail-closed, mascaramento de senha, seleção de eventos por ambiente e rejeição de eventos LIVE no PostgreSQL. A separação entre TRAINING e PAPER demonstrada nessa execução é lógica em instância local compartilhada.
+
+O aceite consolidado da implementação permanece pendente. [G0](../governance/G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

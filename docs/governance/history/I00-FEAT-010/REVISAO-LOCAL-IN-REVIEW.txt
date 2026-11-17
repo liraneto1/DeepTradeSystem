@@ -1,0 +1,1198 @@
+# I00-FEAT-010.md
+## TRADE SYSTEM V1 — Observability Foundation
+
+**Document ID:** I00-FEAT-010  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-10  
+**Primary Epic:** TS-EP-01 — Engineering Foundation  
+**Primary Domain:** D06 — Infrastructure, Security & DevOps  
+**Related Domain:** D04 — Operations & Observability  
+**Supporting Domains:** D05 / D07  
+**Functional Owner:** Infrastructure & Observability Architecture  
+**Technical Owner:** TBD  
+**Operations Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 / V1.0 — APPROVED  
+**Epic Baseline:** TS-EP-01 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Approval Reference:** PENDING  
+**Domain:** D06, relacionado a D04, com apoio de D05 e D07  
+**Owner:** Infrastructure & Observability Architecture, conforme responsabilidade funcional acima.  
+**Source References:** [anexo original](../governance/history/I00-FEAT-010/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md) e [fontes oficiais](../referencias/originais/)  
+**Related ADRs:** referências da seção 2.  
+**Related Components:** seções 2 e 15 e [matriz DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** AC09 e referências das seções 20, 22 e 25.  
+**Dependencies:** [catálogo I00](../increments/I00-FEATURE-CATALOG.md), [TS-EP-01](../epics/TS-EP-01.md), [template de Feature](../governance/templates/FEATURE-TEMPLATE.md) e dependências da seção 18.  
+**Acceptance Criteria:** seções 20, 23 e 24, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-17
+
+---
+
+## 1. Objetivo
+
+### 1.1 Objetivo principal
+
+Estabelecer mecanismos padronizados de observabilidade que permitam identificar, acompanhar, correlacionar e diagnosticar o comportamento técnico dos componentes do TRADE SYSTEM V1.
+
+### 1.2 Necessidade atendida
+
+O sistema deverá evoluir para uma arquitetura composta por serviços, agentes de IA, componentes de dados, mecanismos de eventos e módulos financeiros.
+
+Essa arquitetura exige capacidade de investigação sobre:
+
+- Execução de processos.
+- Disponibilidade de componentes.
+- Falhas e exceções.
+- Latência.
+- Processamento de comandos.
+- Persistência de dados.
+- Publicação e consumo de eventos.
+- Decisões de autorização.
+- Recuperação após falhas.
+- Integridade das integrações.
+- Alterações de configuração.
+- Resultados dos testes e validações.
+
+Sem observabilidade adequada, o sistema poderá apresentar falhas silenciosas e resultados impossíveis de reconstruir.
+
+### 1.3 Resultado demonstrável
+
+A implementação deverá demonstrar:
+
+1. Logs estruturados padronizados.
+2. Identificação consistente de componentes.
+3. Correlação de requisições e eventos.
+4. Métricas técnicas verificáveis.
+5. Traces distribuídos aplicáveis.
+6. Integração com health e readiness.
+7. Identificação de erros e falhas.
+8. Telemetria de Outbox, Dispatcher e consumidores.
+9. Proteção de dados sensíveis.
+10. Diagnóstico após reinicialização.
+11. Condições de alerta definidas.
+12. Evidências de observabilidade verificáveis.
+
+### 1.4 Declaração da Feature
+
+**Como** equipe de engenharia e operações do TRADE SYSTEM V1,  
+**quero** mecanismos consistentes de logs, métricas e traces,  
+**para** compreender o comportamento dos componentes, investigar falhas e verificar a conformidade das operações técnicas.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines aplicáveis
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-01 / V1.0.
+- TS-EP-02 / V1.0.
+- TS-I00-FEAT-CAT-001 / V1.0.
+- I00-FEAT-001–009, conforme aplicabilidade.
+- TS-DOC-STD-V1.0.
+- TS-DOC-TRC-001.
+- TS-DOC-GAP-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+
+### 2.2 Decisões arquiteturais
+
+A arquitetura aprovada prevê:
+
+- Observabilidade ponta a ponta.
+- OpenTelemetry.
+- Logs estruturados.
+- Monitoramento e alertas.
+- Event Store e auditoria.
+- Correlação entre comandos e eventos.
+- Strategy Replay em incrementos futuros.
+- Recuperação controlada.
+- Segregação de ambientes.
+- Evidências verificáveis.
+
+Os vínculos individuais com ADR-001–098 deverão ser confirmados contra os registros originais.
+
+**ADR Traceability:** UNVERIFIED.
+
+### 2.3 Responsabilidades por domínio
+
+| Domínio | Responsabilidade |
+|---|---|
+| D06 | Instrumentação, infraestrutura e segurança da telemetria |
+| D04 | Operação, monitoramento e análise operacional futura |
+| D05 | Eventos, persistência, correlação e auditoria |
+| D07 | Testes, critérios e evidências |
+
+### 2.4 Componentes
+
+Os identificadores específicos deverão ser reconciliados com o catálogo original dos 33 componentes.
+
+**Component Mapping:** UNVERIFIED.
+
+A participação de D04 nesta Feature não significa implementar integralmente os componentes operacionais desse domínio no I00.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Convenções de logs estruturados.
+- Identificação de serviços e processos.
+- Correlação entre operações.
+- Instrumentação OpenTelemetry.
+- Métricas técnicas.
+- Traces distribuídos.
+- Instrumentação da Foundation API.
+- Instrumentação de persistência e eventos.
+- Monitoramento de erros.
+- Interfaces para health e readiness.
+- Condições iniciais de alerta.
+- Configuração de exportação de telemetria.
+- Proteção de informações sensíveis.
+- Testes de instrumentação.
+- Evidências verificáveis.
+
+### 3.2 Excluído
+
+- Centro operacional completo de trading.
+- Dashboards financeiros de produção.
+- Monitoramento completo de estratégias PPO.
+- Métricas financeiras de PnL em produção.
+- Sistema completo de incident management.
+- Implementação integral de Strategy Replay.
+- Operação de infraestrutura LIVE.
+- Execução de ordens financeiras.
+- Homologação de G0.
+- Aprovação de gates futuros.
+
+### 3.3 Fronteiras
+
+**I00-FEAT-008:** disponibiliza endpoints técnicos da Foundation API.
+
+**I00-FEAT-009:** estabelece segurança e isolamento.
+
+**I00-FEAT-010:** estabelece convenções e mecanismos compartilhados de observabilidade.
+
+**I00-FEAT-011:** executa verificações automatizadas no CI/CD.
+
+**I00-FEAT-013:** utiliza telemetria para verificar falhas e recuperação.
+
+**I00-FEAT-014:** reúne resultados e evidências para avaliação do I00.
+
+A observabilidade não poderá substituir o Event Store nem os registros transacionais autoritativos.
+
+---
+
+## 4. Stack técnica
+
+| Camada | Tecnologia ou abordagem |
+|---|---|
+| Linguagem | Python 3.12+ |
+| Instrumentação | OpenTelemetry |
+| Logs | JSON estruturado |
+| Métricas | Instrumentação OpenTelemetry |
+| Traces | OpenTelemetry |
+| API | FastAPI |
+| Configuração | Pydantic v2, quando aplicável |
+| Testes | pytest / Hypothesis |
+| Ambiente local | Docker Compose |
+| Exportação | Interface compatível com a configuração aprovada |
+| Backend de observabilidade | TBD |
+
+### 4.1 Política de versões
+
+As versões exatas das bibliotecas e componentes deverão ser fixadas na implementação.
+
+### 4.2 Backend
+
+A seleção de coletores, armazenamento, visualização e alertas deverá ser formalizada em especificação técnica.
+
+Não será presumida a adoção obrigatória de uma ferramenta específica de dashboard ou armazenamento.
+
+### 4.3 Compatibilidade
+
+A instrumentação deverá utilizar interfaces e formatos compatíveis com a baseline aprovada.
+
+---
+
+## 5. Arquitetura lógica proposta
+
+Fluxo conceitual:
+
+1. Componente executa operação.
+2. Instrumentação produz logs, métricas e traces.
+3. Contexto de correlação é associado.
+4. Informações sensíveis são filtradas.
+5. Telemetria é encaminhada por interface autorizada.
+6. O backend técnico recebe e disponibiliza os dados.
+7. Condições de alerta são avaliadas.
+8. Resultados podem ser associados às evidências.
+
+### 5.1 Organização física proposta
+
+```text
+packages/
+└── common/
+    └── observability/
+        ├── logging/
+        ├── metrics/
+        ├── tracing/
+        └── context/
+
+infrastructure/
+└── observability/
+    ├── configuration/
+    └── collectors/
+
+tests/
+├── unit/
+├── integration/
+└── resilience/
+
+docs/
+├── engineering/
+└── runbooks/
+```
+
+**Structure Status:** PROPOSED.
+
+A localização definitiva deverá ser reconciliada com I00-FEAT-001 e com o repositório real.
+
+Nenhum arquivo ou diretório é declarado existente.
+
+---
+
+## 6. Identidade de componentes e recursos
+
+### 6.1 Identidade
+
+Cada componente instrumentado deverá possuir identidade estável.
+
+### 6.2 Metadados técnicos
+
+A telemetria deverá permitir identificar, conforme aplicabilidade:
+
+- Service Name.
+- Service Version.
+- Deployment Environment.
+- Component ID.
+- Process ou Instance ID.
+- Build ID.
+- Commit Reference.
+- Timestamp.
+
+### 6.3 Ambientes
+
+A identificação deverá distinguir TRAINING, PAPER e LIVE quando aplicável.
+
+### 6.4 I00
+
+Somente recursos autorizados de ambientes controlados poderão produzir e receber telemetria.
+
+### 6.5 Cardinalidade
+
+A seleção de atributos de métricas deverá evitar cardinalidade descontrolada.
+
+Identificadores individuais de eventos e requisições não deverão ser utilizados indiscriminadamente como labels de métricas.
+
+### 6.6 Segurança
+
+Metadados não poderão divulgar credenciais ou informações sensíveis.
+
+---
+
+## 7. Logs estruturados
+
+### 7.1 Objetivo
+
+Padronizar registros técnicos para investigação e auditoria operacional.
+
+### 7.2 Formato
+
+Os logs deverão utilizar estrutura JSON consistente.
+
+### 7.3 Campos conceituais
+
+Deverão permitir identificar, conforme aplicabilidade:
+
+- Timestamp.
+- Severity.
+- Service Name.
+- Component ID.
+- Environment.
+- Event Name.
+- Message.
+- Correlation ID.
+- Trace ID.
+- Span ID.
+- Operation ID.
+- Error Code.
+- Result.
+
+### 7.4 Severidade
+
+A política de níveis deverá ser definida e documentada.
+
+### 7.5 Mensagens
+
+As mensagens deverão ser objetivas e úteis para diagnóstico.
+
+### 7.6 Exceções
+
+Falhas deverão permitir identificar categoria e contexto sem exposição de dados sensíveis.
+
+### 7.7 Logs duplicados
+
+A instrumentação deverá evitar duplicação indevida de registros.
+
+### 7.8 Persistência
+
+A política de armazenamento e retenção deverá ser formalizada.
+
+### 7.9 Integridade
+
+Logs destinados a evidências deverão possuir mecanismos de identificação e integridade aplicáveis.
+
+### 7.10 Limites
+
+Logs não substituem registros autoritativos de estado, eventos ou decisões.
+
+---
+
+## 8. Correlação e causalidade
+
+### 8.1 Objetivo
+
+Permitir relacionar uma operação aos seus efeitos em diferentes componentes.
+
+### 8.2 Correlation ID
+
+Deverá identificar a cadeia lógica de uma operação quando aplicável.
+
+### 8.3 Causation ID
+
+Deverá identificar a origem causal de eventos quando definida pelo contrato.
+
+### 8.4 Trace ID
+
+Deverá permitir associação aos traces distribuídos.
+
+### 8.5 Span ID
+
+Deverá identificar uma unidade de trabalho instrumentada.
+
+### 8.6 Event ID
+
+Deverá preservar a identidade do evento, sem confundi-la com a identidade de uma tentativa de processamento.
+
+### 8.7 Attempt ID
+
+Tentativas distintas poderão possuir identificadores próprios.
+
+### 8.8 Propagação
+
+O contexto deverá ser propagado entre componentes por mecanismos aprovados.
+
+### 8.9 Validação
+
+Identificadores recebidos de fontes externas deverão ser tratados conforme políticas de confiança e validação.
+
+### 8.10 Limites
+
+Correlation ID, Event ID e Trace ID possuem funções diferentes e não deverão ser considerados intercambiáveis.
+
+---
+
+## 9. Métricas
+
+### 9.1 Objetivo
+
+Permitir avaliar o estado e o comportamento técnico dos componentes.
+
+### 9.2 Categorias
+
+As métricas iniciais deverão contemplar, conforme aplicabilidade:
+
+- Disponibilidade.
+- Erros.
+- Latência.
+- Volume de operações.
+- Processamento de eventos.
+- Pendências.
+- Recuperações.
+- Utilização de recursos.
+- Rejeições de segurança.
+
+### 9.3 Métricas de API
+
+Poderão incluir:
+
+- Requisições recebidas.
+- Duração das requisições.
+- Erros por categoria.
+- Resultados de readiness.
+- Falhas de validação.
+
+### 9.4 Métricas de persistência
+
+Poderão incluir:
+
+- Falhas de conexão.
+- Falhas transacionais.
+- Rollbacks.
+- Duração de operações.
+- Estado do pool de conexões.
+
+### 9.5 Métricas de Outbox
+
+Poderão incluir:
+
+- Registros pendentes.
+- Idade dos registros pendentes.
+- Falhas de persistência.
+- Registros bloqueados.
+
+### 9.6 Métricas de Dispatcher
+
+Poderão incluir:
+
+- Tentativas de publicação.
+- Publicações confirmadas.
+- Falhas.
+- Retries.
+- Resultados desconhecidos.
+- Recuperações.
+
+### 9.7 Métricas de consumidores
+
+Poderão incluir:
+
+- Eventos recebidos.
+- Eventos processados.
+- Duplicidades.
+- Rejeições.
+- Falhas.
+- Latência.
+- Lacunas de sequência.
+
+### 9.8 Unidades
+
+Cada métrica deverá possuir unidade explícita.
+
+### 9.9 Semântica
+
+Contadores, gauges e histogramas deverão ser utilizados conforme a natureza da medição.
+
+### 9.10 Cardinalidade
+
+Labels deverão ser controladas para evitar crescimento desnecessário de séries.
+
+### 9.11 Limiares
+
+Valores de referência e alertas deverão ser aprovados antes de sua utilização como critérios normativos.
+
+---
+
+## 10. Traces distribuídos
+
+### 10.1 Objetivo
+
+Permitir acompanhar a execução de operações que atravessam componentes.
+
+### 10.2 Spans
+
+Unidades relevantes de trabalho deverão ser instrumentadas.
+
+### 10.3 Contexto
+
+O contexto de trace deverá ser propagado quando tecnicamente aplicável.
+
+### 10.4 Operações assíncronas
+
+A propagação deverá considerar eventos, filas e processamento desacoplado.
+
+### 10.5 Outbox
+
+A relação entre a operação de origem e a publicação posterior deverá ser rastreável.
+
+### 10.6 Dispatcher
+
+As tentativas de publicação deverão possuir identificação diagnóstica.
+
+### 10.7 Consumidores
+
+O processamento deverá permitir correlação com o evento recebido.
+
+### 10.8 Sampling
+
+A política de amostragem deverá ser especificada, considerando custos, desempenho e necessidades de diagnóstico.
+
+### 10.9 Auditoria
+
+Traces amostrados não poderão ser considerados substitutos de registros de auditoria obrigatórios.
+
+### 10.10 Segurança
+
+Atributos e eventos de span não deverão expor segredos ou dados sensíveis indevidos.
+
+---
+
+## 11. Health e readiness
+
+### 11.1 Fonte das interfaces
+
+A Foundation API, especificada em I00-FEAT-008, fornecerá as interfaces HTTP aplicáveis.
+
+### 11.2 Liveness
+
+Deverá representar a capacidade básica de resposta do processo.
+
+### 11.3 Readiness
+
+Deverá representar a capacidade de receber trabalho conforme as dependências essenciais.
+
+### 11.4 Observabilidade
+
+A FEAT-010 deverá permitir observar os resultados dessas verificações.
+
+### 11.5 Dependências
+
+Falhas de dependências deverão ser identificáveis sem expor detalhes sensíveis.
+
+### 11.6 Estados degradados
+
+A semântica deverá seguir HealthStatus.v1 quando formalizada.
+
+### 11.7 Limites
+
+A observabilidade não poderá declarar prontidão em desacordo com a avaliação autoritativa do componente.
+
+---
+
+## 12. Alertas e condições operacionais
+
+### 12.1 Objetivo
+
+Identificar condições que exigem investigação ou intervenção.
+
+### 12.2 Categorias iniciais
+
+Poderão incluir:
+
+- Componente indisponível.
+- Readiness não atendida.
+- Aumento de falhas.
+- Acúmulo de Outbox.
+- Dispatcher sem progresso.
+- Eventos bloqueados.
+- Falhas persistentes de consumidores.
+- Falhas de conexão com banco.
+- Rejeições críticas de autorização.
+- Falhas de exportação de telemetria.
+
+### 12.3 Severidade
+
+A classificação deverá considerar impacto e urgência.
+
+### 12.4 Limiares
+
+Valores quantitativos deverão ser aprovados no refinamento técnico.
+
+### 12.5 Destinatários
+
+Os responsáveis e canais deverão ser definidos.
+
+### 12.6 Ruído
+
+A política deverá evitar alertas duplicados e excesso de notificações.
+
+### 12.7 Reconhecimento
+
+O tratamento operacional de alertas deverá ser rastreável quando aplicável.
+
+### 12.8 Limites
+
+A implementação de uma plataforma completa de incidentes não pertence ao I00.
+
+---
+
+## 13. Exportação e armazenamento
+
+### 13.1 Interfaces
+
+A exportação deverá utilizar mecanismos compatíveis com a configuração OpenTelemetry aprovada.
+
+### 13.2 Destinos
+
+Somente destinos autorizados poderão receber telemetria.
+
+### 13.3 Segregação
+
+Dados de TRAINING e PAPER deverão respeitar o isolamento aprovado.
+
+### 13.4 LIVE
+
+O I00 não poderá enviar telemetria para infraestrutura operacional LIVE.
+
+### 13.5 Falhas de exportação
+
+Falhas deverão ser diagnosticáveis.
+
+### 13.6 Buffers
+
+Buffers e mecanismos de retry deverão possuir limites controlados.
+
+### 13.7 Impacto operacional
+
+Falhas de exportação não deverão comprometer indevidamente a integridade das transações de negócio.
+
+### 13.8 Auditoria obrigatória
+
+Eventos de auditoria obrigatórios não poderão depender exclusivamente da entrega bem-sucedida de telemetria.
+
+### 13.9 Retenção
+
+A política de retenção deverá considerar finalidade, custo, segurança e requisitos de auditoria.
+
+### 13.10 Backend
+
+O backend definitivo permanece TBD.
+
+---
+
+## 14. Segurança e privacidade da telemetria
+
+### 14.1 Princípio
+
+A observabilidade deverá produzir informação suficiente para diagnóstico com exposição mínima de dados.
+
+### 14.2 Segredos
+
+Não registrar:
+
+- Chaves de API.
+- Tokens de autenticação.
+- Senhas.
+- Credenciais financeiras.
+- Valores secretos de configuração.
+
+### 14.3 Payloads
+
+Payloads completos não deverão ser registrados indiscriminadamente.
+
+### 14.4 Dados sensíveis
+
+Campos sensíveis deverão ser removidos, mascarados ou tratados conforme política aprovada.
+
+### 14.5 Controle de acesso
+
+Consultas à telemetria deverão respeitar identidades e permissões.
+
+### 14.6 Ambientes
+
+O isolamento TRAINING/PAPER/LIVE deverá ser preservado.
+
+### 14.7 Identificadores
+
+Identificadores de correlação deverão ser tratados conforme sua classificação de segurança.
+
+### 14.8 Exportação
+
+Destinos externos deverão ser explicitamente autorizados.
+
+### 14.9 Falha segura
+
+Falhas críticas de configuração de segurança deverão impedir exportação não autorizada.
+
+### 14.10 LIVE
+
+Nenhuma capacidade da FEAT-010 poderá habilitar ou contornar as restrições LIVE.
+
+---
+
+## 15. Integração com componentes
+
+### 15.1 Foundation API
+
+Instrumentar requisições, respostas, erros e ciclo de vida.
+
+### 15.2 PostgreSQL
+
+Instrumentar operações relevantes de conectividade e persistência.
+
+### 15.3 Transactional Outbox
+
+Registrar persistência, pendências, falhas e correlação.
+
+### 15.4 Event Dispatcher
+
+Registrar tentativas, resultados, retries, bloqueios e recuperação.
+
+### 15.5 Idempotent Consumers
+
+Registrar processamento, duplicidades, rejeições e efeitos confirmados.
+
+### 15.6 Segurança
+
+Registrar rejeições e decisões críticas sem expor segredos.
+
+### 15.7 CI/CD
+
+Permitir associar builds e resultados de testes às evidências.
+
+### 15.8 Componentes futuros
+
+As convenções deverão ser reutilizáveis pelos domínios de mercado, IA, risco e execução.
+
+### 15.9 Limite
+
+A instrumentação de componentes futuros será realizada nos incrementos correspondentes.
+
+---
+
+## 16. Comportamento esperado
+
+### 16.1 Requisição válida
+
+**Given:** Foundation API instrumentada.
+
+**When:** uma requisição autorizada for processada.
+
+**Then:** deverão ser produzidos os registros técnicos previstos, com correlação e sem exposição indevida de dados.
+
+### 16.2 Erro de API
+
+**Given:** requisição que provoca erro controlado.
+
+**When:** o erro for tratado.
+
+**Then:** a categoria e a correlação deverão ser identificáveis.
+
+### 16.3 Publicação de evento
+
+**Given:** evento persistido na Outbox.
+
+**When:** o Dispatcher processar sua publicação.
+
+**Then:** deverá ser possível correlacionar a tentativa ao registro e ao evento de origem.
+
+### 16.4 Entrega duplicada
+
+**Given:** consumidor recebe evento já processado.
+
+**When:** a duplicidade for detectada.
+
+**Then:** o resultado deverá ser observável sem reaplicação indevida do efeito.
+
+### 16.5 Falha de banco
+
+**Given:** indisponibilidade controlada do PostgreSQL.
+
+**When:** uma operação dependente falhar.
+
+**Then:** o diagnóstico deverá identificar a categoria de falha e permitir correlação.
+
+### 16.6 Falha de exportação
+
+**Given:** backend de telemetria indisponível.
+
+**When:** a exportação falhar.
+
+**Then:** a falha deverá ser diagnosticável, respeitando os limites de buffer e sem corromper o estado autoritativo.
+
+### 16.7 Dado sensível
+
+**Given:** operação contendo campo sensível.
+
+**When:** a telemetria for produzida.
+
+**Then:** o campo não deverá ser exposto indevidamente.
+
+### 16.8 Ambiente incompatível
+
+**Given:** destino de telemetria não autorizado.
+
+**When:** a configuração for validada.
+
+**Then:** a exportação deverá ser bloqueada.
+
+---
+
+## 17. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação |
+|---|---|---|
+| Consistência | Campos e convenções padronizados | Testes de schema |
+| Rastreabilidade | Operações correlacionáveis | Testes de contexto |
+| Confiabilidade | Falhas diagnosticáveis | Testes negativos |
+| Segurança | Ausência de exposição sensível | Testes de redaction |
+| Isolamento | Destinos segregados | Testes de configuração |
+| Auditabilidade | Eventos críticos rastreáveis | Revisão de registros |
+| Desempenho | Sobrecarga controlada | Testes de desempenho |
+| Recuperabilidade | Diagnóstico após falhas | Testes de reinício |
+| Manutenibilidade | Instrumentação reutilizável | Revisão técnica |
+| Reprodutibilidade | Configuração versionada | Testes em ambiente limpo |
+
+Limiares de latência, cardinalidade, retenção e overhead deverão ser formalizados antes do aceite de implementação.
+
+---
+
+## 18. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| I00-FEAT-001 | Monorepo | APPROVED documentalmente |
+| I00-FEAT-002 | Toolchain | APPROVED documentalmente |
+| I00-FEAT-003 | Contratos | APPROVED documentalmente |
+| I00-FEAT-008 | Foundation API | APPROVED documentalmente |
+| I00-FEAT-009 | Segurança e isolamento | APPROVED documentalmente |
+| I00-FEAT-004–007 | Fontes de telemetria | APPROVED documentalmente |
+| OpenTelemetry | Tecnologia | APPROVED na baseline |
+| HealthStatus.v1 | Contrato | SPECIFICATION_PENDING |
+| Backend de observabilidade | Infraestrutura | TBD |
+| Política de sampling | Decisão técnica | TBD |
+| Política de retenção | Decisão técnica | TBD |
+| Política de alertas | Operações | TBD |
+| ADRs individuais | Fonte normativa | UNVERIFIED |
+| Componentes | Fonte arquitetural | UNVERIFIED |
+| Repositório | Fonte técnica | NOT_INSPECTED |
+| Owners | Governança | TBD |
+
+### 18.1 Dependências posteriores
+
+- I00-FEAT-011 — CI/CD Foundation.
+- I00-FEAT-013 — Failure & Recovery Validation.
+- I00-FEAT-014 — Evidence & G0 Preparation.
+
+### 18.2 Histórias técnicas
+
+Os vínculos com TS-ST-001–024 deverão ser confirmados contra o backlog original.
+
+**Story Mapping:** PENDING.
+
+Nenhum identificador de história será atribuído por inferência.
+
+---
+
+## 19. Estratégia de testes
+
+### 19.1 Logs
+
+Verificar estrutura JSON e campos obrigatórios.
+
+### 19.2 Correlação
+
+Verificar propagação e preservação de identificadores.
+
+### 19.3 Métricas
+
+Verificar emissão, unidades e atributos.
+
+### 19.4 Cardinalidade
+
+Verificar limites e ausência de labels indevidas.
+
+### 19.5 Traces
+
+Verificar spans e propagação entre componentes.
+
+### 19.6 API
+
+Verificar instrumentação de requisições e erros.
+
+### 19.7 Persistência
+
+Verificar diagnóstico de operações e falhas de banco.
+
+### 19.8 Outbox
+
+Verificar correlação entre operação e registro persistido.
+
+### 19.9 Dispatcher
+
+Verificar rastreabilidade de tentativas e resultados.
+
+### 19.10 Consumidores
+
+Verificar registros de processamento, duplicidades e falhas.
+
+### 19.11 Exportação
+
+Verificar envio para destino de teste autorizado.
+
+### 19.12 Falha de exportação
+
+Verificar comportamento quando o destino está indisponível.
+
+### 19.13 Segurança
+
+Verificar ausência de segredos e dados sensíveis.
+
+### 19.14 Isolamento
+
+Verificar bloqueio de destinos incompatíveis e LIVE.
+
+### 19.15 Alertas
+
+Verificar detecção de condições aprovadas.
+
+### 19.16 Desempenho
+
+Verificar overhead de instrumentação conforme limites definidos.
+
+### 19.17 Recuperação
+
+Verificar diagnóstico após reinicialização.
+
+### 19.18 End-to-End
+
+Verificar o fluxo controlado:
+
+**Foundation API → Operação → PostgreSQL/Outbox → Dispatcher → Consumer → Telemetria correlacionada.**
+
+Nenhum teste executará operações financeiras reais.
+
+---
+
+## 20. Critérios de aceite
+
+Os critérios abaixo são propostos para aceite da implementação de I00-FEAT-010.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| FEAT010-AC01 | Identidade de componentes padronizada | Testes de metadados |
+| FEAT010-AC02 | Logs JSON estruturados | Testes de logging |
+| FEAT010-AC03 | Correlação propagada corretamente | Testes de contexto |
+| FEAT010-AC04 | Métricas técnicas instrumentadas | Testes de métricas |
+| FEAT010-AC05 | Unidades e cardinalidade controladas | Testes de semântica |
+| FEAT010-AC06 | Traces distribuídos disponíveis | Testes de tracing |
+| FEAT010-AC07 | Foundation API instrumentada | Testes HTTP |
+| FEAT010-AC08 | Persistência e Outbox observáveis | Testes de integração |
+| FEAT010-AC09 | Dispatcher e consumidores observáveis | Testes de eventos |
+| FEAT010-AC10 | Health e readiness integrados | Testes de saúde |
+| FEAT010-AC11 | Exportação controlada | Testes de exportação |
+| FEAT010-AC12 | Falhas de exportação tratadas | Testes de resiliência |
+| FEAT010-AC13 | Dados sensíveis protegidos | Testes de segurança |
+| FEAT010-AC14 | Segregação de ambientes preservada | Testes de isolamento |
+| FEAT010-AC15 | Condições de alerta verificáveis | Testes de alerta |
+| FEAT010-AC16 | Overhead de instrumentação avaliado | Relatório de desempenho |
+| FEAT010-AC17 | Rastreabilidade documental consistente | Matriz verificada |
+| FEAT010-AC18 | Evidências verificáveis | Evidence Bundle I00 |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+### 20.1 Critérios superiores relacionados
+
+- EP01-AC07 — Observabilidade disponível.
+- EP02-AC09 — Eventos e processamento auditáveis.
+- I00-AC09 — Telemetria.
+- I00-AC11 — Rastreabilidade.
+- I00-AC12 — Evidências verificáveis.
+
+Os vínculos deverão ser reconciliados com a Traceability Matrix.
+
+---
+
+## 21. Evidências esperadas
+
+| Referência provisória | Evidência |
+|---|---|
+| EV-FEAT010-01 | Inventário de componentes instrumentados |
+| EV-FEAT010-02 | Testes de logs estruturados |
+| EV-FEAT010-03 | Testes de correlação |
+| EV-FEAT010-04 | Testes de métricas |
+| EV-FEAT010-05 | Verificação de cardinalidade |
+| EV-FEAT010-06 | Testes de traces |
+| EV-FEAT010-07 | Instrumentação da Foundation API |
+| EV-FEAT010-08 | Instrumentação de persistência e Outbox |
+| EV-FEAT010-09 | Instrumentação de Dispatcher e consumidores |
+| EV-FEAT010-10 | Testes de health e readiness |
+| EV-FEAT010-11 | Testes de exportação |
+| EV-FEAT010-12 | Testes de falha de exportação |
+| EV-FEAT010-13 | Verificação de dados sensíveis |
+| EV-FEAT010-14 | Testes de isolamento |
+| EV-FEAT010-15 | Testes de alertas |
+| EV-FEAT010-16 | Relatório de overhead |
+| EV-FEAT010-17 | Matriz de rastreabilidade |
+| EV-FEAT010-18 | Manifesto de integridade |
+
+Os identificadores são provisórios e deverão ser reconciliados com a convenção oficial de Evidence Bundle.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 22. Riscos e lacunas
+
+| Referência | Risco ou lacuna | Tratamento |
+|---|---|---|
+| DOC-GAP-003 | ADRs individuais não verificadas | Conferir fontes |
+| DOC-GAP-004 | ADRs técnicas não formalizadas integralmente | Recuperar registros |
+| DOC-GAP-005 | Rastreabilidade incompleta | Confirmar vínculos |
+| DOC-GAP-006 | Histórias da Feature não reconciliadas | Verificar backlog |
+| DOC-GAP-007 | Repositório não auditado | Inspecionar antes de implementar |
+| DOC-GAP-008 | Owners pendentes | Formalizar responsabilidades |
+
+### 22.1 Riscos técnicos
+
+- Logs inconsistentes.
+- Ausência de correlação.
+- Traces desconectados.
+- Métricas de cardinalidade excessiva.
+- Sobrecarga de instrumentação.
+- Falha de exportação sem diagnóstico.
+- Exposição de segredos.
+- Divergência entre métricas e estado autoritativo.
+- Alertas ruidosos.
+- Retenção insuficiente.
+- Destinos de telemetria incorretos.
+- Confusão entre observabilidade e auditoria obrigatória.
+- Instrumentação alterando indevidamente o comportamento transacional.
+
+### 22.2 Tratamento
+
+Os riscos deverão ser refinados, classificados e associados a decisões, histórias, testes e evidências.
+
+A aprovação desta Feature não encerra automaticamente lacunas.
+
+---
+
+## 23. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. ADRs aplicáveis estiverem verificadas.
+3. Componentes e owners estiverem confirmados.
+4. Convenções de logs estiverem definidas.
+5. Metadados de recursos estiverem aprovados.
+6. Política de correlação estiver especificada.
+7. Catálogo inicial de métricas estiver definido.
+8. Política de cardinalidade estiver aprovada.
+9. Estratégia de tracing estiver definida.
+10. Política de sampling estiver especificada.
+11. Backend e interfaces de exportação estiverem aprovados.
+12. Política de retenção estiver definida.
+13. Condições de alerta estiverem especificadas.
+14. Proteção de dados sensíveis estiver aprovada.
+15. Integrações com componentes estiverem definidas.
+16. Histórias relacionadas estiverem refinadas.
+17. Critérios de aceite estiverem testáveis.
+18. Estratégia de testes estiver aprovada.
+19. Evidências estiverem especificadas.
+20. Lacunas bloqueantes estiverem resolvidas.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação desta especificação não altera automaticamente esse estado.
+
+---
+
+## 24. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- Os mecanismos de observabilidade estiverem implementados.
+- Os critérios FEAT010-AC01–AC18 estiverem atendidos.
+- Logs estruturados estiverem conformes.
+- A correlação estiver demonstrada.
+- Métricas e traces estiverem disponíveis.
+- A instrumentação de componentes aplicáveis estiver verificada.
+- As falhas de exportação estiverem tratadas.
+- A proteção de dados sensíveis estiver demonstrada.
+- O isolamento estiver preservado.
+- Os testes obrigatórios tiverem sido executados.
+- O overhead estiver avaliado.
+- As evidências estiverem validadas.
+- A rastreabilidade estiver atualizada.
+- As lacunas bloqueantes estiverem resolvidas.
+- A autoridade competente registrar o aceite.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite desta Feature não substitui o aceite do TS-EP-01, I00 ou G0.
+
+---
+
+## 25. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-01 → I00-FEAT-010 → História → Teste → Evidência**
+
+Contratos e interfaces deverão ser vinculados quando aplicáveis.
+
+### Estados iniciais
+
+| Relação | Estado |
+|---|---|
+| Epic Link | VERIFIED documentalmente |
+| Work Package Link | VERIFIED documentalmente |
+| Feature Catalog Link | VERIFIED documentalmente |
+| Related Feature Links | VERIFIED documentalmente |
+| Story Link | PENDING |
+| ADR Links | UNVERIFIED |
+| Component Links | UNVERIFIED |
+| Requirement Links | UNVERIFIED |
+| Contract Links | PENDING |
+| Test Links | PLANNED |
+| Evidence Links | PLANNED |
+
+VERIFIED documentalmente não comprova implementação.
+
+---
+
+## 26. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-17 | PENDING | Especificação inicial Observability Foundation | PENDING |
+
+---
+
+## 27. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-010 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEAT-011.md — CI/CD Foundation
+
+**Restriction:** não avançar antes da aprovação desta Feature.
+
+## 28. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/I00-FEAT-010/IN-REVIEW.txt) está arquivado. A especificação permanece **IN_REVIEW**, com aprovação **PENDING**.
+
+A [evidência histórica de I00-10](../evidence/I00-10-telemetria.md) registra logs JSON, spans locais OpenTelemetry e correlação entre API, Dispatcher e Consumer. A exportação externa ficou desativada nesse ensaio. O [registro mestre de I00](../backlog/registro-mestre-i00.md) vincula o pacote a AC09.
+
+As [definições de métricas de Outbox do DOC-05](../governance/DOC-05-OUTBOX-METRICS.md) têm aprovação documental. A [evidência do coletor](../evidence/AC09-coletor-outbox.md) registra o ensaio em PostgreSQL. O [dossiê de G0](../governance/G0-REVIEW-DOSSIER.md) acompanha o vínculo ao candidato, a medição desde a detecção do bloqueio e a decisão sobre parâmetros operacionais.
+
+O aceite consolidado da implementação permanece pendente. G0 segue em revisão e LIVE permanece indisponível.

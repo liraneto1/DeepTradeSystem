@@ -1,0 +1,1155 @@
+# TS-REC-PLAN-001.md
+
+# TRADE SYSTEM V1
+## Source & Backlog Reconciliation Plan
+
+**Document ID:** TS-REC-PLAN-001  
+**Document Type:** Engineering Governance / Reconciliation Plan  
+**Version:** 1.0.0-draft.1  
+**Target Baseline:** V1.0  
+**Status:** IN_REVIEW  
+**Execution Status:** NOT_STARTED  
+**Project:** TRADE SYSTEM V1  
+**Scope:** Arquitetura Global + Engenharia I00  
+**Primary Domain:** D07 — Engineering, Quality & Validation  
+**Supporting Domains:** D01–D06, conforme responsabilidade  
+**Proposed Owner:** Engineering Governance  
+**Technical Owner:** TBD  
+**Architecture Reviewer:** TBD  
+**Backlog Owner:** TBD  
+**Approval Authority:** Responsável pela governança documental, a formalizar  
+**Last Updated:** 2026-11-17  
+**Domain:** D07, com apoio de D01–D06  
+**Increment:** I00, no contexto da arquitetura global.  
+**Owner:** Engineering Governance, conforme proposta acima.  
+**Source References:** [anexo original](history/TS-REC-PLAN-001/IN-REVIEW.txt), [fontes oficiais](../referencias/originais/) e [TS-DOC-STD-V1.0](TS-DOC-STD-V1.0.md)  
+**Related ADRs:** seções 2 e 7.  
+**Related Components:** seções 7 e 14.  
+**Related Requirements/Pendências:** seções 8, 10 e 23.  
+**Dependencies:** seções 19 e 22.  
+**Acceptance Criteria:** seção 16 para o plano e seção 25 para sua execução.  
+**Created:** 2026-11-17  
+**Approval Reference:** PENDING
+
+---
+
+## 1. Propósito
+
+### 1.1 Objetivo
+
+Estabelecer o procedimento formal para localizar, identificar, verificar e reconciliar as fontes normativas originais do TRADE SYSTEM V1 antes de iniciar a especificação individual das histórias de engenharia do incremento I00.
+
+### 1.2 Resultado esperado
+
+Ao concluir a reconciliação, deverá existir uma visão fundamentada sobre:
+
+- Quais fontes originais foram localizadas.
+- Quais versões são autoritativas.
+- Quais decisões arquiteturais foram confirmadas.
+- Quais componentes possuem identidade e ownership verificáveis.
+- Quais requisitos e pendências possuem textos recuperados.
+- Quais épicos e histórias correspondem ao backlog original.
+- Quais vínculos de rastreabilidade estão corretos.
+- Quais divergências exigem decisão.
+- Quais lacunas impedem o detalhamento das histórias.
+- Quais alterações documentais precisam de Change Control.
+
+### 1.3 Restrição principal
+
+A reconciliação não poderá reconstruir informações ausentes por inferência e classificá-las como normativas.
+
+### 1.4 Limite da autorização
+
+A autorização recebida permite elaborar e submeter este plano à revisão.
+
+**Não autoriza sua execução.**
+
+---
+
+## 2. Contexto e baselines
+
+### 2.1 Arquitetura global
+
+**Baseline:** TS-ARCH-GLOBAL-V1.0  
+**Estado documental:** APPROVED
+
+Inventário registrado:
+
+| Categoria | Quantidade |
+|---|---:|
+| Domínios | 7 |
+| Componentes lógicos | 33 |
+| ADRs arquiteturais | 88 |
+| Pendências técnicas | 106 |
+| Fluxos arquiteturais | 10 |
+| Épicos | 14 |
+| Histórias iniciais | 24 |
+| Incrementos | 10 |
+| Gates | 6 |
+
+Essas quantidades são referências de planejamento provenientes das decisões anteriormente registradas.
+
+A correspondência com as fontes originais deverá ser verificada.
+
+### 2.2 Engenharia I00
+
+**Baseline:** TS-ENG-I00-V1.0  
+**Estado documental:** APPROVED
+
+Inclui:
+
+- Monorepo modular.
+- Python 3.12+.
+- FastAPI e Pydantic v2.
+- PostgreSQL 17.
+- SQLAlchemy 2 e Alembic.
+- uv, Ruff, mypy, pytest e Hypothesis.
+- Transactional Outbox.
+- Event Dispatcher.
+- Idempotent Consumers.
+- Segurança e segregação.
+- Observabilidade.
+- GitHub Actions.
+- Testes de falha e recuperação.
+- Governança de evidências.
+
+### 2.3 ADRs técnicas
+
+Identificadores registrados:
+
+**TS-ADR-089–098**
+
+Total previsto para reconciliação:
+
+**98 ADRs**, considerando o inventário arquitetural e técnico.
+
+### 2.4 Documentação aprovada
+
+Foram aprovados documentalmente nesta conversa:
+
+- Padrão de documentação.
+- Registros de governança.
+- Templates.
+- Especificação do agente de governança.
+- Incremento I00.
+- Épicos TS-EP-01 e TS-EP-02.
+- Catálogo de Features.
+- Especificações I00-FEAT-001–014.
+
+**Total registrado:** 33 documentos.
+
+### 2.5 Limitação
+
+As aprovações desta conversa não comprovam:
+
+- Existência dos arquivos no repositório.
+- Correspondência exata entre arquivos e textos aprovados.
+- Integridade das versões.
+- Implementação técnica.
+- Execução de testes.
+- Atendimento dos critérios de aceite.
+- Aprovação de Gate.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+A reconciliação deverá abranger:
+
+1. Fontes arquiteturais originais.
+2. Decisões globais.
+3. ADRs arquiteturais e técnicas.
+4. Catálogo de componentes.
+5. Pendências técnicas.
+6. Backlog de épicos e histórias.
+7. Fluxos arquiteturais.
+8. Baselines documentais do I00.
+9. Vínculos de rastreabilidade.
+10. Lacunas documentais.
+11. Divergências entre fontes.
+12. Propostas de correção.
+13. Condições documentais para iniciar histórias.
+
+### 3.2 Excluído
+
+Não pertence ao escopo:
+
+- Implementação de software.
+- Alteração de código.
+- Criação de infraestrutura.
+- Execução de pipelines.
+- Execução de testes técnicos.
+- Desenvolvimento de agentes PPO.
+- Operações na Binance.
+- Avaliação de G0.
+- Aprovação de G0.
+- Autorização de LIVE.
+- Alteração automática de baselines.
+- Encerramento automático de lacunas.
+
+### 3.3 Natureza do trabalho
+
+A atividade será de **inspeção, comparação, classificação e proposição documental**.
+
+A aplicação de alterações dependerá de aprovação específica.
+
+---
+
+## 4. Princípios obrigatórios
+
+### REC-INV-01 — Proveniência
+
+Toda informação classificada como verificada deverá possuir referência à fonte consultada.
+
+### REC-INV-02 — Fonte autoritativa
+
+A reconciliação deverá distinguir fonte original, cópia, resumo, interpretação e documento derivado.
+
+### REC-INV-03 — Não inferência normativa
+
+Nenhum texto de ADR, requisito ou história poderá ser inventado para completar lacunas.
+
+### REC-INV-04 — Identidade estável
+
+Os identificadores originais deverão ser preservados.
+
+### REC-INV-05 — Versionamento
+
+A versão utilizada deverá ser explicitamente identificada.
+
+### REC-INV-06 — Divergências visíveis
+
+Conflitos entre fontes deverão permanecer registrados até decisão.
+
+### REC-INV-07 — Rastreabilidade bidirecional
+
+Vínculos deverão permitir navegação entre origem normativa e artefato derivado.
+
+### REC-INV-08 — Aprovação independente
+
+A verificação técnica não poderá substituir a autoridade responsável pela aprovação.
+
+### REC-INV-09 — Baseline protegida
+
+Documentos aprovados não poderão ser modificados silenciosamente.
+
+### REC-INV-10 — Lacunas explícitas
+
+Fontes ausentes e vínculos não comprovados deverão permanecer identificados.
+
+### REC-INV-11 — Estados segregados
+
+Aprovação documental, readiness, implementação e Gate deverão permanecer independentes.
+
+### REC-INV-12 — Segurança
+
+A reconciliação não poderá habilitar operações financeiras nem alterar permissões operacionais.
+
+Os identificadores REC-INV-01–12 são internos a este plano e não representam novas ADRs.
+
+---
+
+## 5. Fontes necessárias
+
+### 5.1 Fontes arquiteturais
+
+- TS-ARCH-GLOBAL-V1.0.
+- Registros G01–G60.
+- ADR-001–088.
+- TS-ADR-089–098.
+- Catálogo dos 33 componentes.
+- Mapa de ownership.
+- Fluxos F01–F10.
+- Pendências P01–P106.
+- Critérios G0–G5.
+
+### 5.2 Fontes de planejamento
+
+- Roadmap I00–I09.
+- Catálogo dos 14 épicos.
+- Backlog TS-ST-001–024.
+- Critérios de aceite dos épicos.
+- Critérios do incremento I00.
+- Dependências e prioridades.
+
+### 5.3 Fontes documentais
+
+- Documentation Standard.
+- Document Registry.
+- Gap Register.
+- Traceability Matrix.
+- Approval Register.
+- Change Log.
+- Templates aprovados.
+- Especificações do I00.
+
+### 5.4 Fontes técnicas
+
+Quando disponíveis e mediante autorização de acesso:
+
+- Estrutura do repositório.
+- Histórico de versões.
+- Arquivos documentais.
+- Referências de commits.
+- Metadados de publicação.
+
+### 5.5 Hierarquia de autoridade
+
+A hierarquia definitiva deverá seguir o padrão de governança aprovado.
+
+Quando não houver regra explícita, o conflito deverá ser registrado, e não resolvido automaticamente.
+
+### 5.6 Disponibilidade
+
+A existência de uma referência nominal não comprova que a fonte esteja disponível.
+
+---
+
+## 6. Etapa R01 — Inventário e proveniência
+
+### 6.1 Objetivo
+
+Construir um inventário verificável das fontes necessárias à reconciliação.
+
+### 6.2 Atividades
+
+1. Identificar os locais autorizados de consulta.
+2. Localizar cada fonte.
+3. Registrar identificador e título.
+4. Registrar versão.
+5. Registrar localização.
+6. Registrar owner, quando disponível.
+7. Identificar tipo e formato.
+8. Registrar estado de aprovação.
+9. Identificar referências de integridade, quando disponíveis.
+10. Identificar fontes ausentes.
+11. Distinguir originais de derivados.
+12. Registrar conflitos de versão.
+
+### 6.3 Registro mínimo
+
+| Campo | Descrição |
+|---|---|
+| Source ID | Identificador da fonte |
+| Artifact ID | Identificador normativo |
+| Title | Título |
+| Version | Versão |
+| Source Type | Original, derivada ou cópia |
+| Location | Localização |
+| Owner | Responsável |
+| Availability | Estado de acesso |
+| Integrity Reference | Hash ou referência, se disponível |
+| Approval Reference | Aprovação |
+| Verification Status | Estado da verificação |
+| Observations | Divergências |
+
+### 6.4 Entregáveis
+
+**REC-OUT-01 — Source Inventory**
+
+**REC-OUT-02 — Source Availability Matrix**
+
+### 6.5 Critério de conclusão
+
+O inventário deverá identificar todas as fontes previstas, inclusive as indisponíveis.
+
+A ausência de fontes não poderá ser ocultada para declarar completude.
+
+### 6.6 Bloqueios
+
+Fontes obrigatórias não localizadas poderão impedir as etapas dependentes.
+
+---
+
+## 7. Etapa R02 — Reconciliação arquitetural
+
+### 7.1 Objetivo
+
+Verificar a correspondência entre decisões arquiteturais, ADRs e componentes lógicos.
+
+### 7.2 Escopo
+
+- G01–G60.
+- ADR-001–088.
+- TS-ADR-089–098.
+- Componentes lógicos.
+- Domínios D01–D07.
+- Ownership.
+- Dependências arquiteturais.
+
+### 7.3 Atividades
+
+1. Recuperar o texto original das decisões.
+2. Confirmar identificadores.
+3. Confirmar versões e estados.
+4. Verificar duplicidades.
+5. Verificar relações entre ADRs.
+6. Confirmar componentes mencionados.
+7. Verificar domínio responsável.
+8. Verificar ownership.
+9. Identificar decisões substituídas.
+10. Identificar conflitos.
+11. Registrar vínculos não comprovados.
+12. Propor tratamento de divergências.
+
+### 7.4 ADR Reconciliation Matrix
+
+Cada registro deverá permitir identificar:
+
+- ADR ID.
+- Versão.
+- Título.
+- Estado.
+- Fonte.
+- Domínio.
+- Componentes relacionados.
+- Decisões relacionadas.
+- Dependências.
+- Conflitos.
+- Resultado de verificação.
+
+### 7.5 Component Ownership Matrix
+
+Cada componente deverá permitir identificar:
+
+- Component ID.
+- Nome original.
+- Domínio.
+- Responsabilidade.
+- Owner.
+- Interfaces relevantes.
+- ADRs aplicáveis.
+- Features relacionadas.
+- Estado de verificação.
+
+### 7.6 Entregáveis
+
+**REC-OUT-03 — ADR Reconciliation Matrix**
+
+**REC-OUT-04 — Component Ownership Matrix**
+
+### 7.7 Critério de conclusão
+
+Os registros deverão distinguir claramente itens verificados, ausentes, conflitantes e pendentes.
+
+Não será permitido substituir ADRs não recuperadas por descrições inferidas.
+
+---
+
+## 8. Etapa R03 — Reconciliação de requisitos e backlog
+
+### 8.1 Objetivo
+
+Verificar a identidade, o conteúdo e os vínculos dos requisitos e elementos do backlog.
+
+### 8.2 Escopo
+
+- P01–P106.
+- TS-EP-01–14.
+- TS-ST-001–024.
+- F01–F10.
+- I00–I09.
+- Dependências entre itens.
+- Critérios de aceite aplicáveis.
+
+### 8.3 Atividades
+
+1. Recuperar o catálogo original de pendências.
+2. Confirmar cada identificador.
+3. Recuperar os textos originais dos épicos.
+4. Recuperar o backlog das histórias.
+5. Confirmar os critérios de aceite.
+6. Confirmar as dependências.
+7. Verificar relações entre requisitos e épicos.
+8. Verificar relações entre épicos e histórias.
+9. Verificar relações com os fluxos arquiteturais.
+10. Identificar histórias sem requisito de origem.
+11. Identificar requisitos sem planejamento correspondente.
+12. Registrar conflitos e lacunas.
+
+### 8.4 Verificação específica da TS-ST-001
+
+Antes de iniciar `TS-ST-001.md`, deverão ser confirmados:
+
+- Identificador original.
+- Título original.
+- Descrição original.
+- Épico responsável.
+- Feature relacionada.
+- Escopo.
+- Critérios de aceite, quando existentes.
+- Dependências.
+- Prioridade.
+- Referência normativa.
+
+O vínculo TS-ST-001 → I00-FEAT-001 permanece PROPOSED até confirmação.
+
+### 8.5 Entregável
+
+**REC-OUT-05 — Requirements & Backlog Reconciliation Matrix**
+
+### 8.6 Critério de conclusão
+
+O backlog deverá permitir identificar os itens que podem ser detalhados sem inventar informações normativas.
+
+---
+
+## 9. Etapa R04 — Reconciliação documental do I00
+
+### 9.1 Objetivo
+
+Verificar a consistência entre as fontes recuperadas e as baselines documentais aprovadas do incremento I00.
+
+### 9.2 Escopo
+
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-01.
+- TS-EP-02.
+- TS-I00-FEAT-CAT-001.
+- I00-FEAT-001–014.
+- Critérios I00-AC01–12.
+- Registros de governança.
+
+### 9.3 Atividades
+
+1. Confirmar a fonte normativa do incremento.
+2. Verificar os vínculos das Features.
+3. Verificar o ownership dos pacotes.
+4. Comparar requisitos com critérios de aceite.
+5. Verificar dependências.
+6. Identificar referências a ADRs não confirmadas.
+7. Identificar referências a componentes não confirmados.
+8. Identificar histórias atribuídas por inferência.
+9. Verificar consistência entre Features.
+10. Identificar alterações normativas necessárias.
+11. Preparar propostas de Change Control.
+12. Registrar itens que permanecem válidos.
+
+### 9.4 Classificação de divergências
+
+- Ausência de fonte.
+- Divergência de versão.
+- Divergência de conteúdo.
+- Divergência de ownership.
+- Referência inválida.
+- Vínculo não comprovado.
+- Critério incompatível.
+- Duplicidade.
+- Alteração normativa necessária.
+
+### 9.5 Entregável
+
+**REC-OUT-06 — I00 Baseline Consistency Report**
+
+### 9.6 Critério de conclusão
+
+Cada divergência relevante deverá possuir classificação, impacto e encaminhamento.
+
+A etapa não poderá alterar automaticamente documentos aprovados.
+
+---
+
+## 10. Etapa R05 — Tratamento de lacunas
+
+### 10.1 Objetivo
+
+Reconciliar o Gap Register e preparar o tratamento das lacunas que afetam o I00.
+
+### 10.2 Registro inicial
+
+O histórico documental identifica:
+
+**DOC-GAP-001–008 — OPEN**
+
+O conteúdo individual deverá ser confirmado no registro autoritativo.
+
+### 10.3 Atividades
+
+1. Recuperar o Gap Register original.
+2. Confirmar os IDs existentes.
+3. Confirmar descrições e estados.
+4. Identificar artefatos afetados.
+5. Identificar bloqueios.
+6. Verificar owners.
+7. Identificar evidências de resolução existentes.
+8. Classificar novas lacunas.
+9. Propor ações corretivas.
+10. Propor prioridades.
+11. Identificar dependências.
+12. Preparar recomendações de encerramento ou manutenção.
+
+### 10.4 Classificação de impacto proposta
+
+- BLOCKER.
+- HIGH.
+- MEDIUM.
+- LOW.
+
+A taxonomia definitiva deverá respeitar o padrão aprovado.
+
+### 10.5 Encerramento
+
+Uma lacuna somente poderá ser encerrada mediante evidência suficiente e aprovação aplicável.
+
+### 10.6 Novas lacunas
+
+Novos identificadores deverão ser atribuídos conforme o procedimento do Gap Register.
+
+### 10.7 Entregável
+
+**REC-OUT-07 — Gap Disposition Proposal**
+
+### 10.8 Critério de conclusão
+
+Todas as lacunas relevantes deverão possuir estado conhecido, impacto, responsável proposto e encaminhamento.
+
+A etapa não encerrará lacunas automaticamente.
+
+---
+
+## 11. Etapa R06 — Consolidação e autorização para histórias
+
+### 11.1 Objetivo
+
+Consolidar os resultados da reconciliação e recomendar, com fundamento, se a especificação das histórias do I00 poderá começar.
+
+### 11.2 Atividades
+
+1. Consolidar inventário de fontes.
+2. Consolidar matrizes de ADRs e componentes.
+3. Consolidar requisitos e backlog.
+4. Consolidar divergências do I00.
+5. Consolidar lacunas.
+6. Verificar vínculos críticos.
+7. Identificar conflitos não resolvidos.
+8. Identificar alterações sujeitas a aprovação.
+9. Preparar relatório final.
+10. Recomendar próximos artefatos.
+11. Submeter a recomendação à autoridade competente.
+
+### 11.3 Entregável principal
+
+**REC-OUT-08 — Reconciliation Closure Report**
+
+### 11.4 Conteúdo mínimo
+
+- Escopo executado.
+- Fontes consultadas.
+- Fontes não localizadas.
+- Itens verificados.
+- Itens não verificados.
+- Conflitos.
+- Lacunas.
+- Riscos residuais.
+- Alterações propostas.
+- Situação dos vínculos críticos.
+- Condições para iniciar TS-ST-001.
+- Recomendação fundamentada.
+- Referências às matrizes e evidências.
+
+### 11.5 Resultados possíveis
+
+**READY_FOR_STORY_REVIEW:** fontes e vínculos necessários à primeira história verificados; pendências não bloqueantes identificadas.
+
+**CONDITIONALLY_READY:** pendências remanescentes possuem tratamento formal aprovado e não impedem a especificação pretendida.
+
+**BLOCKED:** ausência de fontes ou conflitos impedem especificação confiável.
+
+### 11.6 Regra de progressão
+
+A classificação de reconciliação não autoriza automaticamente a elaboração da próxima história.
+
+A progressão exigirá autorização específica.
+
+### 11.7 Limite
+
+A conclusão da reconciliação não aprova G0 e não comprova implementação do I00.
+
+---
+
+## 12. Estados de verificação
+
+| Estado | Significado |
+|---|---|
+| NOT_STARTED | Verificação ainda não iniciada |
+| SOURCE_MISSING | Fonte necessária indisponível |
+| PROPOSED | Vínculo ou interpretação proposto |
+| UNVERIFIED | Informação ainda não comprovada |
+| VERIFIED | Informação confirmada por fonte identificada |
+| CONFLICT | Divergência entre fontes |
+| BLOCKED | Verificação impedida |
+| NOT_APPLICABLE | Não aplicável, mediante justificativa |
+
+### 12.1 Evidência de verificação
+
+VERIFIED deverá possuir:
+
+- Referência à fonte.
+- Identificador do artefato.
+- Versão.
+- Localização verificável.
+- Informação confirmada.
+- Responsável pela verificação.
+- Data ou referência de execução.
+
+### 12.2 Fonte indisponível
+
+SOURCE_MISSING não poderá ser convertido em VERIFIED por inferência.
+
+### 12.3 Conflito
+
+CONFLICT exigirá registro explícito e encaminhamento.
+
+### 12.4 Taxonomia
+
+Os estados propostos deverão ser reconciliados com TS-DOC-STD-V1.0 antes da execução.
+
+---
+
+## 13. Tratamento de conflitos
+
+### 13.1 Identificação
+
+Cada conflito deverá possuir referência própria.
+
+### 13.2 Conteúdo
+
+O registro deverá identificar:
+
+- Fontes conflitantes.
+- Versões.
+- Trechos ou decisões afetados.
+- Natureza do conflito.
+- Impacto.
+- Artefatos dependentes.
+- Owner proposto.
+- Alternativas de resolução.
+- Decisão necessária.
+
+### 13.3 Autoridade
+
+A resolução normativa deverá respeitar a autoridade definida na governança.
+
+### 13.4 Baseline aprovada
+
+Alterações em documentos aprovados deverão seguir Change Control.
+
+### 13.5 Histórico
+
+A resolução deverá preservar a rastreabilidade das fontes e da decisão.
+
+### 13.6 Ausência de decisão
+
+Conflitos bloqueantes permanecerão abertos.
+
+---
+
+## 14. Rastreabilidade
+
+### 14.1 Cadeia principal
+
+**ADR → Componente → Pendência → Épico → Feature → História → Contrato → Teste → Evidência**
+
+### 14.2 Vínculos críticos do I00
+
+Deverão ser verificados:
+
+- TS-EP-01 → Features 001, 002, 003, 008, 009, 010, 011, 012 e 014.
+- TS-EP-02 → Features 004, 005, 006, 007 e 013.
+- I00-01–14 → Features correspondentes.
+- Requisitos e ADRs → Features aplicáveis.
+- Histórias originais → Features.
+- Critérios superiores → critérios de Feature.
+
+### 14.3 Fonte
+
+Cada vínculo VERIFIED deverá identificar a fonte consultada.
+
+### 14.4 Inconsistência
+
+Vínculos incorretos deverão ser sinalizados e submetidos ao procedimento de correção.
+
+### 14.5 Não implementação
+
+A verificação de um vínculo documental não comprova implementação.
+
+---
+
+## 15. Critérios de conclusão por etapa
+
+| Etapa | Critério de conclusão |
+|---|---|
+| R01 | Inventário das fontes com estados de disponibilidade |
+| R02 | ADRs e componentes classificados, com conflitos explícitos |
+| R03 | Requisitos e backlog classificados, com TS-ST-001 identificada |
+| R04 | Divergências das baselines I00 registradas e encaminhadas |
+| R05 | Lacunas classificadas e ações propostas |
+| R06 | Relatório consolidado e recomendação fundamentada |
+
+### 15.1 Completude
+
+A conclusão de uma etapa exige a entrega de seus registros e a identificação explícita dos itens não resolvidos.
+
+### 15.2 Bloqueio
+
+Uma etapa poderá ser encerrada administrativamente como BLOCKED, sem declarar que a reconciliação técnica foi concluída.
+
+### 15.3 Aceite
+
+O aceite dos resultados dependerá da revisão da autoridade competente.
+
+---
+
+## 16. Critérios de aceite do plano
+
+Os critérios seguintes dizem respeito à qualidade da especificação deste plano, não à execução da reconciliação.
+
+| ID | Critério |
+|---|---|
+| REC-AC01 | Objetivo e limites definidos |
+| REC-AC02 | Baselines e inventários identificados |
+| REC-AC03 | Fontes necessárias especificadas |
+| REC-AC04 | Princípios de proveniência estabelecidos |
+| REC-AC05 | Etapas R01–R06 definidas |
+| REC-AC06 | Entregáveis REC-OUT-01–08 identificados |
+| REC-AC07 | Estados de verificação definidos |
+| REC-AC08 | Tratamento de conflitos especificado |
+| REC-AC09 | Gestão de lacunas especificada |
+| REC-AC10 | Rastreabilidade bidirecional prevista |
+| REC-AC11 | Critérios de conclusão definidos |
+| REC-AC12 | Responsabilidades e autoridades previstas |
+| REC-AC13 | Segurança e limites operacionais estabelecidos |
+| REC-AC14 | Riscos e bloqueios identificados |
+| REC-AC15 | Condições para iniciar histórias definidas |
+| REC-AC16 | Aprovação do plano separada de sua execução |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+---
+
+## 17. Evidências esperadas da execução
+
+| Referência | Evidência planejada |
+|---|---|
+| REC-EV-01 | Inventário de fontes consultadas |
+| REC-EV-02 | Matriz de disponibilidade |
+| REC-EV-03 | Matriz de ADRs |
+| REC-EV-04 | Matriz de componentes |
+| REC-EV-05 | Matriz de requisitos e backlog |
+| REC-EV-06 | Relatório de consistência I00 |
+| REC-EV-07 | Proposta de tratamento de lacunas |
+| REC-EV-08 | Relatório de encerramento |
+| REC-EV-09 | Registro de conflitos |
+| REC-EV-10 | Referências de aprovação |
+
+**Evidence Status:** PLANNED.
+
+Nenhuma dessas evidências foi produzida por esta proposta.
+
+---
+
+## 18. Responsabilidades
+
+| Papel | Responsabilidade | Estado |
+|---|---|---|
+| Engineering Governance | Coordenação da reconciliação | TBD |
+| Architecture Owner | Verificação das ADRs e componentes | TBD |
+| Backlog Owner | Verificação de épicos e histórias | TBD |
+| Domain Owners | Validação das responsabilidades | TBD |
+| Documentation Owner | Registro e consistência documental | TBD |
+| QA Reviewer | Verificação dos critérios e resultados | TBD |
+| Approval Authority | Aprovação das decisões | TBD |
+
+### 18.1 Separação de responsabilidades
+
+A equipe que prepara as matrizes não poderá aprovar unilateralmente alterações normativas.
+
+### 18.2 Ausência de owner
+
+A ausência de responsável deverá permanecer identificada como pendência.
+
+### 18.3 Automação
+
+Ferramentas ou agentes poderão auxiliar na inspeção após autorização, sem substituir a aprovação humana.
+
+---
+
+## 19. Dependências e precedência
+
+A execução deverá respeitar a sequência:
+
+**R01 → R02/R03 → R04 → R05 → R06**
+
+R02 e R03 poderão ser executadas em paralelo quando as fontes necessárias estiverem disponíveis.
+
+### 19.1 Dependências de R04
+
+A reconciliação do I00 dependerá dos resultados arquiteturais e do backlog.
+
+### 19.2 Dependências de R05
+
+A classificação das lacunas dependerá das divergências identificadas.
+
+### 19.3 Dependências de R06
+
+O relatório final dependerá dos entregáveis anteriores ou de registros explícitos de bloqueio.
+
+### 19.4 Alterações de sequência
+
+Deverão ser justificadas e aprovadas quando alterarem o plano normativo.
+
+---
+
+## 20. Riscos
+
+| Risco | Impacto potencial | Tratamento proposto |
+|---|---|---|
+| Fontes originais indisponíveis | Reconciliação incompleta | SOURCE_MISSING |
+| ADRs incompletas | Vínculos não verificáveis | Registrar bloqueio |
+| Backlog divergente | História incorreta | Exigir fonte original |
+| IDs duplicados | Perda de identidade | Registrar conflito |
+| Versões conflitantes | Baseline ambígua | Change Control |
+| Owners ausentes | Decisão sem autoridade | Formalizar responsabilidade |
+| Registro de lacunas desatualizado | Bloqueios omitidos | Reconciliar Gap Register |
+| Inferências tratadas como fatos | Falsa conformidade | Exigir proveniência |
+| Alterações não autorizadas | Quebra de baseline | Controle de aprovação |
+| Conclusão prematura | Início incorreto das histórias | Critérios de encerramento |
+
+### 20.1 Classificação
+
+A criticidade deverá ser refinada durante a execução.
+
+### 20.2 Transparência
+
+Riscos não resolvidos deverão constar do relatório final.
+
+---
+
+## 21. Segurança e restrições operacionais
+
+### 21.1 Acesso às fontes
+
+Somente fontes e repositórios autorizados poderão ser consultados.
+
+### 21.2 Segredos
+
+Credenciais e informações sensíveis não deverão ser reproduzidas nos relatórios.
+
+### 21.3 Integridade
+
+Fontes originais não poderão ser alteradas durante a inspeção.
+
+### 21.4 Repositório
+
+A inspeção, quando autorizada, deverá ocorrer sem modificações automáticas.
+
+### 21.5 Código
+
+Nenhum software será implementado como parte deste plano.
+
+### 21.6 Infraestrutura
+
+Nenhuma infraestrutura operacional será provisionada.
+
+### 21.7 Gates
+
+G0–G5 não serão avaliados nesta atividade.
+
+### 21.8 LIVE
+
+LIVE permanecerá NOT_AUTHORIZED.
+
+### 21.9 Operações financeiras
+
+Nenhuma ordem financeira será executada.
+
+---
+
+## 22. Integração com governança documental
+
+### 22.1 Document Registry
+
+Os artefatos produzidos deverão ser propostos para registro conforme a governança aprovada.
+
+### 22.2 Traceability Matrix
+
+Os vínculos confirmados deverão ser apresentados para atualização controlada.
+
+### 22.3 Gap Register
+
+As lacunas identificadas deverão ser propostas para registro ou atualização.
+
+### 22.4 Approval Register
+
+As decisões deverão possuir referência à versão e à autoridade correspondente.
+
+### 22.5 Change Log
+
+Alterações normativas deverão preservar histórico.
+
+### 22.6 Baselines
+
+Nenhuma baseline aprovada será substituída sem decisão formal.
+
+### 22.7 Estado atual
+
+Nenhuma atualização desses registros foi realizada por esta proposta.
+
+---
+
+## 23. Condições para iniciar TS-ST-001.md
+
+A primeira história somente deverá ser proposta para especificação quando:
+
+1. O plano de reconciliação estiver aprovado.
+2. A execução da reconciliação estiver autorizada.
+3. A fonte original de TS-ST-001 estiver localizada.
+4. O identificador da história estiver confirmado.
+5. Seu título e escopo estiverem confirmados.
+6. O vínculo com TS-EP-01 estiver confirmado.
+7. O vínculo com I00-FEAT-001 estiver confirmado ou formalmente corrigido.
+8. Os requisitos e decisões aplicáveis estiverem identificados.
+9. Conflitos bloqueantes estiverem resolvidos.
+10. Lacunas remanescentes estiverem classificadas.
+11. O relatório de reconciliação estiver submetido à revisão.
+12. A progressão para a história estiver expressamente autorizada.
+
+### 23.1 Exceções
+
+Qualquer exceção deverá ser aprovada pela autoridade competente e registrada.
+
+### 23.2 Fonte não localizada
+
+Se a história original não puder ser recuperada, o vínculo permanecerá não verificado e a progressão dependerá de decisão formal sobre o tratamento da ausência.
+
+### 23.3 Limite
+
+A autorização para especificar uma história não autorizará sua implementação.
+
+---
+
+## 24. Documentation Readiness do plano
+
+O plano poderá ser considerado documentalmente READY quando:
+
+- Escopo e limites estiverem aprovados.
+- Etapas R01–R06 estiverem aprovadas.
+- Fontes necessárias estiverem identificadas.
+- Entregáveis estiverem definidos.
+- Estados de verificação estiverem formalizados.
+- Critérios de conclusão estiverem aprovados.
+- Responsabilidades estiverem definidas ou suas lacunas formalmente tratadas.
+- Segurança e restrições estiverem aprovadas.
+- Critérios de aceite estiverem testáveis.
+- Decisão formal de aprovação estiver registrada.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação do texto não implica disponibilidade das fontes nem autorização automática para execução.
+
+---
+
+## 25. Aceite da execução
+
+A execução do plano somente poderá ser considerada concluída quando:
+
+- Os entregáveis aplicáveis estiverem produzidos.
+- As fontes consultadas estiverem identificadas.
+- Os vínculos VERIFIED possuírem proveniência.
+- As fontes ausentes estiverem explicitadas.
+- Os conflitos estiverem registrados.
+- As lacunas estiverem classificadas.
+- As propostas de alteração estiverem identificadas.
+- O relatório final estiver disponível.
+- Os bloqueios estiverem transparentes.
+- A autoridade competente registrar sua decisão.
+
+**Execution Acceptance:** NOT_EVALUATED.
+
+A execução poderá terminar com resultado BLOCKED caso fontes indispensáveis permaneçam indisponíveis.
+
+---
+
+## 26. Rastreabilidade do plano
+
+### 26.1 Origem
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-01.
+- TS-EP-02.
+- TS-DOC-STD-V1.0.
+- Registros de governança documental aprovados.
+
+### 26.2 Destino
+
+- REC-OUT-01–08.
+- Matrizes de reconciliação.
+- Gap Register.
+- Traceability Matrix.
+- Change Requests.
+- Relatório de encerramento.
+- Eventual TS-ST-001.md, após autorização.
+
+### 26.3 Estado dos vínculos
+
+| Relação | Estado |
+|---|---|
+| Contexto arquitetural | APPROVED documentalmente |
+| Contexto de engenharia I00 | APPROVED documentalmente |
+| Proposta R01–R06 | AUTHORIZED_FOR_DRAFT |
+| Fontes originais | NOT_INSPECTED |
+| ADRs individuais | UNVERIFIED |
+| Componentes individuais | UNVERIFIED |
+| Pendências individuais | PARTIALLY_UNVERIFIED |
+| Histórias individuais | UNVERIFIED |
+| Entregáveis REC-OUT-01–08 | PLANNED |
+| Execução da reconciliação | NOT_STARTED |
+
+---
+
+## 27. Histórico de alterações
+
+| Version | Date | Description | Decision |
+|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-17 | Primeira proposta formal do plano R01–R06 | PENDING |
+
+---
+
+## 28. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | TS-REC-PLAN-001 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / GOV |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Plan Execution:** NOT_STARTED  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Action:** revisão e aprovação deste plano.
+
+**Restriction:** não executar R01–R06, não modificar baselines, não iniciar histórias, não implementar software, não avaliar G0 e não habilitar LIVE antes das autorizações correspondentes.
+
+## 29. Histórico e registros de referência
+
+O [anexo original](history/TS-REC-PLAN-001/IN-REVIEW.txt) está arquivado. Esta revisão permanece **IN_REVIEW**, com aprovação **PENDING** e execução **NOT_STARTED**.
+
+Os estados da seção 26 descrevem a execução específica deste plano. O checkout já contém registros anteriores de [recuperação de fontes](SOURCE-RECOVERY.md), [reconciliação de ADRs](ADR-RECONCILIATION.md), [reconciliação de pendências](PENDING-ITEM-RECONCILIATION.md) e [rastreabilidade de I00](DOC-03-I00-TRACEABILITY.md). Esses registros ficam disponíveis como insumos para a revisão do plano. A formalização de TS-ST-001 segue as condições da seção 23.
+
+[G0](G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

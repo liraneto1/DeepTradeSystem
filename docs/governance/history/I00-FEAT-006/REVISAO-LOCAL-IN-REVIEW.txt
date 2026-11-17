@@ -1,0 +1,1166 @@
+# I00-FEAT-006.md
+## TRADE SYSTEM V1 — Event Dispatcher
+
+**Document ID:** I00-FEAT-006  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-06  
+**Primary Epic:** TS-EP-02 — Data & Event Foundation  
+**Primary Domain:** D05 — Data, Events & Audit  
+**Supporting Domains:** D06 / D07  
+**Functional Owner:** Data & Event Architecture  
+**Technical Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 / V1.0 — APPROVED  
+**Epic Baseline:** TS-EP-02 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Predecessor Features:** I00-FEAT-003, I00-FEAT-004, I00-FEAT-005 — APPROVED documentalmente  
+**Approval Reference:** PENDING  
+**Domain:** D05, com apoio de D06 e D07  
+**Owner:** Data & Event Architecture, conforme responsabilidade funcional acima.  
+**Source References:** [anexo original](../governance/history/I00-FEAT-006/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md) e [fontes oficiais](../referencias/originais/)  
+**Related ADRs:** referências da seção 2.  
+**Related Components:** seção 2 e [matriz DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** referências das seções 23, 25 e 28.  
+**Dependencies:** [catálogo I00](../increments/I00-FEATURE-CATALOG.md), [TS-EP-02](../epics/TS-EP-02.md), [I00-FEAT-003](I00-FEAT-003.md), [I00-FEAT-004](I00-FEAT-004.md), [I00-FEAT-005](I00-FEAT-005.md) e dependências da seção 20.  
+**Acceptance Criteria:** seções 23, 26 e 27, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-17
+
+---
+
+## 1. Objetivo
+
+### 1.1 Objetivo principal
+
+Estabelecer um Event Dispatcher capaz de processar registros persistidos na Transactional Outbox e encaminhar eventos aos destinos autorizados de maneira confiável, rastreável, recuperável e compatível com a semântica de entrega aprovada.
+
+### 1.2 Necessidade atendida
+
+Após a confirmação de uma transação PostgreSQL, os eventos registrados na Outbox precisam ser disponibilizados aos componentes consumidores.
+
+Sem um Dispatcher controlado, podem ocorrer:
+
+- Registros pendentes sem processamento.
+- Perda silenciosa de intenção de publicação.
+- Publicações duplicadas sem identidade consistente.
+- Processamento concorrente indevido.
+- Quebra de ordenação por agregado.
+- Repetições ilimitadas sem controle.
+- Falhas sem diagnóstico.
+- Ausência de recuperação após reinício.
+- Divergência entre estado de publicação e resultado efetivo.
+
+### 1.3 Resultado demonstrável
+
+A implementação deverá demonstrar:
+
+1. Identificação de registros Outbox elegíveis.
+2. Reivindicação segura para processamento.
+3. Publicação por interface definida.
+4. Preservação da identidade do evento.
+5. Registro do resultado de publicação.
+6. Controle de tentativas e repetição.
+7. Recuperação após interrupções.
+8. Tratamento de resultado desconhecido.
+9. Ordenação por agregado quando exigida.
+10. Observabilidade e auditoria.
+11. Isolamento de ambientes.
+12. Evidências verificáveis.
+
+### 1.4 Declaração da Feature
+
+**Como** componente de infraestrutura de eventos do TRADE SYSTEM V1,  
+**quero** publicar e recuperar eventos persistidos na Outbox,  
+**para** disponibilizar alterações de estado aos consumidores autorizados sem perda silenciosa e com rastreabilidade.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines aplicáveis
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-02.
+- TS-EP-01.
+- TS-I00-FEAT-CAT-001.
+- I00-FEAT-003.
+- I00-FEAT-004.
+- I00-FEAT-005.
+- TS-DOC-STD-V1.0.
+- TS-DOC-TRC-001.
+- TS-DOC-GAP-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+
+### 2.2 ADRs
+
+As ADRs aplicáveis a eventos, mensageria, idempotência, persistência e recuperação deverão ser consultadas nos registros originais.
+
+**ADR Traceability:** UNVERIFIED.
+
+Não serão atribuídas regras a identificadores individuais sem verificação de fonte.
+
+### 2.3 Domínios
+
+| Domínio | Responsabilidade |
+|---|---|
+| D05 | Dispatcher, publicação, estado de entrega e auditoria |
+| D06 | Execução, configuração, segurança e observabilidade |
+| D07 | Contratos, testes, qualidade e evidências |
+
+### 2.4 Componentes
+
+Os identificadores dos componentes deverão ser reconciliados com o catálogo original dos 33 componentes.
+
+**Component Mapping:** UNVERIFIED.
+
+### 2.5 Fluxos arquiteturais
+
+O Dispatcher poderá sustentar fluxos F01–F10 em incrementos futuros, conforme suas interfaces e dependências.
+
+Sua implementação no I00 não significa que esses fluxos estejam concluídos.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Identificação de registros elegíveis.
+- Consulta e seleção de registros Outbox.
+- Reivindicação controlada de trabalho.
+- Processamento em lote ou unidade, conforme especificação.
+- Publicação por interface de transporte.
+- Preservação de identidade, versão e correlação.
+- Registro de resultados.
+- Controle de tentativas.
+- Retry e backoff.
+- Recuperação após interrupções.
+- Tratamento de resultado de publicação desconhecido.
+- Controle de concorrência.
+- Ordenação por agregado quando exigida.
+- Estados de falha e intervenção.
+- Logs, métricas e traces.
+- Testes de integração e resiliência.
+- Evidências de conformidade.
+
+### 3.2 Excluído
+
+- Persistência transacional inicial da Outbox, pertencente à FEAT-005.
+- Processamento de regras de negócio dos consumidores.
+- Garantia distribuída exactly-once.
+- Implementação obrigatória de Kafka.
+- Integração operacional com Binance.
+- Envio de ordens reais.
+- Motor de risco.
+- Estratégias e agentes de IA.
+- Operação PAPER qualificada.
+- Operação LIVE.
+- Homologação de G0.
+
+### 3.3 Fronteiras
+
+**I00-FEAT-005:** registra a intenção durável de publicação.
+
+**I00-FEAT-006:** seleciona, publica e acompanha o resultado da publicação.
+
+**I00-FEAT-007:** processa eventos recebidos e impede efeitos duplicados indevidos.
+
+**I00-FEAT-010:** fornece infraestrutura compartilhada de observabilidade.
+
+**I00-FEAT-013:** valida cenários de falha e recuperação.
+
+---
+
+## 4. Stack e abordagem técnica
+
+| Responsabilidade | Tecnologia ou abordagem |
+|---|---|
+| Linguagem | Python 3.12+ |
+| Persistência | PostgreSQL 17 |
+| Acesso a dados | SQLAlchemy 2 |
+| Evolução de schema | Alembic |
+| Contratos | JSON Schema / Pydantic v2 |
+| Execução local | Docker Compose |
+| Testes | pytest / Hypothesis |
+| Observabilidade | OpenTelemetry / logs JSON |
+| Origem de mensagens | Transactional Outbox |
+| Semântica proposta | At-least-once |
+| Transporte inicial | Interface a especificar |
+
+O I00 não deverá exigir Kafka ou Kubernetes como dependências obrigatórias.
+
+A implementação concreta do transporte deverá ser aprovada em especificação técnica, preservando a arquitetura e a paridade de contratos.
+
+---
+
+## 5. Modelo operacional do Dispatcher
+
+### 5.1 Unidade de processamento
+
+A unidade lógica será um registro Outbox elegível.
+
+### 5.2 Identificação
+
+Cada processamento deverá preservar:
+
+- Outbox Record ID.
+- Event ID.
+- Event Type.
+- Event Version.
+- Aggregate ID, quando aplicável.
+- Correlation ID.
+- Causation ID, quando aplicável.
+- Environment.
+- Attempt ID ou equivalente, quando necessário.
+
+### 5.3 Elegibilidade
+
+Um registro será elegível somente quando satisfizer as regras aprovadas de estado, tempo de tentativa, concorrência e ordenação.
+
+### 5.4 Reivindicação
+
+O Dispatcher deverá adquirir responsabilidade temporária pelo registro sem permitir que trabalhadores concorrentes produzam transições conflitantes.
+
+### 5.5 Publicação
+
+O evento deverá ser encaminhado ao destino autorizado conforme contrato.
+
+### 5.6 Resultado
+
+O resultado deverá ser classificado e registrado.
+
+### 5.7 Finalização
+
+Uma publicação somente poderá ser marcada como confirmada quando houver confirmação suficiente segundo a semântica do transporte.
+
+### 5.8 Recuperação
+
+Registros não concluídos deverão permanecer identificáveis para nova avaliação.
+
+---
+
+## 6. Semântica de entrega
+
+### 6.1 At-least-once
+
+A semântica inicial proposta é at-least-once.
+
+Um evento confirmado na Outbox deverá permanecer elegível para novas tentativas até confirmação de publicação ou tratamento explícito de bloqueio.
+
+### 6.2 Duplicidade
+
+Uma mesma mensagem poderá ser entregue mais de uma vez.
+
+### 6.3 Identidade
+
+A repetição de publicação do mesmo evento lógico deverá preservar seu Event ID.
+
+### 6.4 Exactly-once
+
+Não será declarada garantia distribuída exactly-once.
+
+### 6.5 Responsabilidade do consumidor
+
+O consumidor deverá aplicar idempotência dos efeitos, conforme I00-FEAT-007.
+
+### 6.6 Limite de confirmação
+
+A confirmação de publicação não equivale à confirmação de processamento de negócio pelo consumidor.
+
+Esses estados deverão permanecer semanticamente distintos.
+
+---
+
+## 7. Ciclo de vida e estados
+
+### 7.1 Estados conceituais
+
+O Dispatcher deverá reconhecer situações equivalentes a:
+
+- PENDING — registro elegível ou aguardando elegibilidade.
+- CLAIMED — registro reivindicado para processamento.
+- PUBLISHED — publicação confirmada pelo transporte.
+- RETRY_PENDING — falha recuperável aguardando nova tentativa.
+- BLOCKED — processamento suspenso por condição que exige intervenção.
+
+### 7.2 Estado desconhecido
+
+Um resultado de publicação desconhecido deverá ser representado explicitamente no resultado da tentativa, mesmo que o registro retorne posteriormente a um estado elegível.
+
+### 7.3 Estados definitivos
+
+A nomenclatura, os campos e as transições definitivas deverão ser formalizados em OutboxRecord.v1 e na especificação do Dispatcher.
+
+### 7.4 Transições
+
+Transições inválidas deverão ser rejeitadas.
+
+### 7.5 Auditoria
+
+As transições relevantes deverão preservar rastreabilidade.
+
+### 7.6 Recuperação
+
+Registros CLAIMED abandonados após falha de processo deverão possuir mecanismo controlado de recuperação.
+
+### 7.7 Retenção
+
+A remoção de registros publicados deverá seguir política de retenção aprovada, sem comprometer auditoria ou reconciliação.
+
+---
+
+## 8. Seleção e reivindicação de registros
+
+### 8.1 Seleção
+
+O Dispatcher deverá selecionar registros conforme elegibilidade e capacidade operacional.
+
+### 8.2 Concorrência
+
+Múltiplos workers não deverão produzir atualizações conflitantes sobre o mesmo registro.
+
+### 8.3 Estratégia técnica
+
+Poderão ser considerados mecanismos como locking, leasing ou reivindicação atômica.
+
+A estratégia definitiva deverá ser especificada e aprovada antes da implementação.
+
+### 8.4 Tempo de posse
+
+Caso seja utilizado leasing, a validade da reivindicação deverá ser verificável.
+
+### 8.5 Recuperação de posse
+
+Uma reivindicação expirada deverá poder ser recuperada sem perda do registro.
+
+### 8.6 Fencing
+
+Quando necessário para impedir atualização por worker com posse expirada, deverá ser utilizado mecanismo de versão ou fencing equivalente.
+
+### 8.7 Starvation
+
+A seleção deverá evitar que registros elegíveis permaneçam indefinidamente sem avaliação por falhas de priorização.
+
+### 8.8 Limites
+
+A escolha de parâmetros quantitativos de lote, concorrência e tempo deverá ocorrer no refinamento técnico.
+
+---
+
+## 9. Interface de publicação
+
+### 9.1 Abstração
+
+O Dispatcher deverá publicar por interface explícita, desacoplada da persistência de negócio.
+
+### 9.2 Responsabilidades da interface
+
+A interface deverá permitir:
+
+- Receber evento versionado.
+- Identificar destino autorizado.
+- Preservar identidade e correlação.
+- Informar resultado de publicação.
+- Distinguir falha conhecida de resultado desconhecido.
+- Produzir informações de diagnóstico.
+
+### 9.3 Implementação inicial
+
+O transporte concreto deverá ser definido nas especificações técnicas e de contrato.
+
+### 9.4 Confirmação
+
+Uma confirmação deverá representar apenas a garantia efetivamente oferecida pelo transporte.
+
+### 9.5 Falha
+
+Falhas deverão ser classificadas para tratamento.
+
+### 9.6 Compatibilidade
+
+Mudanças na interface deverão seguir versionamento e Change Control.
+
+---
+
+## 10. Retry e backoff
+
+### 10.1 Objetivo
+
+Permitir repetição controlada de publicações que não foram confirmadas.
+
+### 10.2 Tentativas
+
+Cada tentativa deverá ser identificável e auditável.
+
+### 10.3 Backoff
+
+A política deverá evitar repetição agressiva que provoque sobrecarga.
+
+### 10.4 Jitter
+
+Poderá ser utilizado para reduzir sincronização indevida de tentativas concorrentes.
+
+### 10.5 Limites
+
+O número de tentativas, os intervalos e os limites de tempo deverão ser definidos e aprovados.
+
+### 10.6 Falhas transitórias
+
+Deverão permitir repetição quando tecnicamente apropriado.
+
+### 10.7 Falhas permanentes
+
+Deverão gerar bloqueio ou encaminhamento para tratamento explícito.
+
+### 10.8 Exaustão
+
+A exaustão da política de retry não poderá causar descarte silencioso do evento.
+
+### 10.9 Reprocessamento manual
+
+Deverá exigir autorização e registrar a ação.
+
+---
+
+## 11. Resultado de publicação desconhecido
+
+### 11.1 Situação
+
+Uma falha de rede ou interrupção poderá ocorrer depois que o transporte recebeu o evento, mas antes que o Dispatcher receba a confirmação.
+
+### 11.2 Regra
+
+O Dispatcher não poderá assumir automaticamente que a publicação falhou ou foi concluída.
+
+### 11.3 Tratamento
+
+Deverá preservar o registro, identificar a incerteza e permitir reconciliação ou repetição segura.
+
+### 11.4 Duplicidade possível
+
+Uma repetição poderá gerar nova entrega do mesmo evento lógico.
+
+### 11.5 Identidade preservada
+
+O Event ID deverá permanecer estável.
+
+### 11.6 Idempotência
+
+O consumidor deverá evitar duplicação indevida dos efeitos.
+
+### 11.7 Evidência
+
+Os testes deverão demonstrar esse comportamento.
+
+---
+
+## 12. Ordenação por agregado
+
+### 12.1 Aplicabilidade
+
+A ordenação será obrigatória apenas para fluxos que possuam requisito formal de sequência.
+
+### 12.2 Identificação
+
+O evento deverá possuir informações suficientes para identificar agregado e sequência quando aplicável.
+
+### 12.3 Regra
+
+O Dispatcher não deverá publicar evento posterior de maneira que viole a ordenação obrigatória.
+
+### 12.4 Falha anterior
+
+Uma falha em evento anterior deverá impedir avanço incompatível com a regra de sequência.
+
+### 12.5 Concorrência
+
+A execução paralela deverá respeitar os limites de ordenação.
+
+### 12.6 Escopo
+
+Não será exigida ordenação global de todos os eventos sem requisito explícito.
+
+### 12.7 Verificação
+
+Os testes deverão incluir publicação concorrente, falha intermediária e recuperação.
+
+---
+
+## 13. Idempotência e duplicidade
+
+### 13.1 Identidade estável
+
+Tentativas de publicação do mesmo evento lógico deverão preservar sua identidade.
+
+### 13.2 Identidade da tentativa
+
+Tentativas distintas poderão possuir identificadores próprios para auditoria.
+
+### 13.3 Deduplicação no consumidor
+
+Pertence à I00-FEAT-007.
+
+### 13.4 Confirmação de publicação
+
+A confirmação não comprova ausência de entregas anteriores.
+
+### 13.5 Reprocessamento
+
+O reprocessamento deverá preservar a semântica original do evento.
+
+### 13.6 Limites
+
+O Dispatcher não poderá prometer efeitos exactly-once nos consumidores.
+
+---
+
+## 14. Falhas e recuperação
+
+### 14.1 Falha antes da reivindicação
+
+O registro deverá permanecer elegível.
+
+### 14.2 Falha após reivindicação
+
+O mecanismo de recuperação deverá permitir retomar o processamento quando a posse anterior não estiver mais válida.
+
+### 14.3 Falha antes da publicação
+
+O registro deverá permanecer recuperável.
+
+### 14.4 Falha durante a publicação
+
+O resultado deverá ser classificado como falha conhecida ou desconhecida, conforme evidência disponível.
+
+### 14.5 Falha após publicação confirmada
+
+Caso o Dispatcher falhe antes de registrar o sucesso, uma nova tentativa poderá ocorrer.
+
+### 14.6 Falha de persistência
+
+O estado não deverá ser declarado atualizado sem confirmação do banco.
+
+### 14.7 Falha de transporte
+
+Deverá ser tratada conforme política de retry e bloqueio.
+
+### 14.8 Falha de autorização
+
+A publicação deverá ser recusada.
+
+### 14.9 Reinício
+
+O Dispatcher deverá reconstruir o trabalho pendente a partir do estado persistido.
+
+### 14.10 Falha persistente
+
+Deverá gerar diagnóstico, alerta e tratamento explícito.
+
+### 14.11 Recuperação manual
+
+Deverá ser autorizada, rastreável e idempotente quanto à operação administrativa.
+
+---
+
+## 15. Persistência e integridade
+
+### 15.1 Fonte de registros
+
+A Outbox persistida no PostgreSQL será a fonte inicial de trabalho.
+
+### 15.2 Transações
+
+As atualizações do estado de publicação deverão utilizar transações apropriadas.
+
+### 15.3 Atomicidade de negócio
+
+O Dispatcher não poderá alterar retroativamente a atomicidade já estabelecida pela FEAT-005.
+
+### 15.4 Constraints
+
+As transições e identidades deverão respeitar as constraints aprovadas.
+
+### 15.5 Concorrência
+
+Atualizações concorrentes deverão preservar integridade.
+
+### 15.6 Histórico
+
+As informações necessárias para auditoria deverão permanecer disponíveis.
+
+### 15.7 Migrations
+
+Alterações no schema deverão seguir I00-FEAT-004.
+
+### 15.8 Retenção
+
+A política de retenção deverá ser aprovada antes da exclusão automatizada de registros.
+
+---
+
+## 16. Contratos e interfaces
+
+### 16.1 OutboxRecord.v1
+
+Deverá estabelecer:
+
+- Identidade.
+- Estado.
+- Elegibilidade.
+- Tentativas.
+- Informações de concorrência.
+- Timestamps.
+- Correlação.
+- Resultado de publicação.
+
+### 16.2 EventEnvelope.v1
+
+Deverá estabelecer:
+
+- Event ID.
+- Event Type.
+- Event Version.
+- Producer.
+- Aggregate ID, quando aplicável.
+- Correlation ID.
+- Causation ID, quando aplicável.
+- Timestamp.
+- Payload.
+
+### 16.3 Interface de transporte
+
+Deverá definir entrada, resultado e classificação de falhas.
+
+### 16.4 Interface de observabilidade
+
+Deverá permitir registrar execução, falhas e recuperação.
+
+### 16.5 Interface administrativa
+
+Operações de reprocessamento ou desbloqueio, quando previstas, deverão possuir autorização e auditoria.
+
+### 16.6 Estado
+
+**Contract Specifications:** PENDING.
+
+Os schemas e as interfaces definitivas deverão ser aprovados individualmente.
+
+---
+
+## 17. Segurança e segregação
+
+### 17.1 Ambientes
+
+TRAINING, PAPER e LIVE deverão permanecer segregados.
+
+### 17.2 I00
+
+O Dispatcher deverá operar exclusivamente em ambiente controlado.
+
+### 17.3 LIVE
+
+O Dispatcher do I00 não poderá acessar infraestrutura ou credenciais LIVE.
+
+### 17.4 Destinos
+
+Somente destinos autorizados poderão receber eventos.
+
+### 17.5 Autenticação
+
+A identidade do componente deverá ser verificada conforme a política aplicável.
+
+### 17.6 Autorização
+
+A publicação deverá respeitar as permissões do componente e do ambiente.
+
+### 17.7 Segredos
+
+Credenciais não deverão ser incluídas nos eventos, logs ou evidências.
+
+### 17.8 Execução financeira
+
+A publicação de um evento não representa autorização para executar uma ordem financeira.
+
+### 17.9 Autoridade
+
+Os fluxos futuros deverão preservar Control → Risk → Execution.
+
+### 17.10 Falha segura
+
+Falhas críticas de autorização ou configuração deverão impedir publicação não autorizada.
+
+---
+
+## 18. Observabilidade
+
+### 18.1 Logs
+
+Registrar, conforme aplicabilidade:
+
+- Dispatcher Run ID.
+- Worker ID.
+- Outbox Record ID.
+- Event ID.
+- Attempt ID.
+- Correlation ID.
+- Ambiente.
+- Resultado.
+- Categoria de falha.
+- Timestamp.
+
+### 18.2 Métricas
+
+As métricas poderão incluir:
+
+- Registros elegíveis.
+- Registros pendentes.
+- Idade do registro mais antigo.
+- Tentativas de publicação.
+- Publicações confirmadas.
+- Falhas transitórias.
+- Falhas permanentes.
+- Resultados desconhecidos.
+- Registros bloqueados.
+- Recuperações.
+- Latência de publicação.
+- Duração de reivindicações.
+
+### 18.3 Traces
+
+Deverá ser possível correlacionar a operação de origem, o registro Outbox e a tentativa de publicação.
+
+### 18.4 Alertas
+
+Deverão existir condições para sinalizar acúmulo, falhas persistentes, registros bloqueados e recuperação anormal.
+
+### 18.5 Limiares
+
+Os valores quantitativos deverão ser definidos e aprovados nas especificações técnicas.
+
+### 18.6 Auditoria
+
+A trilha deverá permitir reconstruir tentativas e resultados sem expor informações sensíveis.
+
+---
+
+## 19. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação |
+|---|---|---|
+| Confiabilidade | Sem perda silenciosa de registros elegíveis | Testes de falha |
+| Recuperabilidade | Retomada após interrupção | Testes de reinício |
+| Idempotência | Identidade preservada nas repetições | Testes de retry |
+| Concorrência | Reivindicação e transições seguras | Testes concorrentes |
+| Ordenação | Sequência preservada quando exigida | Testes por agregado |
+| Auditabilidade | Tentativas e resultados rastreáveis | Logs e registros |
+| Segurança | Destinos e ambientes autorizados | Testes de autorização |
+| Observabilidade | Falhas e pendências diagnosticáveis | Métricas e traces |
+| Reprodutibilidade | Configuração e testes repetíveis | Testes em ambiente limpo |
+| Manutenibilidade | Transporte desacoplado | Revisão de interfaces |
+
+Os limiares quantitativos permanecerão TBD até aprovação.
+
+---
+
+## 20. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| I00-FEAT-003 | Contratos versionados | APPROVED documentalmente |
+| I00-FEAT-004 | PostgreSQL & Migrations | APPROVED documentalmente |
+| I00-FEAT-005 | Transactional Outbox | APPROVED documentalmente |
+| TS-EP-02 | Épico | APPROVED |
+| TS-I00-FEAT-CAT-001 | Catálogo | APPROVED |
+| OutboxRecord.v1 | Contrato | SPECIFICATION_PENDING |
+| EventEnvelope.v1 | Contrato | SPECIFICATION_PENDING |
+| Interface de transporte | Interface técnica | TBD |
+| Estratégia de concorrência | Decisão técnica | TBD |
+| Política de retry | Decisão técnica | TBD |
+| ADRs individuais | Fonte normativa | UNVERIFIED |
+| Catálogo de componentes | Fonte arquitetural | UNVERIFIED |
+| Repositório | Fonte técnica | NOT_INSPECTED |
+| Owners | Governança | TBD |
+
+### 20.1 Dependências posteriores
+
+- I00-FEAT-007 — Idempotent Consumers.
+- I00-FEAT-013 — Failure & Recovery Validation.
+- I00-FEAT-014 — Evidence & G0 Preparation.
+
+### 20.2 História relacionada
+
+TS-ST-004 — vínculo PROPOSED, compartilhado com I00-FEAT-007.
+
+A descrição original deverá ser conferida no backlog antes de confirmar seu escopo e ownership.
+
+---
+
+## 21. Comportamento esperado
+
+### 21.1 Publicação bem-sucedida
+
+**Given:** registro Outbox elegível e destino autorizado.
+
+**When:** o Dispatcher reivindicar e publicar o evento com confirmação suficiente.
+
+**Then:** o resultado deverá ser registrado como publicação confirmada.
+
+### 21.2 Falha transitória
+
+**Given:** falha recuperável de transporte.
+
+**When:** a tentativa falhar.
+
+**Then:** o registro deverá permanecer recuperável conforme política de retry.
+
+### 21.3 Resultado desconhecido
+
+**Given:** publicação possivelmente recebida sem confirmação ao Dispatcher.
+
+**When:** ocorrer interrupção ou timeout.
+
+**Then:** o resultado deverá permanecer explicitamente incerto, permitindo reconciliação ou repetição segura.
+
+### 21.4 Trabalhadores concorrentes
+
+**Given:** dois workers tentando processar o mesmo registro.
+
+**When:** a reivindicação ocorrer.
+
+**Then:** as transições persistidas deverão preservar integridade e controle de posse.
+
+### 21.5 Reinício
+
+**Given:** Dispatcher interrompido com registros pendentes.
+
+**When:** o processo reiniciar.
+
+**Then:** os registros recuperáveis deverão ser identificados e reavaliados.
+
+### 21.6 Ordenação obrigatória
+
+**Given:** eventos sequenciais do mesmo agregado.
+
+**When:** um evento anterior não estiver publicável.
+
+**Then:** eventos posteriores não deverão violar a ordem exigida.
+
+### 21.7 Destino não autorizado
+
+**Given:** destino ou ambiente incompatível com a configuração aprovada.
+
+**When:** a publicação for solicitada.
+
+**Then:** a operação deverá ser bloqueada e auditada.
+
+### 21.8 Retry esgotado
+
+**Given:** falhas persistentes após o limite de tentativas.
+
+**When:** a política atingir seu limite.
+
+**Then:** o registro deverá permanecer rastreável e ser encaminhado para tratamento explícito, sem descarte silencioso.
+
+---
+
+## 22. Estratégia de testes
+
+### 22.1 Seleção
+
+Verificar identificação de registros elegíveis e exclusão dos inelegíveis.
+
+### 22.2 Reivindicação
+
+Verificar posse e transições sob concorrência.
+
+### 22.3 Publicação
+
+Verificar envio e confirmação pelo transporte de teste.
+
+### 22.4 Retry
+
+Verificar repetição controlada e preservação de identidade.
+
+### 22.5 Backoff
+
+Verificar respeito à política configurada.
+
+### 22.6 Resultado desconhecido
+
+Simular confirmação perdida após possível recebimento pelo destino.
+
+### 22.7 Reinício
+
+Interromper o Dispatcher e verificar recuperação.
+
+### 22.8 Concorrência
+
+Executar múltiplos workers sobre registros compartilhados.
+
+### 22.9 Ordenação
+
+Verificar sequência por agregado quando exigida.
+
+### 22.10 Falhas permanentes
+
+Verificar bloqueio e tratamento explícito.
+
+### 22.11 Contratos
+
+Verificar conformidade com OutboxRecord.v1 e EventEnvelope.v1.
+
+### 22.12 Segurança
+
+Verificar autorização, segregação e bloqueio LIVE.
+
+### 22.13 Observabilidade
+
+Verificar logs, métricas, traces e correlação.
+
+### 22.14 Property-Based
+
+Verificar invariantes de identidade, transição e recuperação quando aplicável.
+
+### 22.15 End-to-End
+
+Verificar o fluxo controlado:
+
+**Outbox persistida → Dispatcher → Transporte de teste → Confirmação/Retry → Auditoria.**
+
+Nenhum teste poderá enviar ordens financeiras reais.
+
+---
+
+## 23. Critérios de aceite
+
+Os critérios abaixo são propostos para o aceite da implementação de I00-FEAT-006.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| FEAT006-AC01 | Registros elegíveis identificados corretamente | Testes de seleção |
+| FEAT006-AC02 | Reivindicação concorrente segura | Testes de concorrência |
+| FEAT006-AC03 | Interface de publicação definida e validada | Testes de contrato |
+| FEAT006-AC04 | Publicação confirmada registrada corretamente | Testes de integração |
+| FEAT006-AC05 | Identidade do evento preservada | Testes de repetição |
+| FEAT006-AC06 | Retry controlado implementado | Testes de falha transitória |
+| FEAT006-AC07 | Backoff respeitado | Testes de temporização |
+| FEAT006-AC08 | Resultado desconhecido tratado explicitamente | Testes de incerteza |
+| FEAT006-AC09 | Recuperação após reinício demonstrada | Testes de resiliência |
+| FEAT006-AC10 | Ordenação preservada quando exigida | Testes por agregado |
+| FEAT006-AC11 | Falhas permanentes não geram descarte silencioso | Testes de bloqueio |
+| FEAT006-AC12 | Estados e transições conformes | Testes de máquina de estados |
+| FEAT006-AC13 | Contratos Outbox/Event conformes | Testes de contrato |
+| FEAT006-AC14 | Segurança e isolamento preservados | Testes de autorização |
+| FEAT006-AC15 | Observabilidade e auditoria disponíveis | Logs, métricas e traces |
+| FEAT006-AC16 | Rastreabilidade consistente | Matriz verificada |
+| FEAT006-AC17 | Evidências verificáveis | Evidence Bundle I00 |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+### 23.1 Critérios superiores relacionados
+
+- EP02-AC05 — Dispatcher processa registros elegíveis.
+- EP02-AC06 — Falhas de publicação são recuperáveis.
+- EP02-AC08 — Ordenação aplicável é preservada.
+- EP02-AC09 — Processamento auditável.
+- I00-AC07 — Ordenação.
+- I00-AC08 — Resiliência.
+- I00-AC09 — Telemetria.
+- I00-AC12 — Evidências verificáveis.
+
+Os vínculos deverão ser confirmados na Traceability Matrix.
+
+---
+
+## 24. Evidências esperadas
+
+| Referência provisória | Evidência |
+|---|---|
+| EV-FEAT006-01 | Testes de seleção |
+| EV-FEAT006-02 | Testes de reivindicação |
+| EV-FEAT006-03 | Contrato de publicação |
+| EV-FEAT006-04 | Testes de publicação |
+| EV-FEAT006-05 | Testes de identidade |
+| EV-FEAT006-06 | Testes de retry |
+| EV-FEAT006-07 | Testes de backoff |
+| EV-FEAT006-08 | Testes de resultado desconhecido |
+| EV-FEAT006-09 | Testes de reinício |
+| EV-FEAT006-10 | Testes de ordenação |
+| EV-FEAT006-11 | Testes de falha permanente |
+| EV-FEAT006-12 | Testes de transição |
+| EV-FEAT006-13 | Testes de contrato |
+| EV-FEAT006-14 | Testes de segurança |
+| EV-FEAT006-15 | Relatório de observabilidade |
+| EV-FEAT006-16 | Matriz de rastreabilidade |
+| EV-FEAT006-17 | Manifesto de integridade |
+
+Os identificadores são provisórios e deverão ser reconciliados com a convenção oficial de Evidence Bundle.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 25. Riscos e lacunas
+
+| Referência | Risco ou lacuna | Tratamento |
+|---|---|---|
+| DOC-GAP-003 | ADRs individuais não verificadas | Conferir fontes |
+| DOC-GAP-004 | ADRs técnicas não formalizadas integralmente | Recuperar registros |
+| DOC-GAP-005 | Rastreabilidade incompleta | Confirmar vínculos |
+| DOC-GAP-006 | História TS-ST-004 não reconciliada | Verificar backlog |
+| DOC-GAP-007 | Repositório não auditado | Inspecionar antes de implementar |
+| DOC-GAP-008 | Owners pendentes | Formalizar responsabilidades |
+
+### 25.1 Riscos técnicos
+
+- Publicação duplicada.
+- Confirmação registrada sem evidência suficiente.
+- Resultado desconhecido tratado como sucesso.
+- Reivindicação concorrente inconsistente.
+- Worker com posse expirada atualizando estado.
+- Perda de ordenação.
+- Retry agressivo.
+- Registros permanentemente pendentes.
+- Descarte silencioso após falhas.
+- Falha de recuperação após reinício.
+- Publicação para destino não autorizado.
+- Divergência entre schema e implementação.
+
+### 25.2 Tratamento
+
+Os riscos deverão ser classificados, refinados e associados a testes e decisões técnicas.
+
+A aprovação da Feature não encerrará automaticamente nenhuma lacuna.
+
+---
+
+## 26. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. ADRs aplicáveis estiverem verificadas.
+3. Componentes e owners estiverem confirmados.
+4. Infraestrutura PostgreSQL estiver disponível.
+5. Transactional Outbox estiver disponível.
+6. OutboxRecord.v1 estiver especificado.
+7. EventEnvelope.v1 estiver especificado.
+8. Interface de transporte estiver definida.
+9. Estados e transições estiverem aprovados.
+10. Estratégia de concorrência estiver aprovada.
+11. Política de retry e backoff estiver definida.
+12. Tratamento de resultado desconhecido estiver especificado.
+13. Política de ordenação estiver definida.
+14. História TS-ST-004 estiver refinada, caso seu vínculo seja confirmado.
+15. Critérios de aceite estiverem testáveis.
+16. Testes e evidências estiverem especificados.
+17. Segurança e isolamento estiverem definidos.
+18. Lacunas bloqueantes estiverem resolvidas.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação desta especificação não altera automaticamente esse estado.
+
+---
+
+## 27. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- O Dispatcher estiver implementado.
+- Os contratos aplicáveis estiverem conformes.
+- Os critérios FEAT006-AC01–AC17 estiverem atendidos.
+- A seleção e a reivindicação estiverem validadas.
+- As publicações e confirmações estiverem verificadas.
+- Retry, backoff e recuperação estiverem demonstrados.
+- O resultado desconhecido estiver corretamente tratado.
+- A concorrência e a ordenação estiverem validadas.
+- A segurança e o isolamento estiverem preservados.
+- As evidências estiverem verificadas.
+- A rastreabilidade estiver atualizada.
+- As lacunas bloqueantes estiverem resolvidas.
+- A autoridade competente registrar o aceite.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite desta Feature não substitui o aceite de TS-EP-02, I00 ou G0.
+
+---
+
+## 28. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-02 → I00-FEAT-006 → TS-ST-004 → Contrato → Teste → Evidência**
+
+### Estados iniciais
+
+| Relação | Estado |
+|---|---|
+| Epic Link | VERIFIED documentalmente |
+| Work Package Link | VERIFIED documentalmente |
+| Feature Catalog Link | VERIFIED documentalmente |
+| Predecessor Feature Links | VERIFIED documentalmente |
+| Story Link | PROPOSED |
+| ADR Links | UNVERIFIED |
+| Component Links | UNVERIFIED |
+| Requirement Links | UNVERIFIED |
+| Contract Specifications | PENDING |
+| Test Links | PLANNED |
+| Evidence Links | PLANNED |
+
+VERIFIED documentalmente não comprova implementação.
+
+---
+
+## 29. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-17 | PENDING | Especificação inicial Event Dispatcher | PENDING |
+
+---
+
+## 30. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-006 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEAT-007.md
+
+**Restriction:** não avançar antes da aprovação desta Feature.
+
+## 31. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/I00-FEAT-006/IN-REVIEW.txt) está arquivado. A especificação permanece **IN_REVIEW**, com aprovação **PENDING**.
+
+A [evidência histórica de I00-06](../evidence/I00-06-dispatcher.md) registra ordenação de versões pendentes, retry com retenção do evento e republicação após interrupção. O [registro mestre de I00](../backlog/registro-mestre-i00.md) vincula o pacote a AC07, AC08 e AC09.
+
+A [política de ordenação DOC-04](../governance/DOC-04-OUTBOX-ORDERING.md) e as [definições de métricas DOC-05](../governance/DOC-05-OUTBOX-METRICS.md) têm aprovação documental. As validações restantes de AC07 e AC09 constam do [dossiê de G0](../governance/G0-REVIEW-DOSSIER.md). O aceite consolidado da Feature permanece pendente. G0 segue em revisão e LIVE permanece indisponível.

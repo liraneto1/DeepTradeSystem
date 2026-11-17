@@ -1,0 +1,488 @@
+# STORY-TEMPLATE.md
+## TRADE SYSTEM V1 — Technical Story Specification Template
+
+**Document ID:** TS-DOC-TPL-STORY-001  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Domain:** GLOBAL / D07  
+**Applicable Increments:** I00–I09  
+**Owner:** Architecture & Documentation Governance  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Document Registry:** TS-DOC-REG-001 — APPROVED  
+**Gap Register:** TS-DOC-GAP-001 — APPROVED  
+**Traceability Matrix:** TS-DOC-TRC-001 — APPROVED  
+**Approval Register:** TS-DOC-APR-001 — APPROVED  
+**Change Log:** TS-DOC-CHG-001 — APPROVED  
+**Increment Template:** TS-DOC-TPL-INC-001 — APPROVED  
+**Epic Template:** TS-DOC-TPL-EPIC-001 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Approval Reference:** PENDING  
+**Last Updated:** 2026-11-16
+
+---
+
+# TEMPLATE — TECHNICAL STORY SPECIFICATION
+
+> **Instrução de utilização:** preencher os campos exclusivamente com informações verificadas. Não inventar requisitos, ADRs, pendências, contratos, testes executados ou evidências. Informações desconhecidas deverão permanecer `TBD`, com referência à lacuna correspondente.
+
+## 1. Identificação
+
+| Campo | Valor |
+|---|---|
+| Story ID | [TS-ST-NNN] |
+| Story Title | [Título] |
+| Specification Version | [Versão] |
+| Status | [DRAFT / IN_REVIEW / APPROVED / SUPERSEDED] |
+| Work Status | [IDENTIFIED / REFINED / READY / IN_PROGRESS / IN_REVIEW / VALIDATED / DONE / BLOCKED] |
+| Primary Epic | [TS-EP-XX] |
+| Primary Feature | [IXX-FEAT-NNN] |
+| Increment | [IXX] |
+| Primary Domain | [DXX] |
+| Related Components | [DXX-CYY] |
+| Related ADRs | [IDs] |
+| Related Requirements | [PXX] |
+| Functional Owner | [Responsável] |
+| Technical Owner | [Responsável] |
+| QA Owner | [Responsável] |
+| Priority | [Prioridade] |
+| Estimate | [Estimativa fundamentada ou TBD] |
+| Approval Reference | [Referência ou PENDING] |
+| Last Updated | [Data] |
+
+O identificador da história deverá permanecer estável após seu registro.
+
+O estado documental e o estado de execução deverão ser controlados separadamente.
+
+## 2. História técnica
+
+### 2.1 Objetivo
+
+[Descrever o resultado técnico esperado.]
+
+### 2.2 Necessidade atendida
+
+[Identificar o requisito, problema ou capacidade que justifica a história.]
+
+### 2.3 Declaração da história
+
+**Como** [ator técnico ou componente responsável],  
+**quero** [capacidade ou comportamento],  
+**para** [resultado ou benefício verificável].
+
+Quando o formato Como/Quero/Para não for adequado, poderá ser utilizada uma descrição técnica objetiva, desde que o comportamento esperado permaneça verificável.
+
+### 2.4 Resultado demonstrável
+
+[Descrever o que poderá ser observado ou executado para demonstrar a entrega.]
+
+## 3. Contexto arquitetural
+
+### 3.1 Baselines
+
+[Relacionar baselines aplicáveis.]
+
+### 3.2 ADRs
+
+| ADR ID | Regra aplicável | Impacto | Verificação |
+|---|---|---|---|
+| [ADR] | [Regra verificada] | [Impacto] | [Estado] |
+
+### 3.3 Componentes
+
+| Component ID | Responsabilidade | Interface |
+|---|---|---|
+| [DXX-CYY] | [Responsabilidade] | [Interface] |
+
+### 3.4 Requisitos e pendências
+
+| Requirement ID | Descrição | Fonte | Status |
+|---|---|---|---|
+| [PXX] | [Descrição original] | [Referência] | [Estado] |
+
+### 3.5 Fluxos relacionados
+
+[Relacionar F01–F10 conforme aplicabilidade.]
+
+## 4. Escopo
+
+### 4.1 Incluído
+
+[Descrever comportamentos e entregas incluídos.]
+
+### 4.2 Excluído
+
+[Descrever o que não será implementado.]
+
+### 4.3 Premissas
+
+[Registrar premissas verificadas ou pendentes.]
+
+### 4.4 Restrições
+
+[Registrar restrições técnicas, operacionais e de segurança.]
+
+### 4.5 Limites de responsabilidade
+
+[Definir fronteiras com outras histórias e componentes.]
+
+## 5. Pré-condições
+
+[Descrever estados, contratos, dados, permissões e dependências necessários para execução.]
+
+Cada pré-condição deverá ser verificável ou explicitamente identificada como dependência.
+
+## 6. Comportamento esperado
+
+### 6.1 Fluxo principal
+
+1. [Condição inicial.]
+2. [Entrada ou estímulo.]
+3. [Processamento esperado.]
+4. [Resultado.]
+5. [Estado final.]
+
+### 6.2 Fluxos alternativos
+
+[Descrever variações válidas.]
+
+### 6.3 Rejeições
+
+[Descrever condições de rejeição e respostas esperadas.]
+
+### 6.4 Falhas
+
+[Descrever falhas, indisponibilidade, timeout, duplicidade e inconsistência aplicáveis.]
+
+### 6.5 Recuperação
+
+[Descrever como o sistema deverá recuperar ou bloquear a operação.]
+
+### 6.6 Invariantes
+
+[Relacionar propriedades que deverão permanecer verdadeiras.]
+
+## 7. Contratos e interfaces
+
+| Contract ID | Versão | Tipo | Producer | Consumer | Status |
+|---|---|---|---|---|---|
+| [Contrato] | [Versão] | [API/Command/Event/Query] | [Producer] | [Consumer] | [Estado] |
+
+### 7.1 Entradas
+
+[Definir dados recebidos.]
+
+### 7.2 Saídas
+
+[Definir resultados produzidos.]
+
+### 7.3 Validações
+
+[Definir regras de validação.]
+
+### 7.4 Erros
+
+[Definir erros tipados e respostas.]
+
+### 7.5 Compatibilidade
+
+[Definir requisitos de versionamento.]
+
+Os schemas deverão ser referenciados por fonte autoritativa.
+
+## 8. Dados e persistência
+
+### 8.1 Entidades
+
+[Relacionar entidades.]
+
+### 8.2 Ownership
+
+[Definir quem pode alterar os dados.]
+
+### 8.3 Consistência
+
+[Definir requisitos transacionais.]
+
+### 8.4 Idempotência
+
+[Definir chaves e comportamento sob repetição.]
+
+### 8.5 Ordenação
+
+[Definir regras quando aplicáveis.]
+
+### 8.6 Auditoria
+
+[Definir registros necessários.]
+
+### 8.7 Migrações
+
+[Definir alterações de schema quando aplicáveis.]
+
+## 9. Requisitos não funcionais
+
+| Categoria | Requisito | Critério | Fonte |
+|---|---|---|---|
+| Performance | [Requisito] | [Critério] | [Fonte] |
+| Reliability | [Requisito] | [Critério] | [Fonte] |
+| Security | [Requisito] | [Critério] | [Fonte] |
+| Observability | [Requisito] | [Critério] | [Fonte] |
+| Maintainability | [Requisito] | [Critério] | [Fonte] |
+| Auditability | [Requisito] | [Critério] | [Fonte] |
+
+Limites quantitativos não aprovados deverão permanecer `TBD`.
+
+## 10. Dependências
+
+| Dependency ID | Tipo | Descrição | Status |
+|---|---|---|---|
+| [ID] | [Story/Contract/Component/External] | [Descrição] | [Estado] |
+
+Dependências bloqueantes deverão impedir a transição para READY.
+
+## 11. Critérios de aceite
+
+Cada critério deverá possuir identificador único e resultado verificável.
+
+| Acceptance ID | Critério | Método de verificação | Resultado esperado |
+|---|---|---|---|
+| [TS-ST-NNN-AC01] | [Critério] | [Método] | [Resultado] |
+
+Os critérios deverão abranger os cenários aplicáveis de:
+
+- Sucesso.
+- Rejeição.
+- Falha.
+- Recuperação.
+- Idempotência.
+- Segurança.
+- Observabilidade.
+- Compatibilidade.
+- Auditoria.
+
+Critérios não aplicáveis deverão possuir justificativa.
+
+## 12. Estratégia de testes
+
+| Test ID | Tipo | Cenário | Critério associado | Resultado esperado |
+|---|---|---|---|---|
+| [TS-TEST-NNN] | [Tipo] | [Cenário] | [Acceptance ID] | [Resultado] |
+
+### 12.1 Testes unitários
+
+[Definir testes necessários.]
+
+### 12.2 Testes de contrato
+
+[Definir validações de schema e compatibilidade.]
+
+### 12.3 Testes de integração
+
+[Definir interações entre componentes.]
+
+### 12.4 Testes baseados em propriedades
+
+[Definir invariantes a testar.]
+
+### 12.5 Testes E2E
+
+[Definir cenários completos, quando aplicáveis.]
+
+### 12.6 Testes de resiliência
+
+[Definir falhas e recuperação.]
+
+### 12.7 Testes de segurança
+
+[Definir verificações de acesso, ambiente e autorização.]
+
+## 13. Dados e ambiente de teste
+
+### 13.1 Fixtures
+
+[Definir dados sintéticos ou controlados.]
+
+### 13.2 Dependências de teste
+
+[Definir serviços necessários.]
+
+### 13.3 Ambiente permitido
+
+[Definir ambiente de execução.]
+
+### 13.4 Restrições
+
+[Definir proibições e isolamento.]
+
+Testes não deverão utilizar credenciais LIVE sem autorização operacional específica, que não existe no I00.
+
+## 14. Observabilidade
+
+### 14.1 Logs
+
+[Definir eventos e campos.]
+
+### 14.2 Métricas
+
+[Definir indicadores.]
+
+### 14.3 Traces
+
+[Definir correlação.]
+
+### 14.4 Alertas
+
+[Definir condições aplicáveis.]
+
+### 14.5 Diagnóstico
+
+[Definir informações necessárias para investigação.]
+
+## 15. Segurança e risco
+
+### 15.1 Atores e permissões
+
+[Definir identidades e autorização.]
+
+### 15.2 Segregação de ambientes
+
+[Definir TRAINING/PAPER/LIVE.]
+
+### 15.3 Invariantes críticos
+
+[Relacionar regras obrigatórias.]
+
+### 15.4 Comportamento fail-closed
+
+[Definir bloqueios em falhas.]
+
+### 15.5 Riscos residuais
+
+[Relacionar riscos.]
+
+### 15.6 Autorizações necessárias
+
+[Relacionar aprovações aplicáveis.]
+
+Nenhuma história poderá permitir bypass dos controles financeiros aprovados.
+
+## 16. Definition of Ready
+
+A história poderá ser considerada READY quando:
+
+- Objetivo e escopo estiverem definidos.
+- Requisitos e fontes estiverem identificados.
+- ADRs e componentes aplicáveis estiverem referenciados.
+- Dependências bloqueantes estiverem resolvidas.
+- Contratos necessários estiverem especificados.
+- Critérios de aceite estiverem testáveis.
+- Cenários de teste estiverem definidos.
+- Dados e ambiente de teste estiverem disponíveis ou planejados.
+- Riscos e restrições estiverem identificados.
+- Owner funcional e técnico estiverem definidos.
+- A revisão documental estiver registrada.
+
+**DoR Status:** [NOT_READY / READY_WITH_CONDITIONS / READY]
+
+A aprovação documental da história não significa que sua implementação tenha sido iniciada.
+
+## 17. Plano de implementação
+
+### 17.1 Tarefas técnicas
+
+[Decompor a história em tarefas.]
+
+### 17.2 Sequência
+
+[Definir precedências.]
+
+### 17.3 Arquivos e módulos impactados
+
+[Relacionar arquivos previstos, sem presumir existência.]
+
+### 17.4 Estratégia de implementação
+
+[Descrever abordagem técnica aprovada.]
+
+### 17.5 Estimativa
+
+[Registrar esforço fundamentado ou TBD.]
+
+### 17.6 Plano de rollback
+
+[Definir reversão ou recuperação, quando aplicável.]
+
+## 18. Evidências de implementação
+
+| Evidence ID | Test/Acceptance ID | Build/Commit | Environment | Result | Reference |
+|---|---|---|---|---|---|
+| [ID] | [ID] | [Hash] | [Ambiente] | [Resultado] | [Referência] |
+
+Evidências deverão ser preenchidas somente após execução verificável.
+
+Não deverão ser criados resultados fictícios para completar o template.
+
+## 19. Definition of Done
+
+A história poderá ser considerada DONE quando:
+
+- A implementação estiver concluída e revisada.
+- Os critérios de aceite estiverem atendidos.
+- Os testes obrigatórios tiverem sido executados.
+- Os contratos estiverem conformes.
+- Os invariantes estiverem preservados.
+- Logs, métricas e traces aplicáveis estiverem presentes.
+- As evidências estiverem registradas.
+- A documentação impactada estiver atualizada.
+- As lacunas bloqueantes estiverem encerradas.
+- A rastreabilidade estiver atualizada.
+- A autoridade competente registrar o aceite.
+
+**DoD Status:** [NOT_EVALUATED / NOT_DONE / DONE_WITH_CONDITIONS / DONE]
+
+O aceite da história não substitui o aceite da Feature, épico, incremento ou gate.
+
+## 20. Riscos e lacunas
+
+| Risk/Gap ID | Descrição | Severidade | Tratamento | Status |
+|---|---|---|---|---|
+| [ID] | [Descrição] | [Nível] | [Ação] | [Estado] |
+
+Lacunas que afetem requisitos essenciais, segurança ou contratos deverão bloquear a implementação dependente.
+
+## 21. Rastreabilidade
+
+A história deverá possuir vínculos com:
+
+**ADR → Componente → Pendência → Épico → Feature → História → Contrato → Teste → Evidência**
+
+Relações não aplicáveis deverão ser justificadas.
+
+Relações não verificadas deverão permanecer explicitamente pendentes.
+
+## 22. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| [Versão] | [Data] | [ID] | [Descrição] | [Referência] |
+
+## 23. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Story ID | [TS-ST-NNN] |
+| Version | [Versão] |
+| Approval Category | DOC / TECH / STORY |
+| Decision | [Resultado] |
+| Approved By | [Autoridade] |
+| Approval Reference | [Referência] |
+| Conditions | [Condições] |
+| Date | [Data] |
+
+---
+
+**Template Status:** IN_REVIEW  
+**Template Approval:** PENDING  
+**Next Artifact:** CONTRACT-TEMPLATE.md  
+**Restriction:** não avançar antes da aprovação deste template.

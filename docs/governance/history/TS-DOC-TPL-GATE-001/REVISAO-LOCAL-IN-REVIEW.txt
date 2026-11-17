@@ -1,0 +1,555 @@
+# GATE-CHECKLIST-TEMPLATE.md
+## TRADE SYSTEM V1 — Gate Verification & Approval Checklist Template
+
+**Document ID:** TS-DOC-TPL-GATE-001  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Domain:** GLOBAL / D07  
+**Applicable Gates:** G0–G5  
+**Applicable Increments:** I00–I09  
+**Owner:** Engineering, Quality & Validation / Release Governance  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Document Registry:** TS-DOC-REG-001 — APPROVED  
+**Gap Register:** TS-DOC-GAP-001 — APPROVED  
+**Traceability Matrix:** TS-DOC-TRC-001 — APPROVED  
+**Approval Register:** TS-DOC-APR-001 — APPROVED  
+**Change Log:** TS-DOC-CHG-001 — APPROVED  
+**Increment Template:** TS-DOC-TPL-INC-001 — APPROVED  
+**Test Specification Template:** TS-DOC-TPL-TEST-001 — APPROVED  
+**Evidence Bundle Template:** TS-DOC-TPL-EVB-001 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Approval Reference:** PENDING  
+**Increment:** I00–I09, conforme aplicabilidade  
+**Source References:** [anexo original](../history/TS-DOC-TPL-GATE-001/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../TS-DOC-STD-V1.0.md) e [fontes oficiais](../../referencias/originais/)  
+**Related ADRs:** identificar para cada gate conforme as referências aplicáveis da seção 3.  
+**Related Components:** identificar no escopo de avaliação de cada gate.  
+**Related Requirements/Pendências:** identificar no checklist e registrar as lacunas bloqueantes conforme seções 5 e 13.  
+**Dependencies:** documentos de governança indicados acima e templates de [Incremento](INCREMENT-TEMPLATE.md), [Teste](TEST-SPEC-TEMPLATE.md) e [Evidence Bundle](EVIDENCE-BUNDLE-TEMPLATE.md).  
+**Acceptance Criteria:** seção 21.  
+**Last Updated:** 2026-11-16
+
+---
+
+# TEMPLATE — GATE VERIFICATION CHECKLIST
+
+> **Instrução de utilização:** criar uma instância deste checklist para cada avaliação de gate. Preencher critérios, resultados, evidências e decisões somente com informações verificadas. A aprovação deste template não representa aprovação de nenhum gate.
+
+## 1. Identificação
+
+| Campo | Valor |
+|---|---|
+| Gate Assessment ID | [TS-GATE-GX-NNN] |
+| Gate ID | [G0–G5] |
+| Gate Name | [Nome aprovado] |
+| Assessment Version | [Versão] |
+| Document Status | [DRAFT / IN_REVIEW / APPROVED / SUPERSEDED] |
+| Assessment Status | [NOT_STARTED / COLLECTING / READY_FOR_REVIEW / UNDER_REVIEW / DECIDED] |
+| Related Increment | [IXX] |
+| Related Release | [Release ID] |
+| Related Evidence Bundle | [TS-EVB-IXX-NNN] |
+| Assessment Owner | [Responsável] |
+| QA Reviewer | [Responsável] |
+| Risk/Security Reviewer | [Responsável] |
+| Decision Authority | [Autoridade competente] |
+| Approval Reference | [Referência ou PENDING] |
+| Assessment Date | [Data] |
+| Last Updated | [Data] |
+
+Cada avaliação deverá possuir identificador único.
+
+Uma nova avaliação após alteração material deverá gerar nova versão ou novo registro, preservando o histórico anterior.
+
+## 2. Objetivo do gate
+
+### 2.1 Finalidade
+
+[Descrever a capacidade ou condição que o gate deverá comprovar.]
+
+### 2.2 Decisão habilitada
+
+[Descrever qual decisão poderá ser tomada após a aprovação.]
+
+### 2.3 Escopo
+
+[Identificar release, componentes, modelos, contratos e ambientes.]
+
+### 2.4 Limites
+
+[Descrever explicitamente o que a aprovação não autoriza.]
+
+### 2.5 Pré-requisitos
+
+[Relacionar gates anteriores, entregas e aprovações exigidas.]
+
+A aprovação de um gate não concede permissões além de seu escopo declarado.
+
+## 3. Baselines e referências
+
+| Referência | Versão | Status | Verificação |
+|---|---|---|---|
+| Architecture Baseline | [Versão] | [Estado] | [Verificação] |
+| Engineering Baseline | [Versão] | [Estado] | [Verificação] |
+| Increment Specification | [Versão] | [Estado] | [Verificação] |
+| Contract Specifications | [Versões] | [Estado] | [Verificação] |
+| Test Specifications | [Versões] | [Estado] | [Verificação] |
+| Evidence Bundle | [Versão] | [Estado] | [Verificação] |
+| Risk Policy | [Versão] | [Estado] | [Verificação] |
+| Security Policy | [Versão] | [Estado] | [Verificação] |
+
+Referências não verificadas deverão permanecer pendentes.
+
+## 4. Identidade da release avaliada
+
+| Campo | Valor |
+|---|---|
+| Repository | [Identificador] |
+| Git Commit | [Hash] |
+| Build ID | [ID] |
+| Artifact Digest | [Hash] |
+| Container Image Digest | [Hash ou N/A] |
+| Runtime Version | [Versão] |
+| Contract Versions | [Versões] |
+| Database Schema Version | [Versão] |
+| Model Version | [Versão ou N/A] |
+| Dataset Version | [Versão ou N/A] |
+| Configuration Reference | [Referência] |
+| Environment | [Ambiente] |
+| Evidence Bundle | [ID/Versão] |
+
+O gate deverá avaliar uma configuração identificável e reproduzível.
+
+Alterações materiais após a avaliação poderão exigir revalidação.
+
+## 5. Modelo de checklist
+
+Cada critério deverá possuir:
+
+| Campo | Descrição |
+|---|---|
+| Gate Criterion ID | Identificador único |
+| Criterion | Condição exigida |
+| Requirement Source | Fonte normativa |
+| Verification Method | Método de verificação |
+| Evidence Reference | Evidência aplicável |
+| Result | Resultado |
+| Severity | Criticidade |
+| Blocking | Se impede aprovação |
+| Reviewer | Responsável |
+| Notes | Observações |
+
+Resultados permitidos:
+
+- NOT_EVALUATED.
+- PASS.
+- FAIL.
+- BLOCKED.
+- NOT_APPLICABLE.
+
+`NOT_APPLICABLE` exige justificativa e validação da autoridade competente.
+
+Critérios obrigatórios não avaliados não poderão ser considerados aprovados.
+
+## 6. Checklist comum a todos os gates
+
+### 6.1 Integridade documental
+
+- [ ] Baselines aplicáveis identificadas.
+- [ ] Especificações versionadas.
+- [ ] Contratos aplicáveis identificados.
+- [ ] Critérios de aceite definidos.
+- [ ] Rastreabilidade atualizada.
+- [ ] Lacunas bloqueantes resolvidas.
+- [ ] Aprovações necessárias registradas.
+
+### 6.2 Integridade da release
+
+- [ ] Commit identificado.
+- [ ] Build identificado.
+- [ ] Dependências versionadas.
+- [ ] Configuração identificada.
+- [ ] Ambiente identificado.
+- [ ] Artefatos verificáveis.
+
+### 6.3 Qualidade e testes
+
+- [ ] Testes obrigatórios identificados.
+- [ ] Execuções registradas.
+- [ ] Resultados válidos.
+- [ ] Evidências disponíveis.
+- [ ] Defeitos críticos tratados.
+- [ ] Regressões aplicáveis avaliadas.
+
+### 6.4 Segurança e risco
+
+- [ ] Políticas aplicáveis identificadas.
+- [ ] Segregação de ambientes preservada.
+- [ ] Autorizações verificadas.
+- [ ] Segredos protegidos.
+- [ ] Invariantes críticos demonstrados.
+- [ ] Riscos residuais avaliados.
+
+### 6.5 Operação e observabilidade
+
+- [ ] Logs aplicáveis disponíveis.
+- [ ] Métricas aplicáveis disponíveis.
+- [ ] Traces aplicáveis disponíveis.
+- [ ] Alertas definidos.
+- [ ] Procedimentos de recuperação identificados.
+- [ ] Responsabilidades operacionais definidas.
+
+Itens não aplicáveis deverão possuir justificativa.
+
+## 7. G0 — Engineering Ready
+
+**Objetivo:** demonstrar que a fundação de engenharia está reproduzível, controlada e apta a sustentar os incrementos seguintes.
+
+### Checklist G0
+
+- [ ] Monorepo estruturado conforme baseline.
+- [ ] Toolchain Python reproduzível.
+- [ ] Dependências versionadas.
+- [ ] Build e testes executáveis.
+- [ ] Contratos iniciais versionados.
+- [ ] PostgreSQL e migrations verificadas.
+- [ ] Transactional Outbox com atomicidade demonstrada.
+- [ ] Dispatcher com recuperação verificada.
+- [ ] Consumers com idempotência demonstrada.
+- [ ] Ordenação por agregado verificada quando aplicável.
+- [ ] API de fundação e health checks verificados.
+- [ ] Logs, métricas e traces disponíveis.
+- [ ] CI/CD com verificações obrigatórias.
+- [ ] Segregação de ambientes demonstrada.
+- [ ] LIVE inacessível no escopo I00.
+- [ ] Testes de falha e recuperação executados.
+- [ ] Critérios I00-AC01–I00-AC12 atendidos.
+- [ ] Evidence Bundle I00 validado.
+- [ ] Lacunas bloqueantes encerradas.
+- [ ] Aprovação humana G0 registrada.
+
+**Resultado possível:** Engineering Ready, exclusivamente dentro do escopo aprovado.
+
+**Não autoriza:** operação PAPER qualificada, estratégia validada ou LIVE.
+
+## 8. G1 — Strategy Validated
+
+**Objetivo:** demonstrar validade metodológica e desempenho quantitativo suficiente da estratégia, conforme critérios previamente aprovados.
+
+### Checklist G1
+
+- [ ] Estratégia e versão identificadas.
+- [ ] Dataset e proveniência identificados.
+- [ ] Separação treino/validação/teste verificada.
+- [ ] Controles contra lookahead demonstrados.
+- [ ] Controles contra data leakage demonstrados.
+- [ ] Custos operacionais considerados.
+- [ ] Baselines comparativas definidas.
+- [ ] Walk-forward executado conforme protocolo.
+- [ ] Robustez por regime avaliada.
+- [ ] Sensibilidade a parâmetros avaliada.
+- [ ] Métricas e incerteza documentadas.
+- [ ] Riscos quantitativos avaliados.
+- [ ] Evidências reproduzíveis.
+- [ ] Critérios quantitativos aprovados atendidos.
+- [ ] Revisão independente registrada.
+- [ ] Aprovação humana G1 registrada.
+
+**Não autoriza:** LIVE ou dispensa de qualificação operacional em PAPER.
+
+Nenhuma meta de retorno será considerada garantida pela aprovação de G1.
+
+## 9. G2 — PAPER Qualified
+
+**Objetivo:** demonstrar comportamento operacional controlado em PAPER, com fidelidade suficiente à execução prevista.
+
+### Checklist G2
+
+- [ ] Ambiente PAPER segregado.
+- [ ] Versão de estratégia identificada.
+- [ ] Contratos e políticas aplicáveis identificados.
+- [ ] Paridade PAPER/LIVE demonstrada nos aspectos exigidos.
+- [ ] Controle de risco aplicado.
+- [ ] Simulação de custos validada.
+- [ ] Estados de ordens e posições reconciliados.
+- [ ] Idempotência verificada.
+- [ ] Falhas e recuperação testadas.
+- [ ] Observabilidade operacional disponível.
+- [ ] Alertas e bloqueios verificados.
+- [ ] Resultados PAPER documentados.
+- [ ] Período e amostra mínimos aprovados atendidos.
+- [ ] Desvios entre simulação e execução avaliados.
+- [ ] Evidence Bundle validado.
+- [ ] Aprovação humana G2 registrada.
+
+**Não autoriza:** operações reais.
+
+## 10. G3 — Operationally Ready
+
+**Objetivo:** demonstrar prontidão operacional, segurança, controle de risco, suporte e recuperação.
+
+### Checklist G3
+
+- [ ] Arquitetura operacional validada.
+- [ ] Responsabilidades e alçadas definidas.
+- [ ] Políticas de risco aprovadas.
+- [ ] Limites de exposição definidos.
+- [ ] Segregação de credenciais verificada.
+- [ ] Gestão de segredos validada.
+- [ ] Circuit breakers testados.
+- [ ] Kill switch verificado.
+- [ ] Runbooks aprovados.
+- [ ] Procedimentos de incidente testados.
+- [ ] Recuperação e reconciliação verificadas.
+- [ ] Monitoramento e alertas validados.
+- [ ] Auditoria ponta a ponta demonstrada.
+- [ ] Procedimentos de rollback definidos.
+- [ ] Riscos residuais formalmente avaliados.
+- [ ] Evidence Bundle validado.
+- [ ] Aprovação humana G3 registrada.
+
+**Não autoriza:** LIVE sem autorização específica posterior.
+
+## 11. G4 — LIVE Limited
+
+**Objetivo:** avaliar autorização restrita de operação real, sob limites explícitos e controles reforçados.
+
+### Checklist G4
+
+- [ ] Gates anteriores aplicáveis aprovados.
+- [ ] Release candidata identificada.
+- [ ] Modelo e estratégia identificados.
+- [ ] Política de risco aprovada.
+- [ ] Capital máximo definido.
+- [ ] Exposição máxima definida.
+- [ ] Instrumentos e mercados autorizados.
+- [ ] Limites de perda definidos.
+- [ ] Regras de bloqueio verificadas.
+- [ ] Monitoramento operacional disponível.
+- [ ] Kill switch operacional.
+- [ ] Procedimentos de intervenção humana definidos.
+- [ ] Plano de rollback e contenção aprovado.
+- [ ] Critérios de suspensão definidos.
+- [ ] Evidências de prontidão validadas.
+- [ ] Riscos residuais aprovados.
+- [ ] Decisão Go/No-Go registrada.
+- [ ] Autorização humana LIVE explícita, limitada e verificável.
+
+**Resultado possível:** autorização LIVE Limited, exclusivamente dentro dos limites aprovados.
+
+A aprovação de G4 não autoriza ampliação automática de capital, exposição ou mercados.
+
+## 12. G5 — LIVE Controlled
+
+**Objetivo:** avaliar evolução controlada da operação real com base em evidências operacionais acumuladas.
+
+### Checklist G5
+
+- [ ] G4 aprovado e vigente.
+- [ ] Histórico operacional verificado.
+- [ ] Resultados líquidos e custos reconciliados.
+- [ ] Incidentes e desvios analisados.
+- [ ] Políticas de risco reavaliadas.
+- [ ] Limites propostos justificados.
+- [ ] Estabilidade operacional demonstrada.
+- [ ] Observabilidade e auditoria verificadas.
+- [ ] Controles de recuperação validados.
+- [ ] Critérios de suspensão atualizados.
+- [ ] Alterações de modelo e estratégia avaliadas.
+- [ ] Evidências de generalização e robustez revisadas.
+- [ ] Riscos residuais aprovados.
+- [ ] Decisão Go/No-Go registrada.
+- [ ] Autorização humana específica para evolução LIVE.
+
+**Resultado possível:** evolução LIVE Controlled dentro do escopo expressamente aprovado.
+
+Nenhuma ampliação será automática.
+
+## 13. Critérios bloqueantes
+
+Um gate não poderá ser aprovado quando:
+
+- Existirem critérios obrigatórios não atendidos.
+- Evidências críticas estiverem ausentes ou inválidas.
+- A identidade da release não estiver comprovada.
+- Houver lacunas bloqueantes não resolvidas.
+- Os controles financeiros exigidos não estiverem demonstrados.
+- A segregação de ambientes não estiver comprovada.
+- As autorizações necessárias estiverem ausentes.
+- Os resultados quantitativos exigidos não atenderem aos critérios aprovados.
+- Houver divergência material não resolvida entre a release avaliada e a release candidata.
+- A autoridade competente não tiver registrado decisão explícita.
+
+Exceções somente poderão ser consideradas quando permitidas pela política aplicável e sem violar invariantes críticos.
+
+## 14. Avaliação de riscos residuais
+
+| Risk ID | Descrição | Severidade | Controle | Residual Risk | Decisão |
+|---|---|---|---|---|---|
+| [ID] | [Descrição] | [Nível] | [Controle] | [Nível] | [Resultado] |
+
+Riscos residuais deverão ser avaliados pela autoridade competente.
+
+A aceitação de risco não poderá substituir controles obrigatórios de segurança financeira.
+
+## 15. Registro de exceções
+
+| Exception ID | Critério | Justificativa | Impacto | Autoridade | Validade |
+|---|---|---|---|---|---|
+| [ID] | [Critério] | [Justificativa] | [Impacto] | [Responsável] | [Condição] |
+
+Exceções deverão possuir:
+
+- Escopo.
+- Justificativa.
+- Risco.
+- Owner.
+- Prazo ou condição de expiração.
+- Aprovação.
+- Plano de resolução.
+
+Não serão permitidas exceções que autorizem operação insegura.
+
+## 16. Relatório de avaliação
+
+### 16.1 Resumo dos critérios
+
+| Resultado | Quantidade |
+|---|---|
+| PASS | [N] |
+| FAIL | [N] |
+| BLOCKED | [N] |
+| NOT_EVALUATED | [N] |
+| NOT_APPLICABLE | [N] |
+
+### 16.2 Cobertura
+
+[Informar critérios aplicáveis, critérios verificados e percentual.]
+
+### 16.3 Evidências
+
+[Referenciar Evidence Bundle.]
+
+### 16.4 Lacunas
+
+[Relacionar pendências.]
+
+### 16.5 Riscos
+
+[Relacionar riscos residuais.]
+
+### 16.6 Parecer técnico
+
+[Registrar avaliação.]
+
+### 16.7 Parecer de QA
+
+[Registrar avaliação.]
+
+### 16.8 Parecer de Risk/Security
+
+[Registrar avaliação quando aplicável.]
+
+## 17. Decisão do gate
+
+Resultados possíveis:
+
+| Decisão | Significado |
+|---|---|
+| APPROVED | Gate homologado no escopo definido |
+| APPROVED_WITH_CONDITIONS | Homologação condicionada, somente quando permitida |
+| REJECTED | Gate não homologado |
+| DEFERRED | Decisão postergada |
+| REASSESSMENT_REQUIRED | Nova avaliação necessária |
+
+Uma aprovação condicionada deverá definir explicitamente quais ações ficam autorizadas e quais permanecem bloqueadas.
+
+Para G4 e G5, nenhuma operação LIVE poderá ser iniciada ou ampliada enquanto as condições obrigatórias de segurança e autorização não estiverem integralmente atendidas.
+
+## 18. Registro formal de aprovação
+
+| Campo | Valor |
+|---|---|
+| Gate Assessment ID | [ID] |
+| Gate ID | [G0–G5] |
+| Assessment Version | [Versão] |
+| Release ID | [ID] |
+| Evidence Bundle | [ID/Versão] |
+| Decision | [Resultado] |
+| Decision Scope | [Escopo] |
+| Conditions | [Condições] |
+| Technical Reviewer | [Responsável] |
+| QA Reviewer | [Responsável] |
+| Risk/Security Reviewer | [Responsável] |
+| Decision Authority | [Responsável] |
+| Approval Reference | [Referência] |
+| Decision Timestamp | [Timestamp] |
+| Validity | [Prazo ou condição] |
+
+A decisão deverá ser registrada no Approval Register.
+
+## 19. Reavaliação e revogação
+
+Um gate deverá ser reavaliado quando:
+
+- Houver alteração material de release.
+- Um contrato crítico sofrer mudança incompatível.
+- O modelo ou estratégia for substituído.
+- A política de risco for alterada.
+- Uma evidência essencial for invalidada.
+- Um incidente comprometer premissas de segurança.
+- Uma autorização expirar ou for revogada.
+- Uma mudança operacional alterar o escopo aprovado.
+
+A reavaliação poderá ser parcial quando a análise de impacto demonstrar que as demais evidências continuam válidas.
+
+A revogação deverá preservar o histórico e bloquear ações que dependam da autorização revogada.
+
+## 20. Responsabilidades do Codex e TS-DOC-GOV
+
+O Codex poderá:
+
+- Preparar checklists.
+- Coletar referências de evidências.
+- Verificar metadados e integridade.
+- Identificar critérios não atendidos.
+- Produzir relatórios de cobertura.
+- Detectar lacunas e divergências.
+- Preparar pareceres técnicos para revisão.
+
+O Codex não poderá:
+
+- Homologar gates automaticamente.
+- Fabricar resultados.
+- Marcar critérios como PASS sem evidência.
+- Ignorar lacunas bloqueantes.
+- Alterar limites financeiros aprovados.
+- Autorizar ou ampliar LIVE.
+- Reativar operação LIVE após bloqueio sem autorização humana aplicável.
+
+## 21. Critérios de aceite deste template
+
+O GATE-CHECKLIST-TEMPLATE.md estará apto à aprovação quando:
+
+1. O modelo de identificação e avaliação estiver definido.
+2. Os estados e resultados dos critérios estiverem padronizados.
+3. O checklist comum estiver estabelecido.
+4. Os critérios G0 estiverem contemplados.
+5. Os critérios G1 e G2 estiverem contemplados.
+6. Os critérios G3 estiverem contemplados.
+7. Os critérios G4 e G5 estiverem contemplados.
+8. As regras de bloqueio, risco e exceções estiverem definidas.
+9. O processo de decisão, reavaliação e revogação estiver definido.
+10. As responsabilidades, evidências e restrições LIVE estiverem preservadas.
+
+---
+
+**Template Status:** IN_REVIEW  
+**Template Approval:** PENDING  
+**Next Artifact:** TS-DOC-GOV-AGENT-SPEC.md  
+**Restriction:** não avançar antes da aprovação deste template.
+
+## Histórico da revisão do template
+
+Esta revisão permanece **IN_REVIEW**, com aprovação **PENDING**. A [aprovação comunicada do Approval Register](../history/TS-DOC-APR-001/APPROVAL.md) está registrada e a conferência do seu texto integral no checkout segue pendente.
+
+O [dossiê de G0](../G0-REVIEW-DOSSIER.md) continua sendo o registro da avaliação em andamento. LIVE permanece indisponível.

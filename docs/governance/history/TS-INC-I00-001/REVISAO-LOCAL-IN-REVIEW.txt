@@ -1,0 +1,721 @@
+# I00-INCREMENT.md
+## TRADE SYSTEM V1 — I00 Engineering Foundation
+
+**Document ID:** TS-INC-I00-001  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Increment:** I00  
+**Increment Name:** Engineering Foundation  
+**Primary Domains:** D05 / D06 / D07  
+**Supporting Domains:** D01–D04, conforme interfaces aplicáveis  
+**Owner:** Engineering Architecture  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Increment Template:** TS-DOC-TPL-INC-001 — APPROVED  
+**Documentation Governance Agent:** TS-DOC-GOV-AGENT-001 — APPROVED  
+**Approval Reference:** PENDING  
+**Domain:** D05 / D06 / D07, com D01–D04 conforme interfaces aplicáveis  
+**Source References:** [anexo original](../governance/history/TS-INC-I00-001/IN-REVIEW.txt), [fontes oficiais](../referencias/originais/), [baseline e escopo](../00-BASELINE-E-ESCOPO.md) e [backlog I00](../02-I00-BACKLOG.md)  
+**Related ADRs:** [decisões técnicas do I00](../05-ADRS-TECNICAS.md) e referências da seção 2.  
+**Related Components:** componentes e fronteiras da seção 2, com vínculos no [DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** critérios I00-AC01–I00-AC12 e lacunas da seção 17.  
+**Dependencies:** [template de Incremento](../governance/templates/INCREMENT-TEMPLATE.md), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md) e dependências da seção 16.  
+**Acceptance Criteria:** seções 15, 18, 20 e 21, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-16
+
+---
+
+## 1. Objetivo do incremento
+
+### 1.1 Objetivo
+
+Estabelecer a fundação técnica e operacional de engenharia do TRADE SYSTEM V1, preparando o sistema para o desenvolvimento incremental de componentes de mercado, inteligência artificial, risco e execução.
+
+O I00 deverá fornecer uma base reproduzível, versionada, testável, observável e segura.
+
+### 1.2 Necessidade atendida
+
+O sistema exige infraestrutura técnica consistente para:
+
+- Desenvolver componentes independentes dentro de um monorepo modular.
+- Definir contratos de comunicação.
+- Persistir estados e eventos com integridade.
+- Processar eventos de maneira confiável.
+- Aplicar isolamento de ambientes.
+- Executar testes automatizados.
+- Produzir evidências auditáveis.
+- Controlar mudanças e releases.
+
+### 1.3 Resultado demonstrável
+
+Ao final do I00, deverá ser possível demonstrar:
+
+1. Ambiente de desenvolvimento reproduzível.
+2. Estrutura de monorepo conforme a arquitetura.
+3. Contratos iniciais versionados.
+4. Banco de dados e migrations reproduzíveis.
+5. Persistência transacional de eventos via Outbox.
+6. Publicação e consumo de eventos com controle de duplicidade.
+7. API de fundação e health checks.
+8. Controles de identidade e segregação de ambientes.
+9. Observabilidade técnica.
+10. Pipeline automatizado de qualidade.
+11. Testes de falha e recuperação.
+12. Evidence Bundle rastreável.
+
+### 1.4 Critério de sucesso
+
+O I00 será considerado concluído quando seus critérios I00-AC01–I00-AC12 forem demonstrados por evidências verificáveis, as lacunas bloqueantes forem resolvidas e o aceite competente for registrado.
+
+A conclusão do incremento não implica aprovação automática do gate G0.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines aplicáveis
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-DOC-STD-V1.0.
+- TS-DOC-REG-001.
+- TS-DOC-GAP-001.
+- TS-DOC-TRC-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+
+### 2.2 ADRs aplicáveis
+
+As decisões técnicas TS-ADR-089–098 compõem a baseline de engenharia do I00.
+
+Os textos individuais deverão ser recuperados e conferidos antes de estabelecer vínculos específicos como VERIFIED.
+
+ADRs arquiteturais ADR-001–088 poderão ser aplicáveis aos componentes de fundação, conforme verificação da Traceability Matrix.
+
+### 2.3 Componentes envolvidos
+
+O I00 envolve principalmente responsabilidades dos domínios:
+
+**D05 — Data, Events & Audit**
+- Persistência autoritativa.
+- Event Store e eventos.
+- Transactional Outbox.
+- Publicação e consumo confiável.
+
+**D06 — Infrastructure, Security & DevOps**
+- Ambiente de execução.
+- Segurança.
+- Configuração.
+- Observabilidade.
+- CI/CD.
+
+**D07 — Engineering, Quality & Validation**
+- Estrutura do repositório.
+- Contratos.
+- Testes.
+- Qualidade.
+- Evidências.
+- Governança técnica.
+
+Os IDs individuais dos componentes deverão ser reconciliados com o catálogo original dos 33 componentes antes da confirmação dos vínculos.
+
+### 2.4 Invariantes obrigatórios
+
+O I00 deverá preservar:
+
+- Segregação TRAINING/PAPER/LIVE.
+- Proibição de acesso LIVE no I00.
+- Ausência de execução financeira direta por IA.
+- Autoridade Control → Risk → Execution para operações futuras.
+- Idempotência.
+- Integridade transacional.
+- Auditoria.
+- Recuperação controlada.
+- Rastreabilidade.
+- Aprovação humana para gates e ações críticas.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Bootstrap do monorepo.
+- Toolchain Python.
+- Contratos versionados.
+- PostgreSQL e migrations.
+- Transactional Outbox.
+- Event Dispatcher.
+- Consumidores idempotentes.
+- API de fundação.
+- Segurança e isolamento.
+- Observabilidade.
+- CI/CD.
+- Documentação e rastreabilidade.
+- Testes de falha e recuperação.
+- Evidence Bundle I00.
+
+### 3.2 Excluído
+
+- Estratégias de trading.
+- Treinamento de PPO, DDPG ou DQN.
+- Inferência operacional de modelos.
+- Conexão de execução real com a Binance.
+- Envio de ordens financeiras.
+- Operação PAPER qualificada.
+- Backtesting quantitativo completo.
+- Otimização de portfólio.
+- Interface operacional completa.
+- Homologação de G1–G5.
+- Operação LIVE.
+
+### 3.3 Premissas
+
+- O projeto utilizará Python como linguagem principal.
+- A arquitetura será baseada em monorepo modular.
+- PostgreSQL será a persistência autoritativa inicial.
+- A integração entre componentes utilizará contratos versionados.
+- A infraestrutura inicial será executável localmente.
+- A automação de qualidade será integrada ao GitHub Actions.
+
+### 3.4 Restrições
+
+- Não introduzir Kafka ou Kubernetes como dependências obrigatórias do I00.
+- Não armazenar segredos no repositório.
+- Não utilizar credenciais LIVE.
+- Não permitir envio de ordens reais.
+- Não modificar ADRs aprovadas sem Change Control.
+- Não declarar critérios atendidos sem testes e evidências.
+
+---
+
+## 4. Stack técnica aprovada
+
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | Python 3.12+ |
+| API | FastAPI |
+| Validação | Pydantic v2 |
+| Banco de dados | PostgreSQL 17 |
+| ORM | SQLAlchemy 2 |
+| Migrations | Alembic |
+| Dependências | uv |
+| Lint/Formatting | Ruff |
+| Tipagem | mypy |
+| Testes | pytest |
+| Property-Based Testing | Hypothesis |
+| Containers | Docker Compose |
+| CI/CD | GitHub Actions |
+| Telemetria | OpenTelemetry |
+| Logs | JSON estruturado |
+| Contratos | JSON Schema / OpenAPI |
+| Mensageria inicial | PostgreSQL Transactional Outbox |
+
+As versões exatas de dependências deverão ser fixadas no lockfile durante a implementação.
+
+---
+
+## 5. Épicos do incremento
+
+| Epic ID | Capacidade | Situação |
+|---|---|---|
+| TS-EP-01 | Engineering Foundation | Planejamento aprovado |
+| TS-EP-02 | Data & Event Foundation | Planejamento aprovado |
+
+Os documentos específicos desses épicos deverão utilizar o template TS-DOC-TPL-EPIC-001.
+
+---
+
+## 6. Features propostas
+
+A decomposição abaixo é proposta para refinamento. Não representa aprovação individual das Features.
+
+| Feature ID | Capacidade | Épico proposto |
+|---|---|---|
+| I00-FEAT-001 | Monorepo Bootstrap | TS-EP-01 |
+| I00-FEAT-002 | Python Toolchain & Quality | TS-EP-01 |
+| I00-FEAT-003 | Versioned Contracts | TS-EP-01 |
+| I00-FEAT-004 | PostgreSQL & Migrations | TS-EP-02 |
+| I00-FEAT-005 | Transactional Outbox | TS-EP-02 |
+| I00-FEAT-006 | Event Dispatcher | TS-EP-02 |
+| I00-FEAT-007 | Idempotent Consumers | TS-EP-02 |
+| I00-FEAT-008 | Foundation API | TS-EP-01 |
+| I00-FEAT-009 | Security & Environment Isolation | TS-EP-01 |
+| I00-FEAT-010 | Observability Foundation | TS-EP-01 |
+| I00-FEAT-011 | CI/CD Foundation | TS-EP-01 |
+| I00-FEAT-012 | Documentation & Traceability | TS-EP-01 |
+| I00-FEAT-013 | Failure & Recovery Validation | TS-EP-02 |
+| I00-FEAT-014 | Evidence & G0 Preparation | TS-EP-01 |
+
+O mapeamento final entre Features, épicos e histórias deverá ser aprovado no refinamento documental.
+
+---
+
+## 7. Pacotes de trabalho
+
+| Work Package | Descrição |
+|---|---|
+| I00-01 | Monorepo Bootstrap |
+| I00-02 | Python Toolchain |
+| I00-03 | Versioned Contracts |
+| I00-04 | PostgreSQL & Migrations |
+| I00-05 | Transactional Outbox |
+| I00-06 | Event Dispatcher |
+| I00-07 | Idempotent Consumers |
+| I00-08 | Foundation API |
+| I00-09 | Security & Isolation |
+| I00-10 | Observability |
+| I00-11 | CI/CD |
+| I00-12 | Documentation & Traceability |
+| I00-13 | Failure & Recovery Tests |
+| I00-14 | Evidence Bundle |
+
+Os pacotes de trabalho constituem a estrutura de execução aprovada na baseline TS-ENG-I00-V1.0.
+
+Não deverão ser confundidos com histórias técnicas ou Features.
+
+---
+
+## 8. Histórias técnicas
+
+O backlog inicial aprovado contém TS-ST-001–024.
+
+Para o I00, os vínculos iniciais a verificar incluem:
+
+| Story ID | Capacidade de referência | Verificação |
+|---|---|---|
+| TS-ST-001 | Monorepo Bootstrap | PROPOSED |
+| TS-ST-002 | Versioned Contracts | PROPOSED |
+| TS-ST-003 | PostgreSQL & Transactional Outbox | PROPOSED |
+| TS-ST-004 | Dispatcher & Idempotent Consumers | PROPOSED |
+
+A descrição original e os vínculos de cada história deverão ser conferidos no backlog autoritativo.
+
+Os demais pacotes do I00 deverão ser associados a histórias existentes ou a novas histórias formalmente identificadas, sem reutilizar IDs.
+
+---
+
+## 9. Contratos iniciais
+
+| Contrato | Finalidade |
+|---|---|
+| CommandEnvelope.v1 | Envelope de comandos |
+| EventEnvelope.v1 | Envelope de eventos |
+| ErrorEnvelope.v1 | Estrutura de erros |
+| HealthStatus.v1 | Estado de saúde e prontidão |
+| OutboxRecord.v1 | Registro de publicação transacional |
+
+### 9.1 Requisitos comuns
+
+Os contratos deverão definir, conforme aplicabilidade:
+
+- Identificação.
+- Versão.
+- Origem e destino.
+- Correlação.
+- Causalidade.
+- Temporalidade.
+- Autorização.
+- Idempotência.
+- Validação.
+- Erros.
+- Compatibilidade.
+- Auditoria.
+
+### 9.2 Fonte autoritativa
+
+Os schemas executáveis deverão ser versionados e testados.
+
+A especificação documental não substituirá JSON Schema ou OpenAPI.
+
+### 9.3 Estado inicial
+
+CONTRACT_SPECIFICATION_PENDING.
+
+Nenhum schema deverá ser declarado implementado sem verificação do repositório.
+
+---
+
+## 10. Dados e persistência
+
+### 10.1 PostgreSQL
+
+O PostgreSQL 17 será utilizado como persistência autoritativa inicial.
+
+### 10.2 Migrations
+
+As alterações estruturais deverão utilizar Alembic.
+
+As migrations deverão ser reproduzíveis e verificáveis.
+
+### 10.3 Transactional Outbox
+
+A persistência do estado de negócio e do evento correspondente deverá ocorrer atomicamente quando fizerem parte da mesma transação lógica.
+
+### 10.4 Event Dispatcher
+
+O Dispatcher deverá processar registros pendentes, controlar tentativas e permitir recuperação após falhas.
+
+### 10.5 Consumidores idempotentes
+
+Consumidores deverão impedir que a repetição de uma mensagem provoque duplicação indevida de efeitos.
+
+### 10.6 Ordenação
+
+A ordenação por agregado deverá ser preservada nos fluxos em que for exigida.
+
+### 10.7 Auditoria
+
+Os eventos deverão permitir correlação entre comando, processamento, resultado e estado persistido.
+
+---
+
+## 11. Segurança e segregação
+
+### 11.1 Ambientes
+
+O I00 deverá estabelecer a separação entre:
+
+- TRAINING.
+- PAPER.
+- LIVE.
+
+### 11.2 Restrições LIVE
+
+LIVE deverá permanecer inacessível no I00.
+
+Não poderão ser utilizados:
+
+- Credenciais LIVE.
+- Endpoints de execução real.
+- Configurações que permitam envio de ordens reais.
+- Rotinas de promoção automática para LIVE.
+
+### 11.3 Segredos
+
+Credenciais e informações sensíveis deverão ser gerenciadas fora do código-fonte.
+
+### 11.4 Autorização
+
+A API de fundação deverá respeitar os controles de identidade e permissões aplicáveis.
+
+### 11.5 Falhas
+
+Falhas de autorização ou configuração crítica deverão resultar em comportamento seguro.
+
+### 11.6 Autoridade financeira
+
+A fundação não deverá implementar caminhos que permitam contornar Control → Risk → Execution.
+
+---
+
+## 12. Observabilidade
+
+A fundação deverá oferecer:
+
+### 12.1 Logs
+
+Logs JSON estruturados, com identificadores de correlação.
+
+### 12.2 Métricas
+
+Métricas de saúde, erros, processamento e filas, conforme aplicabilidade.
+
+### 12.3 Traces
+
+Rastreamento distribuído ou correlacionado das operações relevantes.
+
+### 12.4 Health Checks
+
+Verificações de liveness e readiness.
+
+### 12.5 Auditoria
+
+Eventos e registros necessários para reconstruir os fluxos.
+
+### 12.6 Alertas
+
+Condições técnicas de alerta deverão ser definidas e verificadas.
+
+---
+
+## 13. CI/CD e qualidade
+
+O pipeline deverá incluir verificações aplicáveis de:
+
+- Instalação reproduzível.
+- Formatação e lint.
+- Tipagem estática.
+- Testes unitários.
+- Testes de contrato.
+- Testes de integração.
+- Testes baseados em propriedades.
+- Verificações de segurança.
+- Build.
+- Validação de migrations.
+- Produção de relatórios.
+- Identificação da versão avaliada.
+
+O pipeline do I00 não poderá promover releases para LIVE.
+
+---
+
+## 14. Estratégia de testes
+
+### 14.1 Unit
+
+Validar comportamentos isolados.
+
+### 14.2 Contract
+
+Validar schemas, versões e exemplos.
+
+### 14.3 Integration
+
+Validar PostgreSQL, Outbox, Dispatcher e consumidores.
+
+### 14.4 Property-Based
+
+Validar invariantes como idempotência e consistência.
+
+### 14.5 Resilience
+
+Simular interrupções, falhas de persistência e recuperação.
+
+### 14.6 Security
+
+Validar isolamento de ambientes e ausência de caminhos LIVE.
+
+### 14.7 End-to-End
+
+Validar fluxos completos da fundação em ambiente controlado.
+
+Os testes deverão utilizar dados sintéticos ou controlados e não poderão executar ordens reais.
+
+---
+
+## 15. Critérios de aceite I00
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| I00-AC01 | Build reproduzível | Build e ambiente identificados |
+| I00-AC02 | Dependências fixadas | Lockfile e validação |
+| I00-AC03 | Contratos versionados e testados | Schemas e testes |
+| I00-AC04 | Migrations reproduzíveis | Relatórios de migração |
+| I00-AC05 | Outbox atômica | Testes transacionais |
+| I00-AC06 | Idempotência | Testes de repetição |
+| I00-AC07 | Ordenação | Testes por agregado |
+| I00-AC08 | Resiliência | Testes de falha e recuperação |
+| I00-AC09 | Telemetria | Logs, métricas e traces |
+| I00-AC10 | LIVE inacessível | Testes de isolamento |
+| I00-AC11 | Rastreabilidade | Matriz de relacionamentos |
+| I00-AC12 | Evidências verificáveis | Evidence Bundle I00 |
+
+Os critérios acima refletem o resumo aprovado da baseline técnica. Seus textos normativos completos e eventuais subcritérios deverão ser conferidos com a fonte original antes de marcar qualquer resultado como VERIFIED.
+
+**Estado inicial de todos os critérios:** NOT_EVALUATED.
+
+---
+
+## 16. Dependências e sequência de execução
+
+A sequência lógica proposta é:
+
+**Fundação do repositório**
+→ Toolchain
+→ Contratos
+→ Persistência
+→ Outbox
+→ Dispatcher e consumidores
+→ API e segurança
+→ Observabilidade
+→ Testes integrados
+→ Evidence Bundle
+→ Avaliação G0.
+
+Atividades independentes poderão ocorrer em paralelo quando suas interfaces e dependências estiverem suficientemente especificadas.
+
+A sequência deverá ser refinada sem alterar o escopo aprovado.
+
+---
+
+## 17. Riscos e lacunas
+
+| Gap ID | Impacto potencial no I00 |
+|---|---|
+| DOC-GAP-001 | Requisitos originais P01–P47 não reconciliados |
+| DOC-GAP-002 | Classificação provisória de P18 |
+| DOC-GAP-003 | Textos individuais das ADRs não verificados |
+| DOC-GAP-004 | ADRs técnicas ainda não formalizadas integralmente |
+| DOC-GAP-005 | Matriz de rastreabilidade incompleta |
+| DOC-GAP-006 | Features e histórias ainda não refinadas |
+| DOC-GAP-007 | Arquivos do repositório não auditados |
+| DOC-GAP-008 | Owners e referências formais pendentes |
+
+Os bloqueios deverão ser aplicados às histórias e entregas efetivamente dependentes de cada lacuna.
+
+A aprovação deste documento não encerra nenhuma dessas lacunas.
+
+---
+
+## 18. Documentation Readiness
+
+### 18.1 Critérios
+
+O I00 estará documentalmente pronto para iniciar histórias selecionadas quando:
+
+- Escopo do incremento aprovado.
+- ADRs aplicáveis verificadas.
+- Features necessárias formalizadas.
+- Histórias selecionadas READY.
+- Contratos necessários especificados.
+- Dependências identificadas.
+- Critérios de aceite verificáveis.
+- Estratégia de testes definida.
+- Segurança e isolamento especificados.
+- Lacunas bloqueantes resolvidas.
+
+### 18.2 Avaliação inicial
+
+**Documentation Readiness:** NOT_READY.
+
+Justificativa: existem lacunas documentais e verificações de fontes ainda pendentes.
+
+A prontidão deverá ser reavaliada por história, permitindo avanço incremental das atividades independentes quando autorizadas.
+
+---
+
+## 19. Evidence Bundle I00
+
+### 19.1 Identificação
+
+**Bundle ID:** TS-EVB-I00-001 — PROPOSED.
+
+### 19.2 Estado
+
+PLANNED.
+
+### 19.3 Conteúdo esperado
+
+- Identidade do build.
+- Commit e dependências.
+- Contratos e schemas.
+- Relatórios de testes.
+- Evidências de migrations.
+- Evidências de Outbox.
+- Evidências de consumidores.
+- Evidências de resiliência.
+- Evidências de observabilidade.
+- Evidências de isolamento.
+- Matriz de rastreabilidade.
+- Manifesto de integridade.
+
+Nenhuma evidência será declarada produzida antes de sua execução.
+
+---
+
+## 20. Implementation Acceptance
+
+O I00 poderá ser aceito quando:
+
+1. Os 14 pacotes de trabalho obrigatórios estiverem concluídos ou formalmente tratados conforme o escopo aprovado.
+2. Os 12 critérios de aceite estiverem demonstrados.
+3. Os testes obrigatórios tiverem sido executados.
+4. Os contratos estiverem conformes.
+5. Os invariantes de segurança estiverem preservados.
+6. As evidências estiverem validadas.
+7. As lacunas bloqueantes estiverem encerradas.
+8. A rastreabilidade estiver atualizada.
+9. A revisão de engenharia e QA estiver concluída.
+10. A aprovação humana competente estiver registrada.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+---
+
+## 21. Gate G0 — Engineering Ready
+
+O I00 está associado ao gate G0.
+
+A avaliação deverá utilizar o template TS-DOC-TPL-GATE-001.
+
+### 21.1 Pré-condições
+
+- I00 implementado.
+- Critérios de aceite verificados.
+- Evidence Bundle validado.
+- Lacunas bloqueantes resolvidas.
+- Release identificada.
+- Revisões competentes concluídas.
+
+### 21.2 Decisão
+
+**G0 Status:** NOT_EVALUATED.
+
+### 21.3 Limites
+
+A aprovação futura de G0 permitirá reconhecer a fundação de engenharia como pronta para sustentar os próximos incrementos.
+
+Não autorizará, por si só:
+
+- Estratégia validada.
+- Operação PAPER qualificada.
+- Operação financeira real.
+- Promoção LIVE.
+
+---
+
+## 22. Rastreabilidade
+
+O I00 deverá preservar a cadeia:
+
+**ADR → Componente → Pendência → Épico → Feature → História → Contrato → Teste → Evidência**
+
+As relações propostas deverão permanecer PROPOSED até verificação das fontes.
+
+Vínculos ausentes deverão permanecer MISSING ou UNVERIFIED, conforme aplicabilidade.
+
+A Traceability Matrix deverá ser atualizada progressivamente.
+
+---
+
+## 23. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-16 | PENDING | Especificação inicial do I00 | PENDING |
+
+---
+
+## 24. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | TS-INC-I00-001 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** TS-EP-01.md  
+**Restriction:** não avançar antes da aprovação deste documento.
+
+## 25. Histórico da revisão e situação no checkout oficial
+
+A revisão documental permanece **IN_REVIEW**, com aprovação **PENDING**. O [anexo original](../governance/history/TS-INC-I00-001/IN-REVIEW.txt) está arquivado. As Features da seção 6 e os vínculos de histórias da seção 8 mantêm seu caráter proposto.
+
+Os estados iniciais das seções 15 e 18–21 e do rodapé correspondem à proposta submetida. Para o acompanhamento vigente, consulte o [registro mestre de I00](../backlog/registro-mestre-i00.md), o [Gap Register](../governance/GAP-REGISTER.md) e o [dossiê G0](../governance/G0-REVIEW-DOSSIER.md). O [Evidence Bundle I00 RC1](../governance/DOC-07-RC1-ACCEPTANCE.md) tem aceite registrado para I00-14 e AC12 no recorte original. O identificador TS-EVB-I00-001 permanece proposto nesta revisão.
+
+AC02, AC07 e AC09 continuam abertas para fechamento no candidato submetido a G0. O aceite consolidado do incremento continua pendente. G0 segue em revisão, com decisão humana pendente. LIVE permanece indisponível.

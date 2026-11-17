@@ -1,0 +1,1105 @@
+# TRADE SYSTEM V1 — Validação Arquitetural
+
+Domínio 07 · Engenharia, Qualidade e Validação Operacional
+
+Em validação
+
+Identificação: TS-ARCH-D07-V1.0\
+Dependências: D01–D06 aprovados\
+Escopo: BTCUSDT · Binance Spot e USDⓈ-M Futures · Agente de Trading com RL/PPO · Operação supervisionada e automatizada
+
+O Domínio 07 estabelece como transformar a arquitetura conceitual do Trade System V1 em software verificável, desde a implementação dos componentes até a homologação para operação com capital real.
+
+A diretriz central proposta é:
+
+> Nenhuma estratégia, modelo de IA ou versão de software será promovida para LIVE apenas por apresentar rentabilidade positiva em backtesting. A promoção exigirá evidências reproduzíveis de qualidade, robustez, segurança, controle de risco, execução e recuperação operacional.
+
+# 6
+
+Componentes propostos
+
+# 18
+
+ADRs para validação
+
+# 70
+
+ADRs já aprovadas
+
+Baseline proposta · ADR-071 a ADR-088 · Nenhuma decisão do D07 está aprovada nesta etapa.
+
+## 1. Objetivos e fronteiras do domínio
+
+O D07 será responsável por definir padrões de engenharia, critérios de qualidade, evidências experimentais e gates de aprovação.
+
+Deverá assegurar que:
+
+- As implementações respeitem as 70 ADRs já aprovadas.
+- Os contratos entre domínios sejam testáveis e compatíveis.
+- O agente de IA seja avaliado em dados não vistos, sem vazamento temporal.
+- Os resultados considerem taxas, slippage, funding e demais custos aplicáveis.
+- A operação PAPER reproduza os fluxos reais de controle, risco e execução, substituindo apenas as integrações financeiras necessárias.
+- Falhas, desconexões, duplicidades e estados desconhecidos sejam testados.
+- O sistema não entre em LIVE sem critérios de aceitação e aprovação humana.
+
+Fronteira importante: o D07 define o processo de entrega e validação. O D02 continua responsável pelos modelos e treinamento; o D03, pelas decisões financeiras e execução; o D06, pelo runtime e pela implantação.
+
+## 2. Componentes arquiteturais propostos
+
+D07-C01 — Engineering Delivery & Architecture Governance
+
+Transforma ADRs em requisitos, contratos, tarefas, critérios de aceite e entregas incrementais. Define padrões de código, revisão, dependências e rastreabilidade técnica.
+
+Artefatos: backlog, Architecture Compliance Matrix, Definition of Done e release scope.
+
+D07-C02 — Automated Testing & Quality Engineering
+
+Coordena testes unitários, integração, contratos, E2E, segurança, desempenho, migrações e integridade de dados.
+
+Artefatos: Test Suites, Quality Reports, Coverage e evidências CI.
+
+D07-C03 — Strategy Validation & Backtesting
+
+Valida estratégias e modelos com simulações históricas, walk-forward, benchmarks, cenários adversos e métricas de risco ajustadas a custos.
+
+Artefatos: Backtest Report, Walk-Forward Report e Strategy Validation Evidence.
+
+D07-C04 — Paper Trading & Operational Simulation
+
+Executa modelos aprovados em ambiente sem capital real, utilizando dados de mercado e simulador de ordens, fills, taxas e estados operacionais.
+
+Artefatos: Paper Trading Runs, Execution Simulation Reports e Operational Evidence.
+
+D07-C05 — Resilience & Failure Testing
+
+Injeta falhas controladas e verifica idempotência, reconciliação, fail-closed, circuit breakers, recuperação e preservação das proteções.
+
+Artefatos: Failure Scenario Catalog, Chaos Test Results e Recovery Evidence.
+
+D07-C06 — Release Acceptance & LIVE Readiness
+
+Consolida evidências de engenharia, risco, IA, segurança e operação. Controla aprovações, exceções, critérios de promoção e retorno a PAPER.
+
+Artefatos: Release Candidate, Evidence Bundle, Go/No-Go Decision e LIVE Acceptance Record.
+
+Os seis componentes são capacidades lógicas de engenharia e validação, não necessariamente serviços executados continuamente.
+
+## 3. Arquitetura conceitual do ciclo de engenharia
+
+Arquitetura aprovada D01–D06
+
+ADRs · Contratos · Políticas · Pendências
+
+Engineering Delivery
+
+Requisitos → Backlog → Código → Build
+
+Automated Quality Gates
+
+Unit · Integration · Contract · E2E · Security
+
+Backtest & Walk-Forward
+
+Paper Trading
+
+Resilience & Failure Testing
+
+Falhas · Reconciliação · Recuperação · Segurança
+
+Release Acceptance & LIVE Readiness
+
+Evidence Bundle → Go/No-Go → Promoção autorizada
+
+As trilhas de validação podem executar em paralelo, mas todas as evidências obrigatórias precisam convergir antes de LIVE.
+
+O fluxo de aprovação deve ser reversível: qualquer violação crítica durante PAPER ou LIVE poderá suspender a estratégia e exigir nova validação.
+
+## 4. Engineering Delivery & Architecture Governance
+
+Recomendo estruturar a engenharia com uma hierarquia rastreável:
+
+1. ADR: decisão arquitetural e suas restrições.
+2. Capability: capacidade do sistema necessária para cumprir a decisão.
+3. Epic / Feature: entrega funcional ou técnica.
+4. User Story / Technical Story: comportamento verificável.
+5. Acceptance Criteria: condições objetivas de aceite.
+6. Test Case: procedimento automatizado ou controlado.
+7. Evidence: resultado de teste associado à versão entregue.
+
+### Padrões de engenharia
+
+| Área         | Diretriz proposta                                                         |
+| ------------ | ------------------------------------------------------------------------- |
+| Organização  | Monorepo modular ou repositórios separados, conforme acoplamento e equipe |
+| Contratos    | OpenAPI, schemas de eventos e versionamento                               |
+| Código       | Revisão obrigatória e padrões por linguagem                               |
+| Testes       | Executados automaticamente no CI                                          |
+| Dependências | Versões fixadas e inventário de componentes                               |
+| Builds       | Artefatos reproduzíveis e identificados por digest                        |
+| Configuração | Separada do código e dos segredos                                         |
+| Arquitetura  | Testes de conformidade com ADRs críticas                                  |
+| Entregas     | Incrementais, com funcionalidade demonstrável                             |
+
+### Definition of Done
+
+Uma entrega somente poderá ser considerada concluída quando possuir código revisado, testes pertinentes, contratos atualizados, observabilidade mínima, documentação operacional e evidências de aceite.
+
+Para funcionalidades de risco e execução, também serão obrigatórios cenários negativos e testes de falha.
+
+## 5. Estratégia de QA e testes automatizados
+
+Proponho uma pirâmide de testes com camadas complementares.
+
+E2E & System
+
+Integration & Contract
+
+Unit & Property-Based
+
+Distribuição conceitual, não proporção obrigatória de testes.
+
+| Camada         | O que deve validar                                       |
+| -------------- | -------------------------------------------------------- |
+| Unitários      | Indicadores, regras de risco, sizing, estados e cálculos |
+| Property-based | Invariantes financeiros, limites, precisão decimal       |
+| Integração     | PostgreSQL, Outbox, adapters, APIs e serviços            |
+| Contratos      | Compatibilidade de payloads e eventos                    |
+| E2E            | Market Data → IA → Risk → Execution → Portfolio          |
+| Segurança      | RBAC, secrets, isolamento e abuso de comandos            |
+| Performance    | Latência, throughput, backlog e consumo de recursos      |
+| Resiliência    | Falhas, reinícios, duplicidade, recuperação              |
+
+### Invariantes críticos
+
+Algumas propriedades deverão ser testadas independentemente da estratégia:
+
+- Uma ordem rejeitada pelo Risk Engine não pode chegar ao Binance Adapter.
+- `HOLD` não pode gerar uma nova ordem de abertura.
+- Spot não pode abrir posição vendida descoberta.
+- Um evento de fill duplicado não pode duplicar quantidade ou PnL.
+- Uma solicitação de ordem com resultado desconhecido não pode ser reenviada cegamente.
+- A mesma intenção não pode ser executada duas vezes por falha de rede.
+- Um modelo em estado CANDIDATE não pode operar em LIVE.
+- Uma falha de reconciliação deve bloquear novas exposições conforme a política.
+- Uma intervenção manual não pode contornar os controles de risco.
+- Credenciais de TRAINING e PAPER não podem operar no ambiente LIVE.
+
+Critério proposto: nenhuma falha conhecida que viole um invariante financeiro crítico poderá ser aceita como risco residual para liberação LIVE.
+
+## 6. Strategy Validation & Backtesting
+
+O backtesting deverá avaliar não apenas se a estratégia ganha dinheiro, mas se o resultado é reproduzível, estatisticamente defensável e compatível com os riscos assumidos.
+
+### Requisitos do simulador
+
+O ambiente de simulação do D02 deverá incluir:
+
+| Dimensão   | Tratamento                                        |
+| ---------- | ------------------------------------------------- |
+| Mercado    | Dados históricos com timestamps e disponibilidade |
+| Execução   | Spread, slippage e fills simulados                |
+| Custos     | Taxas maker/taker e funding aplicável             |
+| Capital    | Equity, saldo disponível e exposição              |
+| Risco      | Políticas, limites e proteções do D03             |
+| Futuros    | Alavancagem, margem e liquidação aproximada       |
+| Latência   | Atrasos entre observação, decisão e execução      |
+| Dados      | Gaps, dados ausentes e mudanças de regime         |
+| Estratégia | Ações permitidas e máscaras por mercado           |
+
+O simulador não poderá assumir preenchimento integral de toda ordem no preço desejado. Deverá distinguir ordens de mercado, limitadas, parciais e não executadas, conforme o modelo de execução implementado.
+
+### Métricas de validação
+
+| Categoria      | Métricas                                         |
+| -------------- | ------------------------------------------------ |
+| Retorno        | Net Return, CAGR quando aplicável, Profit Factor |
+| Risco          | Max Drawdown, volatilidade, downside deviation   |
+| Risco ajustado | Sharpe, Sortino, Calmar                          |
+| Operações      | Win Rate, Payoff, Expectancy, número de trades   |
+| Custos         | Fees, funding, slippage e turnover               |
+| Exposição      | Leverage, utilização de margem e concentração    |
+| Robustez       | Sensibilidade a custos, regimes e parâmetros     |
+| Estatística    | Intervalos de confiança, dispersão entre janelas |
+| Comparação     | Buy & Hold e estratégias determinísticas         |
+
+As métricas deverão ser avaliadas em conjunto. Um Win Rate elevado, isoladamente, não comprova qualidade da estratégia.
+
+### Comparação com benchmarks
+
+O agente PPO deverá ser comparado, no mínimo, com:
+
+- Buy & Hold do BTCUSDT, ajustado ao mercado e período.
+- Estratégia determinística simples.
+- Política conservadora de não operar, quando relevante.
+- Outras abordagens de aprendizado, quando justificadas pelo D02.
+
+O objetivo de 30% líquidos ao mês poderá ser acompanhado como uma meta exploratória, mas não será utilizado como evidência suficiente de robustez ou como retorno esperado garantido. A aprovação deverá priorizar risco de ruína, drawdown, estabilidade e retorno líquido ajustado ao risco.
+
+## 7. Walk-forward e prevenção de overfitting
+
+O Walk-forward deverá reproduzir a sequência temporal real de desenvolvimento e avaliação.
+
+## Exemplo ilustrativo de Walk-forward
+
+Janela 1
+
+Janela 2
+
+Janela 3
+
+Treino
+
+Validação
+
+Teste OOS
+
+Representação conceitual de janelas temporais sucessivas. Duração, embargo e número de janelas serão definidos conforme os dados disponíveis.
+
+### Política proposta
+
+1. Separar treino, validação e teste fora da amostra cronologicamente.
+2. Aplicar embargo temporal quando necessário para evitar vazamento por labels, horizontes ou posições sobrepostas.
+3. Ajustar normalizadores exclusivamente com dados disponíveis no período de treino.
+4. Não utilizar resultados do teste para escolher hiperparâmetros.
+5. Preservar seeds, versões de código, datasets, features e configuração do ambiente.
+6. Reportar resultados agregados e dispersão entre janelas, não apenas o melhor período.
+7. Manter um conjunto final de avaliação não utilizado durante a otimização.
+
+Para RL/PPO, o Walk-forward deve considerar também o processo de treinamento, e não apenas executar uma política fixa em vários intervalos.
+
+## 8. Paper Trading & Operational Simulation
+
+O Paper Trading será a etapa intermediária obrigatória entre validação histórica e operação LIVE.
+
+### Arquitetura proposta
+
+Market Data — Fluxo real ou reproduzido
+
+AI Inference Runtime
+
+Control Manager → Risk Engine
+
+Execution Engine
+
+Paper Execution Adapter
+
+Ordens, fills, taxas e slippage simulados
+
+Position & Portfolio Manager
+
+O fluxo lógico de controle e risco deve ser equivalente ao LIVE. O adapter financeiro é substituído por um simulador.
+
+### O que deverá ser comprovado
+
+- A estratégia opera sem acesso a capital real.
+- Os estados de ordens e posições são consistentes.
+- As políticas de risco são aplicadas.
+- A operação suporta pausas, retomadas e intervenção humana.
+- O modelo permanece estável sob diferentes condições de mercado.
+- O histórico completo pode ser reproduzido no Strategy Replay.
+- Não existem divergências críticas não resolvidas entre os componentes.
+
+Paper Trading não comprova a qualidade de execução em mercado real. Fills simulados, slippage e impacto de mercado são aproximações, especialmente em períodos de baixa liquidez ou alta volatilidade.
+
+Por isso, a promoção posterior para LIVE deverá utilizar capital limitado e controles adicionais, se aprovada.
+
+## 9. Resilience & Failure Testing
+
+O D07 deverá possuir um catálogo de cenários de falha com resultados esperados previamente definidos.
+
+| Cenário                           | Comportamento esperado                                             |
+| --------------------------------- | ------------------------------------------------------------------ |
+| Perda de WebSocket Binance        | Detectar staleness e bloquear novas exposições quando necessário   |
+| Timeout após envio de ordem       | Consultar/reconciliar antes de qualquer reenvio                    |
+| Fill duplicado                    | Processamento idempotente                                          |
+| PostgreSQL indisponível           | Impedir operações que dependam de estado não confiável             |
+| Event Dispatcher atrasado         | Monitorar backlog e impedir decisões sobre estado crítico obsoleto |
+| Risk Engine indisponível          | Bloquear novas aberturas                                           |
+| AI Runtime indisponível           | Suspender novas decisões, preservando proteções independentes      |
+| Falha no deploy                   | Retomar versão segura e reconciliar                                |
+| Divergência de posições           | Bloquear novas exposições e iniciar reconciliação                  |
+| Credencial Binance revogada       | Alertar, impedir novas operações e acionar procedimento            |
+| Emergency Lock                    | Bloquear ações não autorizadas e manter ações seguras previstas    |
+| Perda de conectividade prolongada | Preservar estado e executar recuperação controlada quando possível |
+
+### Testes de caos e falhas
+
+A injeção de falhas deverá ocorrer inicialmente em ambientes isolados, sem capital real.
+
+O catálogo deverá incluir interrupção de processos, perda de rede, duplicação de eventos, atraso de mensagens, reinício de containers, restauração de backup e recuperação após estado desconhecido de ordens.
+
+Testes destrutivos em LIVE não serão permitidos sem procedimento específico, avaliação de risco e aprovação formal.
+
+## 10. Gates de promoção até LIVE
+
+Proponho um processo de promoção com critérios progressivos.
+
+G0
+
+Engineering Ready
+
+Implementação, contratos e testes básicos
+
+G1
+
+Strategy Validated
+
+Backtesting e Walk-forward aprovados
+
+G2
+
+Paper Qualified
+
+Operação simulada estável e rastreável
+
+G3
+
+Operationally Ready
+
+Segurança, resiliência e recuperação aprovadas
+
+G4
+
+LIVE Limited
+
+Capital limitado e supervisão reforçada
+
+G5
+
+LIVE Controlled
+
+Expansão gradual, sujeita a métricas e autorização
+
+### Critérios por gate
+
+| Gate | Evidências mínimas                                         | Decisão                           |
+| ---- | ---------------------------------------------------------- | --------------------------------- |
+| G0   | CI, testes, contratos e conformidade arquitetural          | Engenharia                        |
+| G1   | Backtest, OOS, Walk-forward e benchmarks                   | AI / Quant / Risk                 |
+| G2   | Paper Trading, reconciliação e relatórios                  | Trading / QA                      |
+| G3   | Segurança, resiliência, DR e OperationalReadiness          | Risk / SRE / Segurança            |
+| G4   | Capital limitado, política de exposição e aprovação humana | Gestor autorizado                 |
+| G5   | Histórico LIVE, estabilidade e risco dentro dos limites    | Comitê ou responsáveis designados |
+
+### Regras de promoção
+
+A aprovação de cada gate deverá ser registrada com versão do software, modelo, dataset, política de risco e evidências utilizadas.
+
+Uma alteração material no modelo, nas features, no simulador ou no Risk Engine poderá invalidar evidências anteriores e exigir revalidação.
+
+O retorno para PAPER será obrigatório quando houver falha crítica, divergência financeira relevante ou violação de condições de operação que impeçam a continuidade segura.
+
+## 11. Critérios quantitativos de aceite
+
+Recomendo separar critérios eliminatórios de critérios de desempenho.
+
+### Critérios eliminatórios
+
+São condições que bloqueiam a promoção independentemente da rentabilidade:
+
+- Violação de limites de risco.
+- Ordens duplicadas não controladas.
+- Divergência financeira crítica sem reconciliação.
+- Vazamento temporal comprovado.
+- Acesso indevido a LIVE.
+- Falha crítica de proteção ou recuperação.
+- Ausência de rastreabilidade.
+- Modelo não aprovado ou artefato não reproduzível.
+
+### Métricas de desempenho
+
+## Matriz de aceitação quantitativa
+
+Os limites numéricos permanecem pendentes de calibração e aprovação. Valores abaixo não representam metas já aprovadas.
+
+| Métrica          | Diretriz                                               |
+| ---------------- | ------------------------------------------------------ |
+| Net Return       | Positivo no conjunto OOS, quando exigido pela política |
+| Max Drawdown     | Abaixo do limite de risco aprovado                     |
+| Profit Factor    | Superior ao mínimo definido                            |
+| Sharpe / Sortino | Avaliar retorno ajustado ao risco                      |
+| Expectancy       | Positiva após custos                                   |
+| Stability        | Desempenho consistente entre janelas                   |
+| Paper Trading    | Período e amostra mínimos definidos                    |
+| Execution Errors | Sem erros críticos não resolvidos                      |
+| Risk Violations  | Zero violações críticas                                |
+| Reconciliation   | Sem divergências críticas pendentes                    |
+| Recovery Tests   | Cenários obrigatórios aprovados                        |
+
+Não recomendo estabelecer limites arbitrários de Sharpe, Profit Factor ou duração de PAPER antes de conhecer a frequência operacional, quantidade de trades e características dos dados.
+
+Uma estratégia com poucas operações pode apresentar indicadores elevados, mas baixa confiabilidade estatística.
+
+## 12. Contratos de engenharia e validação
+
+| Contrato                       | Responsabilidade                              |
+| ------------------------------ | --------------------------------------------- |
+| `ArchitectureComplianceRecord` | Evidência de conformidade com ADRs            |
+| `EngineeringWorkItem`          | Requisito, implementação e critério de aceite |
+| `TestExecutionResult`          | Resultado de teste e versão avaliada          |
+| `BacktestRunManifest`          | Configuração e artefatos do backtest          |
+| `WalkForwardValidationReport`  | Janelas, resultados e métricas OOS            |
+| `StrategyValidationReport`     | Avaliação consolidada da estratégia           |
+| `PaperTradingRun`              | Sessão de operação simulada                   |
+| `FailureScenarioResult`        | Falha injetada e resposta observada           |
+| `QualityGateDecision`          | Aprovação ou rejeição de um gate              |
+| `ReleaseEvidenceBundle`        | Conjunto versionado de evidências             |
+| `LiveReadinessAssessment`      | Avaliação de prontidão para LIVE              |
+| `GoNoGoDecision`               | Decisão humana formal de liberação            |
+
+### Identificadores de rastreabilidade
+
+Cada evidência deverá referenciar, conforme aplicável:
+
+`build_id`, `git_commit`, `container_digest`, `model_version_id`, `dataset_version_id`, `feature_version`, `policy_version_id`, `environment_id`, `test_run_id`, `evidence_hash` e `approved_by`.
+
+Isso permitirá responder: qual versão foi aprovada, com quais dados, sob quais condições e por quem?
+
+## 13. Decisões arquiteturais propostas — ADR-071 a ADR-088
+
+Proponho 18 ADRs para estabelecer a baseline conceitual do Domínio 07.
+
+## Checklist de aprovação — D07
+
+Selecione uma decisão para cada ADR
+
+## 0/18
+
+Avaliadas
+
+Arquitetura do domínio
+
+ADR-071
+
+Adotar seis componentes lógicos de engenharia, QA, validação quantitativa, PAPER, resiliência e aceitação LIVE.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Governança de engenharia
+
+ADR-072
+
+Rastrear ADR → requisito → implementação → teste → evidência, com Definition of Done e revisão de código.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Estratégia de testes
+
+ADR-073
+
+Adotar testes unitários, property-based, integração, contratos, E2E, segurança, desempenho e resiliência.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Invariantes financeiros
+
+ADR-074
+
+Tratar violações críticas de risco, idempotência, reconciliação e autorização como bloqueios de promoção.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Backtesting realista
+
+ADR-075
+
+Simular custos, slippage, spread, fills, margem, funding, latência e políticas de risco, conforme aplicável.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Validação Walk-forward
+
+ADR-076
+
+Adotar avaliação cronológica fora da amostra, controle de leakage, embargo quando necessário e resultados por janela.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Benchmarks e robustez
+
+ADR-077
+
+Comparar PPO com benchmarks adequados, testar sensibilidade, regimes e consistência estatística.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Reprodutibilidade experimental
+
+ADR-078
+
+Versionar datasets, features, código, seeds, parâmetros, modelos e resultados de cada experimento.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Paper Trading obrigatório
+
+ADR-079
+
+Exigir validação PAPER antes de LIVE, sem acesso a credenciais ou capital real.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Exibir as outras 9 decisões
+
+Observações, ajustes ou ressalvas (opcional)
+
+Aprovar todasLimpar
+
+Consolidar validação do Domínio 07&#x20;
+
+## 14. Pendências técnicas identificadas
+
+As seguintes pendências deverão ser resolvidas durante o planejamento e a implementação.
+
+| ID   | Pendência                                                   | Responsável       |
+| ---- | ----------------------------------------------------------- | ----------------- |
+| P85  | Organização de repositórios, módulos e padrões de código    | Engineering       |
+| P86  | Matriz de rastreabilidade ADR → requisitos → testes         | Arquitetura / QA  |
+| P87  | Definition of Done e governança de revisão                  | Engineering       |
+| P88  | Frameworks e infraestrutura de testes automatizados         | QA                |
+| P89  | Catálogo de invariantes financeiros e testes property-based | QA / Risk         |
+| P90  | Testes de contratos entre D01–D06                           | Integração / QA   |
+| P91  | Modelagem de custos, fills, slippage e latência no backtest | Quant / Trading   |
+| P92  | Simulação de margem, alavancagem e liquidação               | Quant / Risk      |
+| P93  | Protocolo Walk-forward, embargo e OOS                       | AI / Quant        |
+| P94  | Benchmarks e análise de robustez estatística                | AI / Quant        |
+| P95  | Reprodutibilidade e registro de experimentos                | MLOps             |
+| P96  | Paper Execution Adapter e paridade PAPER/LIVE               | Execution         |
+| P97  | Duração e amostra mínima de PAPER                           | Trading / Risk    |
+| P98  | Catálogo de falhas e testes de caos                         | QA / SRE          |
+| P99  | Testes de reconciliação e recuperação de ordens             | Execution / QA    |
+| P100 | Critérios quantitativos por gate                            | Risk / Quant      |
+| P101 | Evidências obrigatórias e estrutura do Evidence Bundle      | QA / Governança   |
+| P102 | Workflow de aprovação Go/No-Go                              | Governança / Risk |
+| P103 | Política de capital e exposição para LIVE Limited           | Risk / Gestores   |
+| P104 | Critérios de suspensão, rollback e retorno a PAPER          | Trading / SRE     |
+| P105 | Relatórios de qualidade e indicadores de defeitos           | QA                |
+| P106 | Testes integrados de aceitação e homologação LIVE           | QA / Operações    |
+
+Total: 22 novas pendências, P85–P106.
+
+### Priorização sugerida
+
+Sequência recomendada
+
+1. Fundação de engenharia: P85–P90.
+2. Validação quantitativa: P91–P95.
+3. Validação operacional: P96–P99.
+4. Promoção e governança: P100–P106.
+
+## 15. Checklist de critérios futuros de aceite
+
+Critérios de implementação
+
+0/14
+
+Todos os componentes críticos possuem testes automatizados pertinentes.
+
+Os invariantes financeiros são verificados e não apresentam violações críticas.
+
+Backtests incluem custos, restrições de execução e ausência de lookahead.
+
+Resultados Walk-forward e OOS são reproduzíveis.
+
+O agente é comparado com benchmarks adequados.
+
+Paper Trading opera sem acesso a capital real.
+
+Ordens, fills, posições e PnL são rastreáveis e reconciliáveis.
+
+Timeouts, eventos duplicados e falhas de conexão são testados.
+
+Recuperação e restauração possuem evidências verificáveis.
+
+Critérios quantitativos de risco e desempenho foram aprovados.
+
+Modelos e políticas ativos correspondem às versões homologadas.
+
+Go/No-Go é registrado por responsáveis autorizados.
+
+LIVE Limited possui capital e exposição limitados.
+
+Existe procedimento testado de suspensão e retorno a PAPER.
+
+Checklist de planejamento. Marcar um item não representa comprovação técnica ou aprovação para LIVE.
+
+## 16. Progresso arquitetural acumulado
+
+## Trade System V1
+
+D01 — Integração e Dados de Mercado
+
+6/6
+
+D02 — Inteligência Artificial
+
+10/10
+
+D03 — Risco e Execução
+
+12/12
+
+D04 — Operações e Observabilidade
+
+12/12
+
+D05 — Dados, Eventos e Auditoria
+
+14/14
+
+D06 — Infraestrutura e Segurança
+
+16/16
+
+D07 — Engenharia e Validação
+
+18 propostas
+
+# 70
+
+ADRs aprovadas
+
+# 18
+
+ADRs em validação
+
+# 106
+
+Pendências identificadas
+
+Se as 18 ADRs forem aprovadas, a arquitetura terá 88 decisões aprovadas, 33 componentes lógicos principais e 106 pendências técnicas identificadas.
+
+## 17. Próxima etapa recomendada
+
+Após o D07, recomendo iniciar a consolidação da arquitetura global e o planejamento do MVP, em vez de criar novos domínios sem necessidade demonstrada.
+
+## Trade System V1 — Architecture & MVP Blueprint
+
+Etapa transversal posterior à aprovação dos sete domínios
+
+A etapa deverá consolidar:
+
+- Mapa completo dos 33 componentes lógicos e suas dependências.
+- Arquitetura C4: Context, Container, Component e diagramas de fluxos críticos.
+- Contratos e eventos entre domínios.
+- Classificação das 106 pendências por criticidade, dependência e fase.
+- Definição do MVP mínimo para BTCUSDT.
+- Backlog de implementação com épicos, histórias e critérios de aceite.
+- Roadmap incremental até PAPER e LIVE Limited.
+- Matriz de rastreabilidade das ADRs e critérios de homologação.
+
+Objetivo: produzir um blueprint implementável, que permita iniciar o desenvolvimento sem perder as decisões arquiteturais já aprovadas.
+
+Recomendação: aprovar conceitualmente as ADR-071 a ADR-088, mantendo os limites quantitativos de desempenho, os períodos de PAPER e as condições de liberação LIVE como pendências de engenharia e governança.
+
+A validação do D07 completará o ciclo arquitetural proposto: conceber → implementar → testar → simular → validar → autorizar → monitorar → melhorar, sem confundir rentabilidade histórica com segurança ou desempenho futuro.
+
+
+=====
+
+# TRADE SYSTEM V1 — Consolidação Arquitetural
+
+TS-ARCH-D07-V1.0 · 10/11/2026
+
+&#x20;Aprovado
+
+Domínio 07 — Engenharia, Qualidade e Validação Operacional
+
+A validação arquitetural do Domínio 07 está concluída. As 18 decisões ADR-071 a ADR-088 foram aprovadas integralmente, sem ressalvas.
+
+Com essa aprovação, o Trade System V1 conclui o ciclo de validação conceitual dos sete domínios inicialmente planejados, estabelecendo as diretrizes para implementação, testes, validação quantitativa, Paper Trading, resiliência e liberação controlada em LIVE.
+
+# 18/18
+
+ADRs aprovadas
+
+# 6
+
+Componentes lógicos
+
+# 0
+
+Ressalvas
+
+Baseline conceitual aprovada · BTCUSDT · Binance Spot e USDⓈ-M Futures · RL/PPO · TRAINING/PAPER/LIVE
+
+## 1. Registro das decisões aprovadas
+
+| ADR     | Decisão consolidada                                     | Status   |
+| ------- | ------------------------------------------------------- | -------- |
+| ADR-071 | Arquitetura do domínio com seis componentes lógicos     | Aprovado |
+| ADR-072 | Governança de engenharia e rastreabilidade das entregas | Aprovado |
+| ADR-073 | Estratégia multicamadas de testes automatizados         | Aprovado |
+| ADR-074 | Invariantes financeiros como bloqueios de promoção      | Aprovado |
+| ADR-075 | Backtesting realista com custos e restrições            | Aprovado |
+| ADR-076 | Walk-forward e validação fora da amostra                | Aprovado |
+| ADR-077 | Benchmarks e análise de robustez                        | Aprovado |
+| ADR-078 | Reprodutibilidade de experimentos                       | Aprovado |
+| ADR-079 | Paper Trading obrigatório antes de LIVE                 | Aprovado |
+| ADR-080 | Paridade lógica entre PAPER e LIVE                      | Aprovado |
+| ADR-081 | Testes de resiliência e recuperação                     | Aprovado |
+| ADR-082 | Gates progressivos G0–G5                                | Aprovado |
+| ADR-083 | Critérios quantitativos de aceite                       | Aprovado |
+| ADR-084 | Revalidação após alterações materiais                   | Aprovado |
+| ADR-085 | Liberação LIVE com capital e exposição limitados        | Aprovado |
+| ADR-086 | Suspensão e retorno a PAPER                             | Aprovado |
+| ADR-087 | Evidence Bundle e auditoria das aprovações              | Aprovado |
+| ADR-088 | Separação de responsabilidades entre domínios           | Aprovado |
+
+Resultado: ADR-071 a ADR-088 incorporadas à baseline arquitetural do Trade System V1.
+
+A aprovação da ADR-083 estabelece a obrigação de definir critérios quantitativos, mas não aprova antecipadamente valores de Sharpe, drawdown, rentabilidade, amostra ou duração de PAPER.
+
+## 2. Componentes e responsabilidades consolidados
+
+D07-C01 — Engineering Delivery & Architecture Governance
+
+Converte ADRs em requisitos, backlog, contratos, implementação, critérios de aceite e evidências.
+
+Artefatos: Architecture Compliance Matrix, Engineering Backlog e Definition of Done.
+
+D07-C02 — Automated Testing & Quality Engineering
+
+Testes unitários, property-based, integração, contratos, E2E, segurança, desempenho e integridade financeira.
+
+Artefatos: Test Suites, Quality Reports e evidências de CI.
+
+D07-C03 — Strategy Validation & Backtesting
+
+Avaliação quantitativa de estratégias e modelos, incluindo custos, execução simulada, walk-forward, benchmarks e robustez.
+
+Artefatos: Backtest Report, Walk-Forward Report e Strategy Validation Evidence.
+
+D07-C04 — Paper Trading & Operational Simulation
+
+Validação integrada da operação sem capital real, preservando os fluxos de controle, risco e execução.
+
+Artefatos: Paper Trading Runs, Execution Simulation Reports e Operational Evidence.
+
+D07-C05 — Resilience & Failure Testing
+
+Valida comportamento seguro diante de falhas, timeouts, eventos duplicados, interrupções e recuperação.
+
+Artefatos: Failure Scenario Catalog, Chaos Test Results e Recovery Evidence.
+
+D07-C06 — Release Acceptance & LIVE Readiness
+
+Consolida evidências, controla gates de promoção, decisões Go/No-Go e condições de suspensão ou retorno a PAPER.
+
+Artefatos: Release Evidence Bundle, LiveReadinessAssessment e GoNoGoDecision.
+
+## 3. Arquitetura de validação aprovada
+
+Arquitetura D01–D06
+
+ADRs · Requisitos · Contratos · Políticas
+
+Engineering Delivery
+
+Backlog → Implementação → Build
+
+Automated Quality Gates
+
+Unit · Integration · Contract · E2E · Security
+
+Backtest & Walk-forward
+
+Paper Trading
+
+Resilience & Failure Testing
+
+Falhas · Reconciliação · Recuperação
+
+Release Acceptance & LIVE Readiness
+
+Evidence Bundle → Go/No-Go → Promoção autorizada
+
+Fluxo conceitual aprovado. As validações podem executar em paralelo, desde que todas as evidências obrigatórias estejam disponíveis no gate correspondente.
+
+### Requisitos estruturantes
+
+A baseline estabelece cinco compromissos:
+
+- Rastreabilidade: ADR → requisito → implementação → teste → evidência.
+- Qualidade: invariantes financeiros críticos são bloqueantes.
+- Validação quantitativa: resultados líquidos, fora da amostra e comparados com benchmarks.
+- Validação operacional: PAPER e testes de resiliência obrigatórios.
+- Governança: nenhuma promoção LIVE sem avaliação de prontidão e aprovação humana.
+
+## 4. Gates de promoção aprovados
+
+G0
+
+Engineering Ready
+
+Implementação e testes básicos aprovados
+
+G1
+
+Strategy Validated
+
+Backtest, OOS, walk-forward e benchmarks
+
+G2
+
+Paper Qualified
+
+Operação simulada estável e rastreável
+
+G3
+
+Operationally Ready
+
+Segurança, resiliência e recuperação aprovadas
+
+G4
+
+LIVE Limited
+
+Capital limitado, aprovação humana e supervisão reforçada
+
+G5
+
+LIVE Controlled
+
+Expansão condicionada a evidências operacionais
+
+### Condições de aprovação
+
+| Gate | Evidências obrigatórias                           | Responsáveis propostos  |
+| ---- | ------------------------------------------------- | ----------------------- |
+| G0   | CI, testes, contratos e conformidade arquitetural | Engenharia / QA         |
+| G1   | OOS, walk-forward, benchmarks e métricas de risco | AI / Quant / Risk       |
+| G2   | PAPER, consistência de ordens e rastreabilidade   | Trading / QA            |
+| G3   | Segurança, resiliência, DR e OperationalReadiness | Risk / SRE / Segurança  |
+| G4   | Capital e exposição limitados, aprovação formal   | Gestores autorizados    |
+| G5   | Histórico LIVE e estabilidade dentro dos limites  | Responsáveis designados |
+
+Os gates são progressivos, mas não irreversíveis.
+
+Alterações materiais no modelo, features, simulador, execução ou políticas de risco deverão desencadear reavaliação das evidências afetadas.
+
+A liberação LIVE Limited não equivale à autorização para operar sem supervisão ou ampliar capital automaticamente.
+
+## 5. Invariantes e controles de qualidade aprovados
+
+A implementação deverá demonstrar, entre outros requisitos:
+
+| Invariante                 | Comportamento exigido                       |
+| -------------------------- | ------------------------------------------- |
+| Ordem rejeitada pelo risco | Não chega à Binance                         |
+| `HOLD`                     | Não abre nova posição                       |
+| Spot                       | Não executa venda descoberta                |
+| Fill duplicado             | Não duplica posição nem PnL                 |
+| Timeout de ordem           | Não provoca reenvio cego                    |
+| Modelo não aprovado        | Não opera em LIVE                           |
+| Falha de reconciliação     | Bloqueia novas exposições conforme política |
+| Risk Engine indisponível   | Bloqueia novas entradas                     |
+| Intervenção humana         | Não contorna o Risk Engine                  |
+| Ambientes não produtivos   | Não acessam capital ou credenciais LIVE     |
+
+Regra aprovada: violações críticas desses invariantes impedem a promoção, independentemente da rentabilidade apresentada.
+
+### Validação quantitativa
+
+Os testes deverão considerar custos, slippage, spread, funding, margem, alavancagem, latência e comportamento de execução, conforme aplicável.
+
+A avaliação deverá incluir dados fora da amostra, walk-forward, benchmarks, diferentes regimes de mercado e análise de robustez.
+
+O objetivo exploratório de rentabilidade não substitui os critérios de preservação de capital, risco ajustado e confiabilidade estatística.
+
+## 6. Contratos e evidências consolidados
+
+| Contrato                       | Finalidade                            |
+| ------------------------------ | ------------------------------------- |
+| `ArchitectureComplianceRecord` | Conformidade com ADRs                 |
+| `EngineeringWorkItem`          | Requisitos e entregas                 |
+| `TestExecutionResult`          | Resultado dos testes                  |
+| `BacktestRunManifest`          | Identidade e configuração do backtest |
+| `WalkForwardValidationReport`  | Avaliação temporal fora da amostra    |
+| `StrategyValidationReport`     | Resultado consolidado da estratégia   |
+| `PaperTradingRun`              | Execução simulada                     |
+| `FailureScenarioResult`        | Resultado dos testes de falha         |
+| `QualityGateDecision`          | Aprovação ou rejeição de gate         |
+| `ReleaseEvidenceBundle`        | Evidências vinculadas à versão        |
+| `LiveReadinessAssessment`      | Prontidão para LIVE                   |
+| `GoNoGoDecision`               | Decisão formal de liberação           |
+
+As evidências deverão referenciar versões de software, modelos, datasets, features, políticas e ambientes, além dos responsáveis pela aprovação.
+
+O detalhamento dos schemas permanece para a engenharia.
+
+## 7. Pendências técnicas consolidadas
+
+As 22 pendências P85–P106 permanecem abertas.
+
+| ID   | Pendência                                        | Responsável       |
+| ---- | ------------------------------------------------ | ----------------- |
+| P85  | Repositórios, módulos e padrões de código        | Engineering       |
+| P86  | Rastreabilidade ADR → requisito → teste          | Arquitetura / QA  |
+| P87  | Definition of Done e revisão de código           | Engineering       |
+| P88  | Frameworks e infraestrutura de testes            | QA                |
+| P89  | Invariantes financeiros e property-based testing | QA / Risk         |
+| P90  | Testes de contratos entre domínios               | Integração / QA   |
+| P91  | Custos, fills, slippage e latência no backtest   | Quant / Trading   |
+| P92  | Margem, alavancagem e liquidação simulada        | Quant / Risk      |
+| P93  | Protocolo walk-forward, embargo e OOS            | AI / Quant        |
+| P94  | Benchmarks e robustez estatística                | AI / Quant        |
+| P95  | Reprodutibilidade de experimentos                | MLOps             |
+| P96  | Paper Execution Adapter e paridade PAPER/LIVE    | Execution         |
+| P97  | Duração e amostra mínima de PAPER                | Trading / Risk    |
+| P98  | Catálogo de falhas e testes de caos              | QA / SRE          |
+| P99  | Reconciliação e recuperação de ordens            | Execution / QA    |
+| P100 | Critérios quantitativos por gate                 | Risk / Quant      |
+| P101 | Evidence Bundle e evidências obrigatórias        | QA / Governança   |
+| P102 | Workflow de aprovação Go/No-Go                   | Governança / Risk |
+| P103 | Capital e exposição para LIVE Limited            | Risk / Gestores   |
+| P104 | Suspensão, rollback e retorno a PAPER            | Trading / SRE     |
+| P105 | Relatórios de qualidade e defeitos               | QA                |
+| P106 | Testes integrados de homologação LIVE            | QA / Operações    |
+
+### Organização por frente de implementação
+
+Fundação de engenharia
+
+P85–P90 · 6 itens
+
+Validação quantitativa
+
+P91–P95 · 5 itens
+
+Validação operacional
+
+P96–P99 · 4 itens
+
+Promoção e governança
+
+P100–P106 · 7 itens
+
+Distribuição das 22 pendências por frente. As barras representam quantidade relativa, não progresso de execução.
+
+As pendências deverão ser incorporadas ao backlog técnico e priorizadas por dependência, risco e fase de entrega.
+
+## 8. Progresso acumulado — Trade System V1
+
+## Baseline arquitetural global
+
+7 domínios aprovados
+
+D01 — Integração e Dados de Mercado
+
+6/6
+
+D02 — Inteligência Artificial
+
+10/10
+
+D03 — Risco e Execução
+
+12/12
+
+D04 — Operações e Observabilidade
+
+12/12
+
+D05 — Dados, Eventos e Auditoria
+
+14/14
+
+D06 — Infraestrutura e Segurança
+
+16/16
+
+D07 — Engenharia e Validação
+
+18/18
+
+# 88
+
+ADRs aprovadas
+
+# 33
+
+Componentes lógicos
+
+# 106
+
+Pendências técnicas
+
+Os 33 componentes são responsabilidades lógicas, não 33 microsserviços. As 106 pendências representam detalhamentos e trabalhos identificados, não necessariamente defeitos.
+
+### Situação consolidada
+
+| Dimensão                             | Situação                   |
+| ------------------------------------ | -------------------------- |
+| Arquitetura conceitual D01–D07       | Aprovada                   |
+| Decisões ADR-001–ADR-088             | Aprovadas                  |
+| Modelo físico e contratos detalhados | Pendentes                  |
+| Implementação dos componentes        | Não validada nesta etapa   |
+| Backtesting e walk-forward           | Não executados nesta etapa |
+| Paper Trading                        | Não homologado             |
+| Segurança e recuperação              | Não homologadas            |
+| Operação LIVE                        | Não autorizada             |
+
+A conclusão arquitetural não deve ser confundida com prontidão de produção.
+
+## 9. Próxima etapa — Architecture & MVP Blueprint
+
+Com os sete domínios aprovados, recomendo não iniciar imediatamente um Domínio 08. O próximo trabalho deve ser transversal: consolidar a arquitetura e transformá-la em um plano executável.
+
+## TS-ARCH-GLOBAL-V1.0
+
+Architecture & MVP Blueprint · Próxima etapa proposta
+
+O blueprint deverá produzir seis entregáveis principais:
+
+1. Arquitetura Global C4: Context, Container, Component e fluxos críticos.
+2. Component Map: mapeamento dos 33 componentes, interfaces, dependências e responsabilidades.
+3. Contract & Event Catalog: APIs, eventos, schemas e identificadores.
+4. Technical Backlog: classificação e priorização das 106 pendências.
+5. MVP Scope & Roadmap: definição do menor produto verificável para BTCUSDT.
+6. Acceptance & Release Plan: critérios de qualidade, gates G0–G5 e evidências exigidas.
+
+Iniciar Architecture & MVP Blueprint&#x20;
+
+Conclusão: o Domínio 07 está formalmente aprovado como TS-ARCH-D07-V1.0, consolidando as ADR-071 a ADR-088.
+
+O Trade System V1 possui agora 7 domínios conceitualmente aprovados, 88 decisões arquiteturais, 33 componentes lógicos principais e 106 pendências técnicas identificadas.
+
+O próximo objetivo é transformar essa baseline em uma arquitetura implementável e um roadmap de desenvolvimento, priorizando o MVP de trading automatizado para BTCUSDT, com controle de risco, rastreabilidade e validação progressiva antes de qualquer operação com capital real.

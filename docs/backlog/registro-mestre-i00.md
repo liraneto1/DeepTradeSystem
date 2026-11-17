@@ -1,4 +1,4 @@
-# Registro mestre de I00
+ # Registro mestre de I00
 
 Referência em 11/11/2026. As baselines são `TS-ARCH-GLOBAL-V1.0` e
 `TS-ENG-I00-V1.0`. O [backlog](../02-I00-BACKLOG.md) define as entregas e
@@ -51,14 +51,13 @@ da entrega. A aprovação operacional dos gates exige decisão humana.
 
 | ID | Estado | Próxima ação |
 |---|---|---|
-| DOC-01 | Aberta | Reconciliar P01–P47 com os originais D01–D04 do acervo local e registrar fonte por ID. A [visão inicial](../architecture/visao-inicial.md) aponta exemplos localizados. |
+| DOC-01 | Para revisão | P01–P47 confrontadas com D01–D04. Revisar ressalvas e validar o registro. [Reconciliação](../governance/PENDING-ITEM-RECONCILIATION.md) |
 | DOC-02 | Aberta | Confirmar a classificação de P18. O domínio D02 identifica o tema de degradação e retreinamento. A classificação M3 segue provisória. |
-| DOC-03 | Parcial | I00 está mapeado. Completar a relação global entre ADR, componente, pendência, épico, história, contrato, teste e evidência. Recuperar as fontes integrais das ADRs 001–088 e validar P01–P106 antes de publicar o vínculo global. |
-| DOC-04 | Parcial | I00-13 valida a chegada tardia, retry e reinício. Definir reconciliação de versões conflitantes ou de lacunas que nunca recebem a versão anterior. |
-| DOC-05 | Aberta | Definir e validar as métricas de backlog e atraso de Outbox previstas em T06. Registrar fonte, unidade e cenário de observação. |
-| DOC-06 | Aberta | Registrar a avaliação de compatibilidade e segurança das dependências de release, owners nominais, capacidade e decisões pendentes sobre produção. |
-| DOC-07 | Aberta | Bundle I00 RC1 aprovado. Registrar critérios quantitativos aplicáveis e a decisão sobre G0 após revisão das evidências do gate. |
+| DOC-03 | Parcial | I00–I09 e 24 histórias mapeados. Validar vínculos propostos por ID, contratos, testes e candidato. [Consolidação](../governance/DOC-03-CONSOLIDATION.md) |
+| DOC-04 | Parcial | Colisão concorrente corrigida e testada. Faltam confirmação dos produtores, quarentena e reparo e retomada verificados. [Evidência AC07](../evidence/AC07-conflito-concorrente-outbox.md) |
+| DOC-05 | Em revisão de aceite | Coletor implementado e validado em integração. Faltam parâmetros operacionais e parecer. [Evidência AC09](../evidence/AC09-coletor-outbox.md) |
+| DOC-06 | Parcial | Critérios aprovados e 38 integrações PostgreSQL por digest demonstradas. Faltam conclusão da triagem, inventários efetivos Linux e parecer humano. [Retorno](../evidence/AC02-d561026-retorno-engenharia.md) |
+| DOC-07 | Aberta | Aceite do RC1 e evidências de AC12 consolidados no [DOC-07](../governance/DOC-07-RC1-ACCEPTANCE.md). Registrar critérios aplicáveis e decisão humana de G0. |
 
 Os [riscos residuais da baseline](../06-PENDENCIAS-E-RASTREABILIDADE.md)
-mantêm seus identificadores. As referências Word versionadas são
-reconstruções. As fontes originais de arquitetura estão no acervo local.
+mantêm seus identificadores. As fontes oficiais são os [TXT de arquitetura e engenharia](../referencias/originais/) confirmados em 16/11/2026.

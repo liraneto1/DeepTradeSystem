@@ -1,2 +1,3 @@
-# Fontes de referência DOCX
-Os oito arquivos são os documentos consolidados/reconstruídos produzidos anteriormente. Eles **não** contêm necessariamente a redação integral original das 88 ADRs e 106 pendências. O agente deve tratá-los como fontes secundárias de contexto e preservar as lacunas. A baseline de decisões aprovadas é resumida nos arquivos `docs/00` a `docs/06`.
+# Fontes oficiais do Trade System V1
+
+Em 16/11/2026, o usuário confirmou a retirada intencional dos Word e adotou os [TXT em originais](originais/) como fontes oficiais. Consulte o Blueprint global, o Engineering Foundation e D01–D07. Preserve as lacunas das fontes.

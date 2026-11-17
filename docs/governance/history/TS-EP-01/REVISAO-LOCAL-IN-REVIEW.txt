@@ -1,0 +1,695 @@
+# TS-EP-01.md
+## TRADE SYSTEM V1 — Engineering Foundation
+
+**Document ID:** TS-EP-01  
+**Document Type:** Epic Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Primary Increment:** I00  
+**Primary Domain:** D07 — Engineering, Quality & Validation  
+**Supporting Domains:** D05 — Data, Events & Audit; D06 — Infrastructure, Security & DevOps  
+**Functional Owner:** Engineering Architecture  
+**Technical Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 — APPROVED  
+**Epic Template:** TS-DOC-TPL-EPIC-001 — APPROVED  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Approval Reference:** PENDING  
+**Domain:** D07, com apoio de D05 e D06  
+**Increment:** [I00](../increments/I00-INCREMENT.md)  
+**Owner:** Engineering Architecture, conforme responsabilidade funcional indicada acima.  
+**Source References:** [anexo original](../governance/history/TS-EP-01/IN-REVIEW.txt), [fontes oficiais](../referencias/originais/) e [backlog I00](../02-I00-BACKLOG.md)  
+**Related ADRs:** [decisões técnicas do I00](../05-ADRS-TECNICAS.md), com vínculos individuais sujeitos à verificação da seção 2.  
+**Related Components:** seção 2 e [DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** seções 8, 15 e 18.  
+**Dependencies:** [especificação aprovada do I00](../increments/I00-INCREMENT.md), [template de Épico](../governance/templates/EPIC-TEMPLATE.md) e dependências da seção 17.  
+**Acceptance Criteria:** seções 15, 20 e 21, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-16
+
+---
+
+## 1. Identificação e finalidade
+
+O épico TS-EP-01 estabelece a fundação de engenharia necessária à evolução incremental do TRADE SYSTEM V1.
+
+Seu propósito é criar as condições técnicas para desenvolver, testar, integrar, observar e manter componentes de forma reproduzível e auditável.
+
+O épico não tem como finalidade implementar estratégias financeiras, treinar modelos de inteligência artificial ou executar operações de mercado.
+
+### 1.1 Resultado esperado
+
+Ao final da implementação, o projeto deverá possuir:
+
+- Estrutura de repositório modular.
+- Ambiente Python reproduzível.
+- Convenções de engenharia.
+- Contratos de interface versionados.
+- API de fundação.
+- Controles básicos de segurança e isolamento.
+- Observabilidade técnica.
+- Pipeline automatizado de qualidade.
+- Documentação técnica rastreável.
+- Evidências de conformidade.
+
+### 1.2 Valor para o sistema
+
+A fundação deverá reduzir inconsistências entre ambientes, aumentar a confiabilidade das entregas e estabelecer controles para a evolução dos incrementos I01–I09.
+
+### 1.3 Critério de sucesso
+
+O épico deverá demonstrar suas capacidades por meio dos critérios de aceite definidos neste documento, dos testes associados e das evidências verificáveis.
+
+O aceite do épico não substituirá o aceite do I00 ou a homologação de G0.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines aplicáveis
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-DOC-STD-V1.0.
+- TS-DOC-REG-001.
+- TS-DOC-GAP-001.
+- TS-DOC-TRC-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+
+### 2.2 ADRs
+
+As ADRs técnicas TS-ADR-089–098 constituem o conjunto aprovado de decisões de engenharia do I00.
+
+O vínculo individual de cada ADR com as capacidades deste épico deverá ser confirmado mediante verificação do respectivo registro.
+
+**Estado dos vínculos individuais:** UNVERIFIED.
+
+As ADRs arquiteturais ADR-001–088 poderão ser aplicáveis, conforme a responsabilidade de cada componente.
+
+Não serão atribuídos textos normativos específicos a ADRs cujas fontes originais ainda não tenham sido verificadas.
+
+### 2.3 Componentes
+
+O épico envolve responsabilidades dos seguintes domínios:
+
+| Domínio | Responsabilidade |
+|---|---|
+| D07 | Engenharia, qualidade, contratos e validação |
+| D06 | Infraestrutura, segurança, observabilidade e CI/CD |
+| D05 | Integração com os contratos e mecanismos de eventos |
+
+Os IDs específicos dos componentes deverão ser reconciliados com o catálogo original dos 33 componentes.
+
+### 2.4 Fluxos arquiteturais
+
+Os fluxos F01–F10 deverão ser analisados quanto à aplicabilidade às interfaces e aos mecanismos de fundação.
+
+Nenhum fluxo será declarado integralmente implementado neste épico sem confirmação de seu escopo original.
+
+---
+
+## 3. Escopo do épico
+
+### 3.1 Incluído
+
+1. Organização do monorepo.
+2. Toolchain Python.
+3. Padronização de dependências.
+4. Qualidade estática e testes.
+5. Infraestrutura de contratos versionados.
+6. API de fundação.
+7. Health checks.
+8. Configuração e isolamento de ambientes.
+9. Segurança básica de engenharia.
+10. Observabilidade.
+11. Integração contínua.
+12. Governança documental e rastreabilidade.
+13. Preparação de evidências de engenharia.
+
+### 3.2 Excluído
+
+- Implementação do motor de trading.
+- Execução de ordens na Binance.
+- Treinamento de PPO, DDPG ou DQN.
+- Inferência de modelos em operação.
+- Backtesting quantitativo completo.
+- Construção de estratégias de Smart Money.
+- Gestão operacional de posições.
+- Qualificação PAPER.
+- Operação LIVE.
+- Homologação automática de G0.
+
+### 3.3 Fronteira com TS-EP-02
+
+O TS-EP-02 será responsável principalmente pela fundação de dados e eventos, incluindo:
+
+- PostgreSQL.
+- Migrations.
+- Transactional Outbox.
+- Dispatcher.
+- Consumidores idempotentes.
+- Persistência e recuperação de eventos.
+
+O TS-EP-01 poderá fornecer contratos, configuração, testes, observabilidade e infraestrutura utilizados pelo TS-EP-02.
+
+A distribuição final das responsabilidades será validada durante o refinamento das Features e histórias.
+
+---
+
+## 4. Stack técnica
+
+A baseline TS-ENG-I00-V1.0 estabelece:
+
+| Responsabilidade | Tecnologia |
+|---|---|
+| Linguagem | Python 3.12+ |
+| API | FastAPI |
+| Validação de dados | Pydantic v2 |
+| Dependências | uv |
+| Lint e formatação | Ruff |
+| Tipagem | mypy |
+| Testes | pytest |
+| Testes baseados em propriedades | Hypothesis |
+| Containers locais | Docker Compose |
+| CI/CD | GitHub Actions |
+| Telemetria | OpenTelemetry |
+| Logs | JSON estruturado |
+| Contratos | JSON Schema / OpenAPI |
+
+O PostgreSQL 17, SQLAlchemy 2 e Alembic permanecem na baseline técnica do I00, com responsabilidade principal de persistência atribuída ao TS-EP-02.
+
+Versões exatas deverão ser fixadas e verificadas durante a implementação.
+
+---
+
+## 5. Features propostas
+
+As Features abaixo representam a decomposição inicial aprovada como proposta no documento do I00.
+
+| Feature ID | Nome | Responsabilidade |
+|---|---|---|
+| I00-FEAT-001 | Monorepo Bootstrap | Estrutura modular do projeto |
+| I00-FEAT-002 | Python Toolchain & Quality | Ambiente e verificações de qualidade |
+| I00-FEAT-003 | Versioned Contracts | Estrutura e validação de contratos |
+| I00-FEAT-008 | Foundation API | API básica e health checks |
+| I00-FEAT-009 | Security & Environment Isolation | Segurança e segregação |
+| I00-FEAT-010 | Observability Foundation | Logs, métricas e traces |
+| I00-FEAT-011 | CI/CD Foundation | Automação de qualidade |
+| I00-FEAT-012 | Documentation & Traceability | Governança e rastreabilidade |
+| I00-FEAT-014 | Evidence & G0 Preparation | Preparação de evidências |
+
+**Estado:** PROPOSED.
+
+Os identificadores e os vínculos deverão ser formalizados no Feature Catalog.
+
+A aprovação deste épico não implica aprovação automática das especificações individuais dessas Features.
+
+---
+
+## 6. Pacotes de trabalho relacionados
+
+A distribuição inicial proposta compreende:
+
+| Work Package | Entrega |
+|---|---|
+| I00-01 | Monorepo Bootstrap |
+| I00-02 | Python Toolchain |
+| I00-03 | Versioned Contracts |
+| I00-08 | Foundation API |
+| I00-09 | Security & Isolation |
+| I00-10 | Observability |
+| I00-11 | CI/CD |
+| I00-12 | Documentation & Traceability |
+| I00-14 | Evidence Bundle — participação |
+
+O I00-14 é transversal aos dois épicos.
+
+A propriedade definitiva e os critérios específicos de cada pacote deverão ser formalizados no refinamento técnico.
+
+---
+
+## 7. Histórias técnicas
+
+O backlog aprovado contém 24 histórias iniciais.
+
+Os vínculos propostos para este épico incluem:
+
+| Story ID | Capacidade | Estado do vínculo |
+|---|---|---|
+| TS-ST-001 | Monorepo Bootstrap | PROPOSED |
+| TS-ST-002 | Versioned Contracts | PROPOSED |
+
+As descrições originais e os vínculos deverão ser confirmados no backlog autoritativo.
+
+As demais Features deverão ser associadas a histórias existentes ou a novas histórias formalizadas mediante governança.
+
+Não serão criados novos identificadores de histórias neste documento.
+
+---
+
+## 8. Requisitos e pendências
+
+### 8.1 Origem
+
+As pendências P01–P106 compõem o inventário aprovado do projeto.
+
+O vínculo de pendências específicas com TS-EP-01 deverá ser estabelecido mediante consulta aos registros originais.
+
+### 8.2 Restrições de rastreabilidade
+
+- Não reconstruir textos de pendências ausentes.
+- Não presumir associação individual entre ADR e pendência.
+- Não marcar vínculos como VERIFIED sem fonte.
+- Registrar lacunas quando a origem estiver indisponível.
+
+### 8.3 Estado inicial
+
+**Requirement Traceability:** INCOMPLETE.
+
+Lacunas relacionadas: DOC-GAP-001, DOC-GAP-003 e DOC-GAP-005.
+
+---
+
+## 9. Comportamentos e capacidades esperadas
+
+### 9.1 Monorepo
+
+A estrutura deverá:
+
+- Separar responsabilidades por módulos.
+- Preservar fronteiras arquiteturais.
+- Permitir instalação e execução reproduzíveis.
+- Centralizar configurações comuns sem acoplamento indevido.
+- Suportar testes por componente.
+- Permitir evolução incremental.
+
+### 9.2 Toolchain
+
+O ambiente deverá:
+
+- Utilizar a versão aprovada de Python.
+- Fixar dependências.
+- Executar verificações estáticas.
+- Executar testes automatizados.
+- Produzir resultados rastreáveis.
+- Ser reproduzível por outro desenvolvedor ou ambiente CI.
+
+### 9.3 Contratos
+
+A fundação deverá:
+
+- Manter schemas versionados.
+- Validar estrutura e semântica.
+- Identificar produtores e consumidores.
+- Preservar compatibilidade.
+- Permitir testes de contrato.
+- Registrar alterações de interface.
+
+### 9.4 API de fundação
+
+A API deverá:
+
+- Expor interfaces de saúde e prontidão conforme especificação.
+- Validar entradas.
+- Produzir respostas e erros padronizados.
+- Aplicar autorização quando necessária.
+- Registrar telemetria.
+- Não expor capacidades de execução financeira no I00.
+
+### 9.5 Segurança
+
+A fundação deverá:
+
+- Isolar configurações por ambiente.
+- Impedir acesso LIVE no I00.
+- Proteger segredos.
+- Validar permissões.
+- Falhar de maneira segura.
+- Preservar trilhas de auditoria.
+
+### 9.6 Observabilidade
+
+A fundação deverá oferecer:
+
+- Logs estruturados.
+- Correlação entre operações.
+- Métricas técnicas.
+- Traces aplicáveis.
+- Health checks.
+- Informações para diagnóstico e recuperação.
+
+### 9.7 CI/CD
+
+O pipeline deverá:
+
+- Instalar dependências de maneira reproduzível.
+- Executar lint.
+- Executar tipagem.
+- Executar testes.
+- Validar contratos.
+- Produzir relatórios.
+- Identificar o build.
+- Bloquear entregas que violem verificações obrigatórias.
+- Não permitir promoção LIVE.
+
+---
+
+## 10. Contratos relacionados
+
+Os contratos iniciais do I00 são:
+
+| Contrato | Relação proposta com TS-EP-01 |
+|---|---|
+| CommandEnvelope.v1 | Governança e validação de comandos |
+| EventEnvelope.v1 | Padronização de eventos |
+| ErrorEnvelope.v1 | Erros padronizados |
+| HealthStatus.v1 | Estado de saúde e prontidão |
+| OutboxRecord.v1 | Interface compartilhada com TS-EP-02 |
+
+As responsabilidades de produção, consumo e ownership serão confirmadas nas especificações individuais.
+
+**Contract Readiness:** NOT_READY.
+
+Nenhum schema será declarado implementado sem verificação.
+
+---
+
+## 11. Dados e persistência
+
+O TS-EP-01 não será proprietário da persistência transacional de eventos.
+
+Essa responsabilidade pertence principalmente ao TS-EP-02.
+
+Entretanto, o TS-EP-01 deverá assegurar que:
+
+- Contratos sejam compatíveis com os modelos de dados.
+- Configurações sejam versionadas.
+- Os mecanismos de observabilidade possam correlacionar eventos.
+- Os testes possam utilizar ambientes controlados.
+- A integração não contorne os limites dos componentes.
+- Mudanças de schema sejam tratadas pelo Change Control.
+
+---
+
+## 12. Requisitos não funcionais
+
+| Categoria | Requisito | Critério de verificação |
+|---|---|---|
+| Reprodutibilidade | Ambiente consistente | Instalação e build repetíveis |
+| Manutenibilidade | Organização modular | Verificação de estrutura e dependências |
+| Qualidade | Análise estática e testes | Pipeline executado |
+| Segurança | Segregação de ambientes | Testes de isolamento |
+| Observabilidade | Diagnóstico rastreável | Logs, métricas e traces |
+| Auditabilidade | Identificação das alterações | Commit, versão e evidências |
+| Confiabilidade | Falha controlada | Testes negativos e de recuperação |
+| Compatibilidade | Contratos versionados | Testes de conformidade |
+
+Limiares quantitativos adicionais deverão ser definidos e aprovados antes de serem utilizados como critérios de aceite.
+
+---
+
+## 13. Segurança e governança
+
+### 13.1 Ambientes
+
+O I00 deverá preservar TRAINING, PAPER e LIVE como ambientes segregados.
+
+### 13.2 LIVE
+
+O acesso LIVE permanecerá proibido neste incremento.
+
+### 13.3 Credenciais
+
+Nenhuma credencial LIVE poderá ser utilizada ou incluída na configuração do épico.
+
+### 13.4 Autoridade financeira
+
+O épico não poderá criar caminhos de execução que contornem Control → Risk → Execution.
+
+### 13.5 Aprovações
+
+Alterações normativas deverão seguir o Approval Register e o Change Log.
+
+### 13.6 Falha segura
+
+Erros de autorização, configuração ou isolamento deverão impedir ações incompatíveis com as políticas aprovadas.
+
+---
+
+## 14. Estratégia de validação
+
+| Tipo | Escopo esperado |
+|---|---|
+| UNIT | Funções e componentes da fundação |
+| CONTRACT | Schemas e compatibilidade |
+| INTEGRATION | API, configuração e interfaces |
+| PROPERTY_BASED | Invariantes aplicáveis |
+| SECURITY | Permissões, segredos e isolamento |
+| RESILIENCE | Falhas e recuperação |
+| END_TO_END | Fluxo de engenharia controlado |
+| REGRESSION | Preservação de comportamento após mudanças |
+
+Os testes serão especificados individualmente com o template TS-DOC-TPL-TEST-001.
+
+Nenhum resultado é declarado neste documento.
+
+---
+
+## 15. Critérios de aceite do épico
+
+Os critérios abaixo são propostos para a aceitação do TS-EP-01 e deverão ser vinculados aos critérios I00-AC01–I00-AC12 aplicáveis.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| EP01-AC01 | Estrutura modular reproduzível | Auditoria do repositório e build |
+| EP01-AC02 | Toolchain e dependências controladas | Lockfile e pipeline |
+| EP01-AC03 | Contratos iniciais versionados | Schemas e testes |
+| EP01-AC04 | API de fundação validada | Testes de API e health |
+| EP01-AC05 | Segregação de ambientes demonstrada | Testes de isolamento |
+| EP01-AC06 | LIVE inacessível | Verificações de segurança |
+| EP01-AC07 | Observabilidade disponível | Logs, métricas e traces |
+| EP01-AC08 | CI com verificações obrigatórias | Relatórios de execução |
+| EP01-AC09 | Rastreabilidade documental suficiente | Matriz verificada |
+| EP01-AC10 | Evidências de engenharia verificáveis | Evidence Bundle |
+
+**Estado dos critérios:** PROPOSED / NOT_EVALUATED.
+
+Esses critérios não substituem os critérios normativos I00-AC01–I00-AC12.
+
+A aprovação do documento deverá validar a proposta de critérios do épico; sua satisfação dependerá de implementação e testes futuros.
+
+---
+
+## 16. Evidências esperadas
+
+O TS-EP-01 deverá contribuir para o Evidence Bundle do I00 com:
+
+- Identidade do repositório e commit.
+- Lockfile e versões.
+- Relatórios de build.
+- Resultados de lint e tipagem.
+- Resultados de testes.
+- Validação de contratos.
+- Verificações de segurança.
+- Evidências de isolamento.
+- Evidências de observabilidade.
+- Registros de CI.
+- Matriz de rastreabilidade.
+- Manifesto de integridade.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é considerada produzida ou validada.
+
+---
+
+## 17. Dependências
+
+### 17.1 Dependências internas
+
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- Contratos iniciais.
+- Catálogo de componentes.
+- Backlog técnico.
+- Políticas de segurança.
+- Documentação de governança.
+
+### 17.2 Dependência com TS-EP-02
+
+O TS-EP-02 dependerá de capacidades compartilhadas do TS-EP-01, especialmente:
+
+- Toolchain.
+- Contratos.
+- Testes.
+- Configuração.
+- Observabilidade.
+- CI/CD.
+
+A integração deverá ser especificada sem duplicação de responsabilidades.
+
+### 17.3 Dependências externas
+
+- Repositório Git.
+- Ambiente Python.
+- Infraestrutura local de containers.
+- Serviço de CI.
+- Fontes originais das decisões aprovadas.
+
+### 17.4 Bloqueios
+
+Dependências documentais ainda não verificadas deverão permanecer registradas no Gap Register.
+
+---
+
+## 18. Riscos e lacunas
+
+| Gap ID | Impacto |
+|---|---|
+| DOC-GAP-001 | Pendências originais não reconciliadas |
+| DOC-GAP-003 | ADRs originais não verificadas integralmente |
+| DOC-GAP-004 | Registros individuais das ADRs técnicas pendentes |
+| DOC-GAP-005 | Vínculos de rastreabilidade incompletos |
+| DOC-GAP-006 | Features e histórias não refinadas |
+| DOC-GAP-007 | Arquivos do repositório não auditados |
+| DOC-GAP-008 | Owners e aprovações a complementar |
+
+DOC-GAP-002, relativo à classificação de P18, deverá permanecer no registro global, mas não será considerado bloqueio direto deste épico sem confirmação de dependência.
+
+A severidade e o bloqueio deverão seguir a triagem aprovada no Gap Register.
+
+---
+
+## 19. Planejamento de evolução
+
+A sequência lógica proposta é:
+
+1. Verificar a baseline e as fontes.
+2. Refinar as Features do épico.
+3. Confirmar histórias e dependências.
+4. Especificar contratos.
+5. Especificar testes.
+6. Avaliar Documentation Readiness.
+7. Submeter histórias prontas à implementação autorizada.
+8. Produzir evidências.
+9. Avaliar critérios de aceite.
+10. Solicitar aceite do épico.
+
+Atividades independentes poderão ser executadas em paralelo após validação de suas dependências.
+
+---
+
+## 20. Epic Documentation Readiness
+
+O épico estará documentalmente pronto quando:
+
+- Escopo e objetivo estiverem aprovados.
+- ADRs aplicáveis estiverem verificadas.
+- Componentes responsáveis estiverem identificados.
+- Requisitos possuírem origem verificável.
+- Features estiverem formalizadas.
+- Histórias estiverem identificadas.
+- Dependências estiverem mapeadas.
+- Contratos necessários estiverem especificados.
+- Critérios de aceite estiverem testáveis.
+- Lacunas bloqueantes estiverem resolvidas.
+
+**Documentation Readiness:** NOT_READY.
+
+Justificativa: permanecem lacunas documentais, vínculos propostos e especificações individuais pendentes.
+
+---
+
+## 21. Epic Implementation Acceptance
+
+O TS-EP-01 poderá ser aceito quando:
+
+1. As capacidades obrigatórias estiverem implementadas.
+2. As Features previstas estiverem aceitas.
+3. Os critérios EP01-AC01–EP01-AC10 estiverem atendidos.
+4. Os testes aplicáveis tiverem sido executados.
+5. Os contratos estiverem conformes.
+6. Os invariantes de segurança estiverem demonstrados.
+7. As evidências estiverem verificadas.
+8. As lacunas bloqueantes estiverem encerradas.
+9. A rastreabilidade estiver atualizada.
+10. A autoridade competente registrar a aprovação.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite do épico não representa homologação de G0.
+
+---
+
+## 22. Gate G0
+
+O TS-EP-01 contribui para o gate G0 — Engineering Ready.
+
+A homologação de G0 dependerá também do TS-EP-02, da conclusão dos critérios I00-AC01–I00-AC12 e da validação do Evidence Bundle.
+
+**Gate G0:** NOT_EVALUATED.
+
+**LIVE Authorization:** NOT_AUTHORIZED.
+
+---
+
+## 23. Rastreabilidade
+
+A matriz deverá relacionar:
+
+**ADR → Componente → Pendência → TS-EP-01 → Feature → História → Contrato → Teste → Evidência**
+
+Estados possíveis:
+
+- VERIFIED.
+- PROPOSED.
+- UNVERIFIED.
+- MISSING.
+- NOT_APPLICABLE.
+- SUPERSEDED.
+
+Vínculos propostos neste documento não poderão ser promovidos automaticamente a VERIFIED.
+
+---
+
+## 24. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-16 | PENDING | Especificação inicial TS-EP-01 | PENDING |
+
+---
+
+## 25. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | TS-EP-01 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** TS-EP-02.md
+
+**Restriction:** não avançar antes da aprovação deste documento.
+
+## 26. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/TS-EP-01/IN-REVIEW.txt) está arquivado. Esta revisão documental permanece **IN_REVIEW**, com aprovação **PENDING**. As Features propostas, os critérios de aceite do épico e os vínculos ainda sem verificação mantêm os estados registrados no texto submetido.
+
+A seção 16 descreve as evidências esperadas para o épico. O [Evidence Bundle I00 RC1](../governance/DOC-07-RC1-ACCEPTANCE.md) já tem aceite registrado no recorte de I00-14 e AC12. O aceite consolidado do épico permanece pendente. I00-AC02, I00-AC07 e I00-AC09 seguem abertos no [dossiê de G0](../governance/G0-REVIEW-DOSSIER.md). G0 está em revisão e LIVE permanece indisponível.

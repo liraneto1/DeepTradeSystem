@@ -1,0 +1,971 @@
+# I00-FEAT-004.md
+## TRADE SYSTEM V1 — PostgreSQL & Migrations
+
+**Document ID:** I00-FEAT-004  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-04  
+**Primary Epic:** TS-EP-02 — Data & Event Foundation  
+**Primary Domain:** D05 — Data, Events & Audit  
+**Supporting Domains:** D06 / D07  
+**Functional Owner:** Data & Event Architecture  
+**Technical Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 / V1.0 — APPROVED  
+**Epic Baseline:** TS-EP-02 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Predecessor Features:** I00-FEAT-001 / V1.0; I00-FEAT-002 / V1.0 — APPROVED documentalmente  
+**Approval Reference:** PENDING  
+**Domain:** D05, com apoio de D06 e D07  
+**Owner:** Data & Event Architecture, conforme responsabilidade funcional acima.  
+**Source References:** [anexo original](../governance/history/I00-FEAT-004/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md) e [fontes oficiais](../referencias/originais/)  
+**Related ADRs:** referências da seção 2.  
+**Related Components:** seção 2 e [matriz DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** referências das seções 19, 21 e 24.  
+**Dependencies:** [catálogo I00](../increments/I00-FEATURE-CATALOG.md), [TS-EP-02](../epics/TS-EP-02.md), [I00-FEAT-001](I00-FEAT-001.md), [I00-FEAT-002](I00-FEAT-002.md), [template de Feature](../governance/templates/FEATURE-TEMPLATE.md) e dependências da seção 17.  
+**Acceptance Criteria:** seções 19, 22 e 23, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-17
+
+---
+
+## 1. Objetivo
+
+### 1.1 Objetivo principal
+
+Estabelecer a infraestrutura inicial de persistência relacional do TRADE SYSTEM V1, com controle de evolução de schema, integridade de dados, isolamento de ambientes e procedimentos reproduzíveis de inicialização e migração.
+
+### 1.2 Necessidade atendida
+
+O sistema exige uma camada de persistência confiável para sustentar os mecanismos de eventos, auditoria e estados de negócio que serão implementados progressivamente.
+
+A ausência de controle sobre a persistência poderá provocar:
+
+- Divergência de schemas entre ambientes.
+- Perda de integridade referencial.
+- Falhas em transações.
+- Migrações inconsistentes.
+- Alterações de banco não rastreáveis.
+- Dependências indevidas entre componentes.
+- Dificuldade de recuperação.
+- Exposição de credenciais.
+- Falhas de reprodutibilidade.
+
+### 1.3 Resultado demonstrável
+
+Ao final da implementação, deverá ser possível:
+
+1. Inicializar PostgreSQL 17 em ambiente controlado.
+2. Estabelecer conexão utilizando configuração autorizada.
+3. Utilizar SQLAlchemy 2 conforme a baseline.
+4. Aplicar migrations versionadas com Alembic.
+5. Reconstruir o schema esperado a partir de uma base limpa.
+6. Verificar constraints e integridade referencial.
+7. Detectar divergências entre schema e migrations.
+8. Executar testes de transação e rollback.
+9. Preservar segregação de ambientes.
+10. Produzir evidências verificáveis.
+
+### 1.4 Declaração da Feature
+
+**Como** equipe de engenharia de dados do TRADE SYSTEM V1,  
+**quero** uma camada de persistência relacional versionada e reproduzível,  
+**para** garantir integridade, rastreabilidade e evolução controlada dos dados utilizados pelos componentes do sistema.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines aplicáveis
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-02.
+- TS-EP-01.
+- TS-I00-FEAT-CAT-001.
+- TS-DOC-STD-V1.0.
+- TS-DOC-TRC-001.
+- TS-DOC-GAP-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+
+### 2.2 ADRs
+
+As decisões arquiteturais e técnicas aplicáveis deverão ser verificadas nos registros originais, incluindo TS-ADR-089–098 quando pertinente.
+
+**ADR Traceability:** UNVERIFIED.
+
+Nenhuma regra será atribuída a uma ADR específica sem verificação da fonte.
+
+### 2.3 Domínios
+
+| Domínio | Responsabilidade |
+|---|---|
+| D05 | Persistência, modelos de dados e evolução de schema |
+| D06 | Ambiente, configuração, segurança e infraestrutura |
+| D07 | Testes, qualidade, rastreabilidade e evidências |
+
+### 2.4 Componentes
+
+Os componentes específicos de persistência deverão ser identificados no catálogo aprovado dos 33 componentes.
+
+**Component Mapping:** UNVERIFIED.
+
+### 2.5 Fluxos arquiteturais
+
+A Feature fornece persistência para fluxos futuros, mas não implementa integralmente F01–F10.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- PostgreSQL 17.
+- SQLAlchemy 2.
+- Alembic.
+- Configuração de conexão.
+- Gerenciamento de sessões.
+- Controle de transações.
+- Organização de modelos.
+- Metadados de schema.
+- Migrations versionadas.
+- Constraints e índices necessários ao I00.
+- Verificação de integridade.
+- Testes de persistência.
+- Testes de migrations.
+- Configuração de banco para testes.
+- Procedimentos de inicialização.
+- Procedimentos controlados de recuperação de schema.
+- Evidências técnicas.
+
+### 3.2 Excluído
+
+- Implementação completa da Transactional Outbox.
+- Dispatcher de eventos.
+- Consumidores idempotentes.
+- Banco operacional LIVE.
+- Persistência definitiva de ordens reais.
+- Persistência completa de posições e portfólio.
+- Market Data histórico completo.
+- Feature Store de IA.
+- Data Warehouse.
+- Replicação produtiva de alta disponibilidade.
+- Estratégias financeiras.
+- Operação Binance.
+- Homologação de G0.
+
+### 3.3 Fronteiras
+
+**I00-FEAT-004:** infraestrutura de persistência, transações e migrations.
+
+**I00-FEAT-005:** modelo e comportamento transacional da Outbox.
+
+**I00-FEAT-006:** processamento e publicação de registros.
+
+**I00-FEAT-007:** deduplicação e efeitos dos consumidores.
+
+A infraestrutura compartilhada não deverá concentrar regras específicas de negócio pertencentes a outros componentes.
+
+---
+
+## 4. Stack técnica
+
+| Camada | Tecnologia |
+|---|---|
+| Database | PostgreSQL 17 |
+| ORM | SQLAlchemy 2 |
+| Schema Migrations | Alembic |
+| Language | Python 3.12+ |
+| Dependency Management | uv |
+| Validation | Pydantic v2, quando aplicável |
+| Testing | pytest |
+| Property-Based Testing | Hypothesis |
+| Local Infrastructure | Docker Compose |
+| Observability | OpenTelemetry / logs estruturados |
+| CI | GitHub Actions, via I00-FEAT-011 |
+
+As versões exatas deverão ser fixadas na implementação.
+
+A compatibilidade das versões deverá ser demonstrada por testes.
+
+---
+
+## 5. Organização lógica proposta
+
+A estrutura deverá respeitar o monorepo aprovado.
+
+```text
+packages/
+└── d05_data_events/
+    └── persistence/
+        ├── models/
+        ├── repositories/
+        ├── sessions/
+        └── transactions/
+
+infrastructure/
+└── database/
+    ├── migrations/
+    │   └── versions/
+    └── configuration/
+
+tests/
+├── unit/
+├── integration/
+├── property/
+└── resilience/
+
+docs/
+└── engineering/
+```
+
+**Structure Status:** PROPOSED.
+
+A localização exata dos arquivos deverá ser reconciliada com I00-FEAT-001 e com o estado real do repositório.
+
+Nenhum diretório é declarado existente.
+
+---
+
+## 6. Configuração do PostgreSQL
+
+### 6.1 Versão
+
+Utilizar PostgreSQL 17 conforme baseline.
+
+### 6.2 Ambiente local
+
+A execução local deverá ser reproduzível por meio da infraestrutura aprovada.
+
+### 6.3 Inicialização
+
+O procedimento deverá permitir criar uma instância de banco para desenvolvimento ou testes sem depender de configuração manual não documentada.
+
+### 6.4 Conectividade
+
+A configuração deverá definir:
+
+- Host.
+- Porta.
+- Database.
+- Identidade de conexão.
+- Método de autenticação.
+- Parâmetros de conexão.
+- Timeout.
+- Política de pooling.
+- Ambiente.
+
+Valores específicos deverão ser definidos na implementação.
+
+### 6.5 Health
+
+A conectividade e a disponibilidade do banco deverão poder ser verificadas.
+
+### 6.6 Readiness
+
+A prontidão deverá distinguir conectividade básica de capacidade efetiva de atender às operações exigidas.
+
+### 6.7 Segurança
+
+Credenciais não poderão ser incluídas no código-fonte, migrations ou evidências.
+
+---
+
+## 7. SQLAlchemy 2
+
+### 7.1 Objetivo
+
+Padronizar o acesso relacional e o gerenciamento de sessões e transações.
+
+### 7.2 Modelos
+
+Os modelos deverão representar entidades sob ownership explícito.
+
+### 7.3 Sessões
+
+O ciclo de vida das sessões deverá ser controlado.
+
+### 7.4 Transações
+
+As fronteiras transacionais deverão ser definidas pela camada responsável pela operação.
+
+### 7.5 Commit
+
+A confirmação deverá ocorrer somente após a conclusão das operações que pertencem à transação.
+
+### 7.6 Rollback
+
+Falhas deverão permitir reversão das alterações não confirmadas.
+
+### 7.7 Concorrência
+
+As operações deverão respeitar mecanismos apropriados de consistência e controle de concorrência.
+
+### 7.8 Abstrações
+
+Repositórios e unidades de trabalho poderão ser utilizados quando necessários, evitando abstrações sem responsabilidade clara.
+
+### 7.9 Limites
+
+O ORM não deverá ocultar regras críticas de integridade ou substituir constraints do banco.
+
+---
+
+## 8. Alembic — Schema Migrations
+
+### 8.1 Objetivo
+
+Controlar a evolução do schema de maneira versionada e verificável.
+
+### 8.2 Identificação
+
+Cada migration deverá possuir identificador e relação de precedência.
+
+### 8.3 Histórico
+
+O histórico de migrations deverá ser preservado.
+
+### 8.4 Aplicação
+
+As migrations deverão ser aplicadas de maneira controlada e com resultado verificável.
+
+### 8.5 Ambiente limpo
+
+Uma base limpa deverá alcançar o schema esperado pela sequência aprovada de migrations.
+
+### 8.6 Divergências
+
+Divergências entre o schema efetivo e o histórico de migrations deverão ser detectadas e tratadas.
+
+### 8.7 Autogeração
+
+Migrations autogeradas deverão passar por revisão antes da aprovação.
+
+### 8.8 Operações destrutivas
+
+Alterações que removam ou transformem dados deverão exigir análise de impacto e plano de recuperação.
+
+### 8.9 Downgrade
+
+A reversão deverá ser especificada por migration quando tecnicamente segura e exigida pela política aplicável.
+
+Não será presumido que toda migration seja reversível sem perda de dados.
+
+### 8.10 Falhas
+
+Falhas de migration deverão impedir que a versão do schema seja declarada pronta.
+
+### 8.11 Concorrência
+
+A execução concorrente indevida de migrations deverá ser evitada por mecanismo definido na implementação.
+
+---
+
+## 9. Modelagem e integridade
+
+### 9.1 Identidade
+
+Entidades deverão possuir identificadores consistentes.
+
+### 9.2 Chaves primárias
+
+As chaves deverão preservar unicidade.
+
+### 9.3 Chaves estrangeiras
+
+Relacionamentos deverão preservar integridade referencial quando aplicável.
+
+### 9.4 Constraints
+
+Restrições de unicidade, nulidade e domínio deverão ser definidas no banco quando apropriado.
+
+### 9.5 Índices
+
+Índices deverão ser fundamentados por padrões de acesso e requisitos de integridade.
+
+### 9.6 Tipos
+
+Os tipos deverão refletir a semântica dos dados.
+
+### 9.7 Temporalidade
+
+Timestamps deverão possuir convenções explícitas de timezone e significado.
+
+### 9.8 Valores financeiros
+
+Quando houver valores monetários ou quantitativos, deverá ser utilizada representação decimal exata, com precisão e escala aprovadas.
+
+### 9.9 Ownership
+
+Cada entidade deverá possuir um componente responsável pela escrita.
+
+### 9.10 Evolução
+
+Alterações nos modelos deverão ser compatibilizadas com migrations e contratos.
+
+---
+
+## 10. Transações e consistência
+
+### 10.1 Atomicidade
+
+Uma transação deverá confirmar integralmente as operações que compõem sua unidade de consistência ou revertê-las conforme a semântica do banco.
+
+### 10.2 Isolamento
+
+O nível de isolamento deverá ser definido conforme os requisitos das operações.
+
+### 10.3 Durabilidade
+
+O comportamento deverá respeitar as garantias do PostgreSQL e as configurações aprovadas.
+
+### 10.4 Concorrência
+
+Operações concorrentes deverão preservar constraints e invariantes aplicáveis.
+
+### 10.5 Falhas parciais
+
+Falhas não deverão produzir confirmação parcial de uma transação que exija atomicidade.
+
+### 10.6 Integração com Outbox
+
+A infraestrutura deverá permitir que I00-FEAT-005 persista alterações de estado e registros Outbox na mesma transação.
+
+### 10.7 Limite
+
+A implementação e os testes específicos da atomicidade da Outbox pertencem à I00-FEAT-005.
+
+---
+
+## 11. Segregação de ambientes
+
+### 11.1 Ambientes
+
+TRAINING, PAPER e LIVE deverão permanecer segregados.
+
+### 11.2 I00
+
+Somente ambientes controlados e autorizados poderão ser utilizados.
+
+### 11.3 LIVE
+
+O I00 não poderá acessar banco operacional LIVE.
+
+### 11.4 Configuração
+
+Identidades, conexões e configurações deverão ser separadas por ambiente.
+
+### 11.5 Testes
+
+Os testes não poderão utilizar bases produtivas reais.
+
+### 11.6 Dados
+
+Fixtures e dados sintéticos deverão ser preferidos.
+
+### 11.7 Falha segura
+
+Uma configuração de ambiente inválida ou não autorizada deverá impedir a conexão.
+
+---
+
+## 12. Segurança e permissões
+
+### 12.1 Identidade
+
+A aplicação deverá utilizar identidade autorizada para acesso ao banco.
+
+### 12.2 Menor privilégio
+
+As permissões deverão ser limitadas às operações necessárias.
+
+### 12.3 Migrations
+
+Permissões de alteração de schema deverão ser separadas das permissões operacionais quando exigido pela política de segurança.
+
+### 12.4 Segredos
+
+Credenciais deverão permanecer fora do repositório.
+
+### 12.5 Logs
+
+Queries, exceções e relatórios não deverão expor informações sensíveis desnecessárias.
+
+### 12.6 Autorização
+
+A conexão ao banco não substituirá a autorização de negócio.
+
+### 12.7 Auditoria
+
+Alterações relevantes deverão permitir identificação e investigação.
+
+---
+
+## 13. Contratos e interfaces
+
+### 13.1 Interfaces internas
+
+A Feature deverá estabelecer interfaces técnicas para:
+
+- Obtenção de sessão.
+- Gerenciamento de transação.
+- Acesso a modelos.
+- Execução de migrations.
+- Verificação de conectividade.
+- Diagnóstico de schema.
+
+### 13.2 Contratos compartilhados
+
+Os contratos da I00-FEAT-003 deverão ser utilizados quando aplicáveis.
+
+### 13.3 OutboxRecord.v1
+
+A Feature deverá fornecer a infraestrutura necessária para sua persistência futura.
+
+A semântica definitiva do registro pertence à especificação do contrato e à I00-FEAT-005.
+
+### 13.4 Compatibilidade
+
+Alterações que afetem contratos ou consumidores deverão seguir versionamento e Change Control.
+
+### 13.5 API
+
+A Feature não exporá diretamente endpoints de execução financeira.
+
+---
+
+## 14. Observabilidade
+
+### 14.1 Logs
+
+Registrar eventos relevantes de:
+
+- Inicialização.
+- Conexão.
+- Falhas.
+- Migrations.
+- Transações.
+- Rollbacks.
+- Recuperação.
+
+### 14.2 Métricas
+
+As métricas aplicáveis poderão incluir:
+
+- Disponibilidade do banco.
+- Falhas de conexão.
+- Tempo de aquisição de conexão.
+- Utilização do pool.
+- Falhas de transação.
+- Tempo de execução de migrations.
+- Divergências de schema.
+
+### 14.3 Traces
+
+Operações relevantes deverão permitir correlação com o fluxo de origem.
+
+### 14.4 Health
+
+Deverão existir verificações adequadas de conectividade e prontidão.
+
+### 14.5 Alertas
+
+Condições e limiares deverão ser definidos na implementação e aprovados conforme a política aplicável.
+
+### 14.6 Limites
+
+A infraestrutura de telemetria compartilhada pertence à I00-FEAT-010.
+
+---
+
+## 15. Comportamento esperado
+
+### 15.1 Inicialização limpa
+
+**Given:** ambiente controlado sem schema aplicado.
+
+**When:** o procedimento de inicialização e migrations for executado.
+
+**Then:** o banco deverá alcançar a versão de schema esperada.
+
+### 15.2 Reaplicação controlada
+
+**Given:** banco já atualizado.
+
+**When:** a verificação ou atualização for executada novamente.
+
+**Then:** não deverão ocorrer alterações indevidas ou duplicação de objetos.
+
+### 15.3 Migration inválida
+
+**Given:** migration incompatível ou inválida.
+
+**When:** sua aplicação for tentada.
+
+**Then:** a falha deverá ser registrada e o schema não poderá ser declarado pronto.
+
+### 15.4 Falha transacional
+
+**Given:** transação com erro antes do commit.
+
+**When:** a operação falhar.
+
+**Then:** as alterações não confirmadas deverão ser revertidas.
+
+### 15.5 Violação de constraint
+
+**Given:** operação que viola uma restrição do banco.
+
+**When:** a gravação for executada.
+
+**Then:** a violação deverá ser detectada e tratada.
+
+### 15.6 Conexão não autorizada
+
+**Given:** configuração ou identidade sem permissão.
+
+**When:** a conexão for solicitada.
+
+**Then:** o acesso deverá ser negado.
+
+### 15.7 Ambiente LIVE
+
+**Given:** configuração que aponta para recursos LIVE.
+
+**When:** a aplicação do I00 tentar inicializar a conexão.
+
+**Then:** a operação deverá ser bloqueada conforme a política de isolamento.
+
+### 15.8 Divergência de schema
+
+**Given:** schema efetivo divergente do histórico aprovado.
+
+**When:** a verificação for executada.
+
+**Then:** a divergência deverá ser identificada, sem correção destrutiva automática.
+
+---
+
+## 16. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação |
+|---|---|---|
+| Reprodutibilidade | Schema reconstruível | Testes em banco limpo |
+| Integridade | Constraints aplicadas | Testes de violação |
+| Consistência | Transações corretas | Commit e rollback |
+| Segurança | Permissões controladas | Testes de acesso |
+| Isolamento | Ambientes segregados | Testes de configuração |
+| Auditabilidade | Migrations identificáveis | Histórico e relatórios |
+| Confiabilidade | Falhas detectáveis | Testes negativos |
+| Observabilidade | Diagnóstico disponível | Logs e métricas |
+| Manutenibilidade | Modelos e migrations organizados | Revisão técnica |
+| Compatibilidade | Evolução controlada | Testes de migração |
+
+Limiares quantitativos não aprovados permanecerão TBD.
+
+---
+
+## 17. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| I00-FEAT-001 | Estrutura do monorepo | APPROVED documentalmente |
+| I00-FEAT-002 | Toolchain | APPROVED documentalmente |
+| TS-EP-02 | Épico | APPROVED |
+| TS-I00-FEAT-CAT-001 | Catálogo | APPROVED |
+| PostgreSQL 17 | Tecnologia | APPROVED na baseline |
+| SQLAlchemy 2 | Tecnologia | APPROVED na baseline |
+| Alembic | Tecnologia | APPROVED na baseline |
+| Docker Compose | Infraestrutura | APPROVED na baseline |
+| Catálogo de componentes | Fonte arquitetural | UNVERIFIED |
+| ADRs individuais | Fonte normativa | UNVERIFIED |
+| Repositório existente | Fonte técnica | NOT_INSPECTED |
+| Owners | Governança | TBD |
+
+### 17.1 Dependências posteriores
+
+Esta Feature fornecerá infraestrutura para:
+
+- I00-FEAT-005 — Transactional Outbox.
+- I00-FEAT-006 — Event Dispatcher.
+- I00-FEAT-007 — Idempotent Consumers.
+- I00-FEAT-013 — Failure & Recovery Validation.
+
+### 17.2 História relacionada
+
+TS-ST-003 — vínculo PROPOSED, compartilhado com I00-FEAT-005.
+
+A descrição original deverá ser verificada antes de confirmar ownership e critérios.
+
+---
+
+## 18. Estratégia de testes
+
+### 18.1 Bootstrap
+
+Verificar inicialização em ambiente limpo.
+
+### 18.2 Migrations
+
+Verificar aplicação sequencial, histórico e estado final.
+
+### 18.3 Reprodutibilidade
+
+Reconstruir o schema em ambientes controlados equivalentes.
+
+### 18.4 Integridade
+
+Verificar chaves, constraints e relacionamentos.
+
+### 18.5 Transações
+
+Verificar commit e rollback.
+
+### 18.6 Concorrência
+
+Verificar comportamento sob operações concorrentes relevantes.
+
+### 18.7 Segurança
+
+Verificar permissões e proteção de credenciais.
+
+### 18.8 Isolamento
+
+Verificar bloqueio de conexões LIVE.
+
+### 18.9 Recuperação
+
+Verificar comportamento após falhas de conexão e interrupções controladas.
+
+### 18.10 Regressão
+
+Verificar compatibilidade após evolução de schema.
+
+### 18.11 Property-Based
+
+Verificar invariantes aplicáveis de integridade e consistência.
+
+### 18.12 Limites
+
+Todos os testes deverão utilizar ambientes controlados e não executar operações financeiras.
+
+---
+
+## 19. Critérios de aceite
+
+Os critérios abaixo são propostos para aceite da implementação de I00-FEAT-004.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| FEAT004-AC01 | PostgreSQL 17 configurado | Relatório de ambiente |
+| FEAT004-AC02 | Conectividade controlada | Testes de conexão |
+| FEAT004-AC03 | SQLAlchemy 2 configurado | Testes de integração |
+| FEAT004-AC04 | Alembic configurado | Histórico de migrations |
+| FEAT004-AC05 | Schema reproduzível | Bootstrap em banco limpo |
+| FEAT004-AC06 | Reaplicação controlada de migrations | Testes de repetição |
+| FEAT004-AC07 | Integridade referencial demonstrada | Testes de constraints |
+| FEAT004-AC08 | Commit e rollback verificados | Testes transacionais |
+| FEAT004-AC09 | Divergências de schema detectadas | Relatório de validação |
+| FEAT004-AC10 | Permissões e segredos controlados | Testes de segurança |
+| FEAT004-AC11 | LIVE inacessível | Testes de isolamento |
+| FEAT004-AC12 | Observabilidade disponível | Logs e métricas |
+| FEAT004-AC13 | Falhas e recuperação verificadas | Testes de resiliência |
+| FEAT004-AC14 | Evolução de schema controlada | Testes de migração |
+| FEAT004-AC15 | Rastreabilidade disponível | Matriz verificada |
+| FEAT004-AC16 | Evidências verificáveis | Evidence Bundle I00 |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+### 19.1 Critérios superiores relacionados
+
+- EP02-AC01 — PostgreSQL configurado e reproduzível.
+- EP02-AC02 — Migrations versionadas.
+- EP02-AC03 — Integridade transacional.
+- I00-AC04 — Migrations reproduzíveis.
+- I00-AC10 — LIVE inacessível.
+
+Esses vínculos deverão ser confirmados na Traceability Matrix.
+
+---
+
+## 20. Evidências esperadas
+
+| Referência provisória | Evidência |
+|---|---|
+| EV-FEAT004-01 | Inventário de ambiente |
+| EV-FEAT004-02 | Testes de conexão |
+| EV-FEAT004-03 | Configuração SQLAlchemy |
+| EV-FEAT004-04 | Histórico Alembic |
+| EV-FEAT004-05 | Bootstrap reproduzível |
+| EV-FEAT004-06 | Testes de integridade |
+| EV-FEAT004-07 | Testes transacionais |
+| EV-FEAT004-08 | Validação de schema |
+| EV-FEAT004-09 | Verificação de segurança |
+| EV-FEAT004-10 | Verificação de isolamento |
+| EV-FEAT004-11 | Relatório de observabilidade |
+| EV-FEAT004-12 | Testes de recuperação |
+| EV-FEAT004-13 | Matriz de rastreabilidade |
+| EV-FEAT004-14 | Manifesto de integridade |
+
+Os identificadores são provisórios e deverão ser reconciliados com a convenção oficial de Evidence Bundle.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 21. Riscos e lacunas
+
+| Referência | Risco ou lacuna | Tratamento |
+|---|---|---|
+| DOC-GAP-003 | ADRs originais não verificadas | Conferir fontes |
+| DOC-GAP-004 | ADRs técnicas pendentes de formalização | Recuperar registros |
+| DOC-GAP-005 | Rastreabilidade incompleta | Confirmar vínculos |
+| DOC-GAP-006 | História TS-ST-003 não reconciliada | Verificar backlog |
+| DOC-GAP-007 | Repositório não auditado | Inspecionar antes de implementar |
+| DOC-GAP-008 | Owners pendentes | Formalizar responsabilidades |
+
+### 21.1 Riscos técnicos
+
+- Divergência entre modelos e migrations.
+- Alterações destrutivas sem análise.
+- Transações mal delimitadas.
+- Problemas de concorrência.
+- Permissões excessivas.
+- Vazamento de credenciais.
+- Mistura de ambientes.
+- Dependência de configuração manual.
+- Falha de recuperação após migration incompleta.
+
+### 21.2 Tratamento
+
+Os riscos deverão ser refinados, classificados e tratados nas histórias e testes correspondentes.
+
+A aprovação desta Feature não encerrará lacunas automaticamente.
+
+---
+
+## 22. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. ADRs aplicáveis estiverem verificadas.
+3. Componentes e ownership estiverem confirmados.
+4. Estrutura do monorepo estiver disponível.
+5. Toolchain necessária estiver disponível.
+6. Política de conexão estiver especificada.
+7. Política de sessões e transações estiver definida.
+8. Organização dos modelos estiver especificada.
+9. Estratégia de migrations estiver aprovada.
+10. História relacionada estiver refinada.
+11. Critérios de aceite estiverem testáveis.
+12. Estratégia de testes estiver definida.
+13. Segurança e isolamento estiverem especificados.
+14. Lacunas bloqueantes estiverem resolvidas.
+15. Revisão documental estiver registrada.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação documental não altera automaticamente esse estado.
+
+---
+
+## 23. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- PostgreSQL estiver configurado.
+- SQLAlchemy e Alembic estiverem integrados.
+- O schema puder ser reproduzido.
+- As migrations estiverem verificadas.
+- Os critérios FEAT004-AC01–AC16 estiverem atendidos.
+- Os testes obrigatórios tiverem sido executados.
+- A integridade transacional estiver demonstrada.
+- As restrições de segurança estiverem preservadas.
+- LIVE permanecer inacessível.
+- As evidências estiverem verificadas.
+- A rastreabilidade estiver atualizada.
+- As lacunas bloqueantes estiverem resolvidas.
+- A autoridade competente registrar o aceite.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite desta Feature não representa aceite de I00-FEAT-005, TS-EP-02, I00 ou G0.
+
+---
+
+## 24. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-02 → I00-FEAT-004 → TS-ST-003 → Teste → Evidência**
+
+Contratos deverão ser relacionados quando aplicáveis.
+
+### Estados iniciais
+
+| Relação | Estado |
+|---|---|
+| Epic Link | VERIFIED documentalmente |
+| Work Package Link | VERIFIED documentalmente |
+| Feature Catalog Link | VERIFIED documentalmente |
+| Predecessor Feature Links | VERIFIED documentalmente |
+| Story Link | PROPOSED |
+| ADR Links | UNVERIFIED |
+| Component Links | UNVERIFIED |
+| Requirement Links | UNVERIFIED |
+| Contract Links | PENDING |
+| Test Links | PLANNED |
+| Evidence Links | PLANNED |
+
+O estado VERIFIED documentalmente não comprova implementação.
+
+---
+
+## 25. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-17 | PENDING | Especificação inicial PostgreSQL & Migrations | PENDING |
+
+---
+
+## 26. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-004 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEAT-005.md
+
+**Restriction:** não avançar antes da aprovação desta Feature.
+
+## 27. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/I00-FEAT-004/IN-REVIEW.txt) está arquivado. A especificação permanece **IN_REVIEW**, com aprovação **PENDING**.
+
+A seção 20 registra as evidências esperadas para a Feature. Para o pacote I00-04, o [registro mestre de I00](../backlog/registro-mestre-i00.md) vincula AC04 ao teste de ida e volta das migrações e à [evidência histórica de PostgreSQL](../evidence/I00-04-postgresql.md). O aceite consolidado da implementação da Feature segue pendente. As validações de imagem, componentes nativos e build Linux para AC02 continuam no [dossiê de G0](../governance/G0-REVIEW-DOSSIER.md). G0 segue em revisão e LIVE permanece indisponível.

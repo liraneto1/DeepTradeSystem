@@ -1,0 +1,411 @@
+# EPIC-TEMPLATE.md
+## TRADE SYSTEM V1 — Epic Specification Template
+
+**Document ID:** TS-DOC-TPL-EPIC-001  
+**Version:** 1.0  
+**Status:** APPROVED  
+**Domain:** GLOBAL / D07  
+**Applicable Epics:** TS-EP-01–TS-EP-14  
+**Applicable Increments:** I00–I09  
+**Owner:** Architecture & Documentation Governance  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Document Registry:** TS-DOC-REG-001 — APPROVED  
+**Gap Register:** TS-DOC-GAP-001 — APPROVED  
+**Traceability Matrix:** TS-DOC-TRC-001 — APPROVED  
+**Approval Register:** TS-DOC-APR-001 — APPROVED  
+**Change Log:** TS-DOC-CHG-001 — APPROVED  
+**Increment Template:** TS-DOC-TPL-INC-001 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Approval Reference:** [16/11/2026 · aprovação sem ressalvas](../history/TS-DOC-TPL-EPIC-001/APPROVAL.md)  
+**Increment:** I00–I09, conforme aplicabilidade  
+**Source References:** [anexo original](../history/TS-DOC-TPL-EPIC-001/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../TS-DOC-STD-V1.0.md) e [baselines e fontes oficiais](../../referencias/originais/)  
+**Related ADRs:** especificar por épico, conforme seções 1 e 3.  
+**Related Components:** especificar por épico, conforme seções 1 e 3.  
+**Related Requirements/Pendências:** especificar por épico, conforme seções 1 e 5.  
+**Dependencies:** documentos de governança indicados acima e [template de Incremento aprovado](INCREMENT-TEMPLATE.md). Dependências específicas do épico são registradas na seção 9.  
+**Acceptance Criteria:** seções 14, 18 e 19 orientam os critérios de aceite, prontidão e decisão do épico.  
+**Last Updated:** 2026-11-16
+
+---
+
+# TEMPLATE — EPIC SPECIFICATION
+
+> **Instrução de utilização:** substituir os campos entre colchetes pelas informações verificadas do épico. Não inventar requisitos, ADRs, pendências, Features ou evidências. Informações desconhecidas deverão permanecer como `TBD`, vinculadas às lacunas documentais correspondentes.
+
+## 1. Identificação do épico
+
+| Campo | Valor |
+|---|---|
+| Epic ID | [TS-EP-XX] |
+| Epic Name | [Nome aprovado] |
+| Specification Version | [Versão] |
+| Status | [DRAFT / IN_REVIEW / APPROVED / SUPERSEDED] |
+| Primary Domain | [DXX] |
+| Supporting Domains | [DXX, DYY] |
+| Primary Increment | [IXX] |
+| Related Increments | [IXX, IYY] |
+| Functional Owner | [Responsável] |
+| Technical Owner | [Responsável] |
+| Architecture Baseline | TS-ARCH-GLOBAL-V1.0 |
+| Related ADRs | [IDs] |
+| Related Components | [IDs] |
+| Related Requirements | [PXX] |
+| Approval Reference | [Referência ou PENDING] |
+| Last Updated | [Data] |
+
+O identificador do épico deverá permanecer estável durante seu ciclo de vida.
+
+Alterações de escopo não deverão gerar automaticamente um novo Epic ID.
+
+## 2. Objetivo do épico
+
+### 2.1 Objetivo
+
+[Descrever a capacidade de negócio ou plataforma que o épico deverá entregar.]
+
+### 2.2 Problema ou necessidade
+
+[Identificar a necessidade que justifica a capacidade.]
+
+### 2.3 Resultado esperado
+
+[Descrever o resultado observável após a conclusão.]
+
+### 2.4 Valor para o sistema
+
+[Explicar a contribuição para segurança, desempenho, automação, qualidade ou operação.]
+
+### 2.5 Critério de sucesso
+
+[Definir como o sucesso do épico será demonstrado.]
+
+## 3. Contexto arquitetural
+
+### 3.1 Baselines aplicáveis
+
+[Relacionar versões e referências.]
+
+### 3.2 ADRs relacionadas
+
+| ADR ID | Decisão aplicável | Impacto no épico | Verificação |
+|---|---|---|---|
+| [ADR] | [Descrição verificada] | [Impacto] | [VERIFIED / PROPOSED / UNVERIFIED] |
+
+### 3.3 Componentes envolvidos
+
+| Component ID | Responsabilidade no épico | Owner |
+|---|---|---|
+| [DXX-CYY] | [Responsabilidade] | [Owner] |
+
+### 3.4 Fluxos relacionados
+
+[Relacionar F01–F10, conforme aplicabilidade.]
+
+### 3.5 Invariantes arquiteturais
+
+[Identificar regras que não poderão ser violadas.]
+
+## 4. Escopo funcional e técnico
+
+### 4.1 Incluído
+
+[Relacionar capacidades incluídas.]
+
+### 4.2 Excluído
+
+[Relacionar capacidades não incluídas.]
+
+### 4.3 Limites de responsabilidade
+
+[Definir o que pertence ao épico e o que pertence a outros épicos.]
+
+### 4.4 Premissas
+
+[Registrar premissas verificadas ou pendentes.]
+
+### 4.5 Restrições
+
+[Registrar restrições técnicas, financeiras, operacionais ou de segurança.]
+
+## 5. Requisitos e pendências
+
+| Requirement ID | Descrição | Origem | Prioridade | Incremento | Status |
+|---|---|---|---|---|---|
+| [PXX] | [Descrição original verificada] | [Fonte] | [M0–M3] | [IXX] | [Status] |
+
+Cada requisito deverá possuir origem identificável.
+
+Pendências cuja descrição original não esteja disponível não poderão ser reconstruídas por inferência.
+
+A ausência de requisitos verificáveis deverá ser registrada no Gap Register.
+
+## 6. Catálogo de Features
+
+| Feature ID | Nome | Capacidade | Incremento | Status | Referência |
+|---|---|---|---|---|---|
+| [IXX-FEAT-NNN] | [Nome] | [Descrição] | [IXX] | [Status] | [Documento] |
+
+Cada Feature deverá representar uma capacidade coesa, implementável e verificável.
+
+Uma Feature poderá possuir múltiplas histórias técnicas.
+
+## 7. Histórias técnicas
+
+| Story ID | Feature ID | Objetivo | Prioridade | Status | Referência |
+|---|---|---|---|---|---|
+| [TS-ST-NNN] | [IXX-FEAT-NNN] | [Objetivo] | [Prioridade] | [Status] | [Documento] |
+
+As histórias deverão cumprir a Definition of Ready antes do desenvolvimento.
+
+O épico não deverá duplicar integralmente a especificação das histórias.
+
+## 8. Entregáveis
+
+| Deliverable ID | Descrição | Incremento | Critério de conclusão | Evidência |
+|---|---|---|---|---|
+| [ID] | [Entrega] | [IXX] | [Critério] | [Referência] |
+
+As entregas deverão ser verificáveis e relacionadas às Features ou histórias correspondentes.
+
+## 9. Dependências
+
+### 9.1 Dependências arquiteturais
+
+[Componentes, decisões e contratos necessários.]
+
+### 9.2 Dependências entre épicos
+
+[Relacionar Epic IDs.]
+
+### 9.3 Dependências entre Features
+
+[Relacionar Feature IDs.]
+
+### 9.4 Dependências entre incrementos
+
+[Relacionar I00–I09.]
+
+### 9.5 Dependências externas
+
+[Infraestrutura, APIs, fornecedores ou aprovações.]
+
+### 9.6 Bloqueios conhecidos
+
+[Relacionar Gap IDs e impedimentos.]
+
+## 10. Contratos e interfaces
+
+| Contract ID | Versão | Producer | Consumer | Feature relacionada | Status |
+|---|---|---|---|---|---|
+| [Contrato] | [Versão] | [Producer] | [Consumer] | [Feature] | [Status] |
+
+Contratos deverão ser referenciados por identificador e versão.
+
+O épico não deverá manter cópias divergentes de schemas existentes em fontes autoritativas.
+
+## 11. Dados e persistência
+
+### 11.1 Entidades de dados
+
+[Relacionar entidades relevantes.]
+
+### 11.2 Ownership de dados
+
+[Definir componentes responsáveis pela escrita e leitura.]
+
+### 11.3 Integridade e consistência
+
+[Definir invariantes e requisitos transacionais.]
+
+### 11.4 Versionamento e migração
+
+[Relacionar políticas de compatibilidade.]
+
+### 11.5 Auditoria e retenção
+
+[Definir requisitos aplicáveis.]
+
+## 12. Segurança, risco e governança
+
+### 12.1 Identidade e autorização
+
+[Definir atores e permissões.]
+
+### 12.2 Segregação de ambientes
+
+[Definir regras TRAINING/PAPER/LIVE aplicáveis.]
+
+### 12.3 Invariantes críticos
+
+[Relacionar regras de segurança e risco.]
+
+### 12.4 Controles de falha
+
+[Definir comportamentos fail-closed e recuperação.]
+
+### 12.5 Restrições operacionais
+
+[Definir ações proibidas e condições de execução.]
+
+### 12.6 Autorizações necessárias
+
+[Relacionar aprovações, gates e responsáveis.]
+
+## 13. Estratégia de validação
+
+| Test Type | Objetivo | Escopo | Critério | Referência |
+|---|---|---|---|---|
+| Unit | [Objetivo] | [Escopo] | [Critério] | [Test ID] |
+| Contract | [Objetivo] | [Escopo] | [Critério] | [Test ID] |
+| Integration | [Objetivo] | [Escopo] | [Critério] | [Test ID] |
+| Property-Based | [Objetivo] | [Escopo] | [Critério] | [Test ID] |
+| End-to-End | [Objetivo] | [Escopo] | [Critério] | [Test ID] |
+| Resilience | [Objetivo] | [Escopo] | [Critério] | [Test ID] |
+| Security | [Objetivo] | [Escopo] | [Critério] | [Test ID] |
+
+Testes não aplicáveis deverão possuir justificativa.
+
+## 14. Critérios de aceite do épico
+
+| Epic AC ID | Critério | Método de verificação | Evidência |
+|---|---|---|---|
+| [EP-AC-NNN] | [Critério] | [Método] | [Evidence ID] |
+
+Os critérios deverão demonstrar a capacidade entregue pelo épico.
+
+A conclusão de todas as histórias não deverá implicar automaticamente o aceite do épico se seus critérios de resultado não forem atendidos.
+
+## 15. Evidence Bundle
+
+### 15.1 Evidências esperadas
+
+[Relacionar evidências necessárias.]
+
+### 15.2 Evidências produzidas
+
+[Relacionar apenas evidências efetivamente existentes.]
+
+### 15.3 Evidências pendentes
+
+[Relacionar itens ainda não executados.]
+
+### 15.4 Integridade e versões
+
+[Definir referências de build, contratos, testes e ambiente.]
+
+O épico poderá referenciar Evidence Bundles de múltiplos incrementos, preservando suas versões e contextos.
+
+## 16. Riscos e lacunas
+
+| Risk/Gap ID | Descrição | Severidade | Impacto | Tratamento | Status |
+|---|---|---|---|---|---|
+| [ID] | [Descrição] | [Nível] | [Impacto] | [Ação] | [Status] |
+
+Lacunas bloqueantes deverão impedir as atividades dependentes.
+
+A classificação de risco deverá seguir o padrão aprovado no Gap Register e as políticas aplicáveis.
+
+## 17. Planejamento e evolução
+
+### 17.1 Incrementos de entrega
+
+[Relacionar os incrementos nos quais o épico será desenvolvido.]
+
+### 17.2 Sequência de Features
+
+[Definir precedências.]
+
+### 17.3 Marcos demonstráveis
+
+[Definir entregas intermediárias.]
+
+### 17.4 Estimativas
+
+[Registrar estimativas fundamentadas.]
+
+### 17.5 Responsabilidades
+
+[Definir owners funcionais e nominais quando disponíveis.]
+
+### 17.6 Dependências críticas
+
+[Identificar impedimentos de evolução.]
+
+## 18. Epic Documentation Readiness
+
+O épico estará documentalmente pronto para refinamento e execução quando:
+
+- Seu objetivo estiver definido.
+- O escopo estiver delimitado.
+- Os componentes e ADRs aplicáveis estiverem identificados.
+- Os requisitos possuírem origem verificável.
+- As Features planejadas estiverem identificadas.
+- As dependências estiverem mapeadas.
+- Os contratos necessários estiverem identificados.
+- Os critérios de aceite estiverem verificáveis.
+- Os riscos e lacunas estiverem registrados.
+- As restrições de segurança estiverem preservadas.
+
+**Documentation Readiness Status:** [NOT_READY / READY_WITH_CONDITIONS / READY]
+
+A prontidão do épico não substitui a Definition of Ready de cada história.
+
+## 19. Epic Implementation Acceptance
+
+O épico poderá ser aceito quando:
+
+- As capacidades obrigatórias estiverem entregues.
+- As Features previstas estiverem aceitas.
+- Os critérios de aceite do épico estiverem atendidos.
+- Os testes aplicáveis tiverem sido executados.
+- As evidências estiverem vinculadas.
+- Os riscos residuais estiverem avaliados.
+- As lacunas bloqueantes estiverem encerradas.
+- A rastreabilidade estiver atualizada.
+- A autoridade competente registrar a decisão.
+
+**Implementation Acceptance Status:** [NOT_EVALUATED / REJECTED / APPROVED_WITH_CONDITIONS / APPROVED]
+
+O aceite do épico não substitui o aceite do incremento ou dos gates G0–G5.
+
+## 20. Rastreabilidade
+
+A rastreabilidade deverá relacionar:
+
+**ADR → Componente → Pendência → Épico → Feature → História → Contrato → Teste → Evidência**
+
+Cada vínculo deverá identificar sua fonte e estado de verificação.
+
+Relações desconhecidas deverão permanecer pendentes, sem preenchimento presumido.
+
+## 21. Histórico de mudanças
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| [Versão] | [Data] | [ID] | [Descrição] | [Referência] |
+
+## 22. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Epic ID | [TS-EP-XX] |
+| Version | [Versão] |
+| Approval Category | DOC / TECH / INC, conforme finalidade |
+| Decision | [Resultado] |
+| Approved By | [Autoridade] |
+| Approval Reference | [Referência] |
+| Conditions | [Condições] |
+| Date | [Data] |
+
+---
+
+**Template Status:** APPROVED  
+**Template Approval:** [16/11/2026 · aprovação sem ressalvas](../history/TS-DOC-TPL-EPIC-001/APPROVAL.md)  
+**Next Artifact:** FEATURE-TEMPLATE.md  
+**Próxima etapa:** aguardar o conteúdo do FEATURE-TEMPLATE.md.
+
+## Histórico da revisão do template
+
+A versão **1.0** foi aprovada em 16/11/2026. O histórico preserva a [revisão local anterior à aprovação](../history/TS-DOC-TPL-EPIC-001/REVISAO-LOCAL-IN-REVIEW.txt). O [template de Épico anterior](EPICO.md) mantém sua aprovação original. A [aprovação comunicada do Approval Register](../history/TS-DOC-APR-001/APPROVAL.md) está registrada e a conferência do seu texto integral no checkout segue pendente.
+
+[G0](../G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

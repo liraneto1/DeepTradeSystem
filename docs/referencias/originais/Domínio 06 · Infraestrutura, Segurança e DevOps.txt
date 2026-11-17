@@ -1,0 +1,936 @@
+# TRADE SYSTEM V1 — Validação Arquitetural
+
+Domínio 06 · Infraestrutura, Segurança e DevOps
+
+Identificação: TS-ARCH-D06-V1.0\
+Dependências: Domínios 01 a 05 aprovados\
+Escopo inicial: BTCUSDT · Binance Spot e USDⓈ-M Futures · Operação automatizada 24×7
+
+O Domínio 06 estabelecerá a infraestrutura responsável por executar, proteger, atualizar, monitorar e recuperar o Trade System V1.
+
+Diferentemente dos domínios anteriores, que definiram as capacidades de negócio e seus componentes, este domínio determinará como essas capacidades serão implantadas e operadas com segurança.
+
+A principal diretriz proposta é:
+
+> Nenhuma falha de infraestrutura, implantação ou interface deve autorizar novas exposições financeiras indevidas. A proteção de posições deve permanecer independente do agente de IA e dos processos de treinamento, respeitando os limites de conectividade e execução da corretora.
+
+# 6
+Componentes principais
+
+# 16
+ADRs propostas
+
+# 54
+ADRs já aprovadas
+
+A aprovação será conceitual. Tecnologias, custos, dimensionamento, disponibilidade e testes ainda dependerão de especificação e validação técnica.
+
+## 1. Objetivos e princípios
+
+A arquitetura deverá garantir:
+
+- Operação contínua dos componentes críticos, com recuperação após falhas.
+- Separação rigorosa entre TRAINING, PAPER e LIVE.
+- Proteção de credenciais e chaves de API da Binance.
+- Implantação automatizada, versionada e auditável.
+- Isolamento dos processos de treinamento em relação à execução financeira.
+- Monitoramento técnico independente dos painéis de negócio.
+- Backup, restauração e recuperação de desastres.
+- Controle de custos, capacidade e evolução da infraestrutura.
+
+Princípio de implantação: o Trade System não precisa começar com Kubernetes, dezenas de microsserviços ou uma arquitetura multi-cloud. Recomendo uma infraestrutura inicial enxuta, porém com limites de segurança e recuperação formalmente definidos.
+
+## 2. Componentes arquiteturais propostos
+
+	D06-C01 — Infrastructure & Runtime Platform
+		Gerencia recursos cloud, redes, containers, computação, armazenamento, serviços persistentes, disponibilidade e isolamento dos ambientes.
+	Entrega: ambientes implantáveis, infraestrutura versionada e runtime controlado.
+
+	D06-C02 — CI/CD & Release Management
+		Responsável por builds, testes, análise de segurança, artefatos, deploys, migrações, aprovação de releases e rollback.
+	Entrega: releases rastreáveis e mecanismos de implantação controlada.
+
+	D06-C03 — Identity, Access & Secrets Management
+		Gerencia identidades humanas e de serviços, credenciais, permissões, chaves Binance, autenticação e rotação de segredos.
+	Entrega: IAM, RBAC, identidade de workloads e acesso mínimo necessário.
+
+	D06-C04 — Observability & SRE
+		Monitora disponibilidade, latência, logs, traces, saturação, filas, banco de dados, conectividade e saúde dos componentes críticos.
+	Entrega: métricas técnicas, alertas, SLOs, runbooks e resposta a incidentes.
+
+	D06-C05 — Backup & Disaster Recovery
+		Responsável por backups, retenção, restauração, recuperação de serviços, reconstrução de estados e continuidade operacional.
+	Entrega: plano de recuperação, RPO/RTO e testes periódicos de restauração.
+
+	D06-C06 — Platform Security & Governance
+		Gerencia hardening, políticas de segurança, vulnerabilidades, dependências, auditoria de infraestrutura, segregação de funções e conformidade.
+	Entrega: controles preventivos, evidências de segurança e governança técnica.
+
+Os seis componentes representam responsabilidades lógicas, não seis plataformas separadas.
+
+## 3. Arquitetura conceitual de implantação
+
+Proponho organizar a infraestrutura em três zonas: acesso, execução operacional e dados, com uma zona independente para treinamento.
+
+	Operadores / Administradores
+		HTTPS · MFA · RBAC
+			↓ ^
+	Zona de Acesso
+		Reverse Proxy / API Gateway · Web App · Operations BFF
+			↓ ^
+	Zona Operacional Privada LIVE
+		Market Data & Features
+		AI Inference Runtime
+		Risk & Control
+		Execution Engine
+		Portfolio Manager
+		Event Dispatcher
+			↓ ^
+	Zona de Dados Privada
+		PostgreSQL · Event Store · Backups · Artefatos versionados
+
+	Zona Independente de Treinamento
+		Learning Engine · Simuladores · Experimentos · Datasets
+		Sem credenciais de execução LIVE
+
+Arquitetura lógica. A topologia física, quantidade de hosts, sub-redes e regiões serão definidas no detalhamento.
+
+### Proposta para o MVP
+
+Recomendo uma implantação inicial com containers Linux, imagens versionadas e um orquestrador simples ou serviço gerenciado de containers.
+
+| Tecnologia                 | Diretriz                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------- |
+| Cloud                      | Provedor a selecionar por custo, segurança, latência e serviços disponíveis                     |
+| Runtime                    | Containers Docker/OCI                                                                           |
+| Orquestração               | Serviço gerenciado simples ou Docker Compose controlado, conforme requisitos de disponibilidade |
+| Banco                      | PostgreSQL com backup e recuperação definidos                                                   |
+| Rede                       | Serviços privados, exposição pública mínima e egress controlado                                 |
+| Storage                    | Volumes persistentes e armazenamento de artefatos                                               |
+| Infraestrutura como código | Terraform/OpenTofu ou equivalente                                                               |
+| TLS                        | Obrigatório para interfaces e APIs expostas                                                     |
+
+Não recomendo aprovar um provedor cloud específico ainda. A decisão deve considerar custo mensal, disponibilidade regional, gestão de segredos, PostgreSQL gerenciado, conectividade com a Binance e requisitos de recuperação.
+
+Docker Compose pode atender a um laboratório ou MVP restrito, mas não fornece sozinho alta disponibilidade, recuperação automática entre hosts ou isolamento forte entre ambientes. Esses requisitos precisam ser atendidos pela topologia escolhida.
+
+## 4. Segregação TRAINING, PAPER e LIVE
+
+A separação entre ambientes será uma das decisões de segurança mais importantes do D06.
+
+	TRAINING
+		Treinamento, experimentação, simulação e backtesting. Utiliza datasets históricos e credenciais de serviços de pesquisa, sem permissão para executar ordens reais.
+
+	PAPER
+		Validação de estratégias, inferência, risco e execução simulada. Utiliza um adapter de simulação e, quando aplicável, ambientes de teste da exchange.
+
+	LIVE
+		Execução com capital real. Exige credenciais próprias, políticas aprovadas, releases autorizados e mecanismos independentes de proteção.
+
+### Matriz de isolamento
+
+| Controle                 | TRAINING      | PAPER                  | LIVE                           |
+| ------------------------ | ------------- | ---------------------- | ------------------------------ |
+| Ordens reais             | Proibidas     | Proibidas              | Autorizadas sob política       |
+| Credenciais Binance LIVE | Proibidas     | Proibidas              | Restritas ao Execution Adapter |
+| Banco operacional        | Isolado       | Isolado                | Isolado                        |
+| Modelos                  | Candidatos    | Validados para teste   | Versões aprovadas              |
+| CI/CD                    | Automatizado  | Automatizado com gates | Aprovação reforçada            |
+| Acesso humano            | Pesquisa      | Teste operacional      | RBAC e MFA                     |
+| Rede de execução         | Sem rota LIVE | Sem rota LIVE          | Egress autorizado              |
+
+Recomendação: a segregação não deve depender apenas de uma variável `ENVIRONMENT=LIVE`. Deve existir isolamento de credenciais, identidade, dados e caminhos de rede.
+
+O mesmo artefato de software poderá ser promovido entre ambientes, mas com configurações e permissões específicas, sem incorporar segredos à imagem.
+
+## 5. Proteção das chaves Binance e IAM
+A credencial de trading é um dos ativos mais sensíveis do sistema.
+
+### Arquitetura de acesso proposta
+
+	Trading Agent / Manual Console
+		Trading Intent ou Manual Command
+
+	Control Manager + Risk Engine
+		Autorização operacional e financeira
+
+	Execution Engine / Binance Adapter
+		Única fronteira de envio de ordens
+
+	Secrets Manager
+		↓ ^
+	Binance API
+		Permissões restritas · IP allowlist quando suportado
+
+### Políticas propostas
+
+- Utilizar credenciais distintas por ambiente, conta e finalidade.
+- Não conceder permissão de saque ou transferência às credenciais de execução quando essas capacidades não forem necessárias.
+- Armazenar chaves em um gerenciador de segredos, não em código-fonte, imagens Docker, logs ou arquivos versionados.
+- Restringir o acesso às credenciais ao workload autorizado.
+- Adotar MFA para operadores e administradores.
+- Utilizar identidades de serviço de curta duração sempre que a infraestrutura suportar.
+- Aplicar allowlist de IPs para acesso à API da Binance quando disponível.
+- Registrar acessos administrativos e eventos de rotação ou revogação.
+
+A rotação de credenciais deve possuir procedimento testado. Revogar uma chave incorretamente durante uma posição aberta pode comprometer a capacidade de gerenciamento dessa posição.
+
+Atenção: restrições de rede e permissões específicas da Binance devem ser verificadas no momento da implementação para Spot e USDⓈ-M Futures. Não estamos aprovando detalhes de endpoints nesta etapa.
+
+## 6. CI/CD e governança de releases
+
+Recomendo um pipeline que trate alterações no motor de execução, nas políticas de risco e nos modelos de IA como mudanças de criticidade elevada.
+
+1. Source Control: código revisado, versionado e associado a uma mudança.
+2. Build: geração de artefato OCI imutável e identificável por digest.
+3. Quality & Security Gates: testes, lint, análise de dependências, segredos e vulnerabilidades.
+4. TRAINING / Development: testes de integração, simulação e avaliação dos componentes.
+5. PAPER: testes operacionais, cenários de falha e validação de comportamento.
+6. Approval Gate: autorização para promoção à produção.
+7. LIVE Deployment: implantação controlada, verificação de saúde e acompanhamento.
+8. Post-deploy: reconciliação, monitoramento e rollback quando seguro.
+
+### Políticas de implantação
+
+| Tipo de alteração               | Controle mínimo proposto                       |
+| ------------------------------- | ---------------------------------------------- |
+| Interface sem comandos críticos | Testes e deploy controlado                     |
+| Market Data / Features          | Testes de integridade e compatibilidade        |
+| Trading Agent / Modelo          | Pipeline de aprovação do D02                   |
+| Risk Engine                     | Testes de políticas e autorização reforçada    |
+| Execution Engine                | Testes de idempotência, reconciliação e falhas |
+| Banco de dados                  | Migrações compatíveis e plano de recuperação   |
+| Credenciais / IAM               | Aprovação e auditoria de segurança             |
+
+O rollback de uma aplicação não pode desfazer uma ordem já executada. Por isso, rollback de software e recuperação de estado financeiro são procedimentos diferentes.
+
+Também recomendo utilizar migrações de banco compatíveis com versões antigas e novas durante a transição, evitando mudanças destrutivas sem plano de reversão.
+
+### Proteção durante deploy
+
+O processo de implantação deverá preservar:
+
+- Gestão de posições abertas.
+- Processamento e reconciliação de eventos de ordens.
+- Mecanismos de proteção independentes.
+- Bloqueio de novas entradas durante estados operacionais incertos.
+- Identificação do modelo, política e versão de software ativos.
+
+## 7. Observability & SRE
+
+O D06 será responsável pela observabilidade técnica da infraestrutura. O D04 continuará responsável pela experiência de monitoramento operacional do usuário.
+
+### Indicadores técnicos
+
+| Serviço           | Indicadores                                          |
+| ----------------- | ---------------------------------------------------- |
+| Market Data       | Latência, gaps, reconexões, freshness                |
+| Inference Runtime | Tempo de inferência, erros, disponibilidade          |
+| Risk Engine       | Latência de avaliação, falhas, disponibilidade       |
+| Execution Engine  | Tempo de envio, erros, estados desconhecidos         |
+| Binance Adapter   | Conectividade, timeouts, rate limits                 |
+| PostgreSQL        | Latência, conexões, locks, replicação, armazenamento |
+| Event Dispatcher  | Lag, backlog, retries, eventos em quarentena         |
+| Web App / BFF     | Latência, erros HTTP, conexões WebSocket/SSE         |
+| Infrastructure    | CPU, memória, disco, rede e reinícios                |
+
+### Stack de referência
+
+Uma combinação inicial possível é:
+
+- OpenTelemetry para instrumentação de métricas e traces.
+- Prometheus ou serviço equivalente para métricas.
+- Grafana para visualização técnica.
+- Loki ou serviço equivalente para logs centralizados.
+- Alertmanager ou plataforma equivalente para alertas.
+
+A seleção definitiva dependerá do provedor cloud e dos custos de operação. O D06 não precisa duplicar as funcionalidades do Monitoring & Alerts do D04; deverá fornecer a telemetria que o D04 consome.
+
+## 8. SLOs e objetivos de disponibilidade
+
+Recomendo distinguir SLI, SLO e SLA:
+
+- SLI: indicador medido, como latência de inferência ou disponibilidade do serviço.
+- SLO: objetivo interno de qualidade.
+- SLA: compromisso contratual, quando aplicável.
+
+Os valores abaixo são metas preliminares de engenharia para discussão, não garantias aprovadas nem resultados medidos.
+
+| SLI                                 | SLO inicial sugerido                                 |
+| ----------------------------------- | ---------------------------------------------------- |
+| Disponibilidade do Risk Engine      | ≥ 99,9% mensal                                       |
+| Disponibilidade do Execution Engine | ≥ 99,9% mensal                                       |
+| Disponibilidade do Operations API   | ≥ 99,5% mensal                                       |
+| Latência de inferência              | p95 até 1 segundo, após observação válida            |
+| Latência de avaliação de risco      | p95 até 200 ms                                       |
+| Publicação de eventos internos      | p95 até 1 segundo                                    |
+| Atualização do painel operacional   | p95 até 2 segundos após evento recebido pelo backend |
+
+Essas metas precisam de definições precisas de janela de medição, exclusões, carga e escopo. A latência de resposta da Binance e a liquidez de mercado não estão sob controle do Trade System.
+
+### Disponibilidade e orçamento de indisponibilidade
+
+## Simulador de error budget
+
+Indisponibilidade máxima teórica permitida pela meta de disponibilidade.
+
+Disponibilidade alvo
+
+99%
+99,5%
+99,9%
+99,95%
+
+Janela de avaliação
+
+7 dias 30 dias
+
+# 43,2 min
+
+Indisponibilidade máxima na janela
+
+Exemplo matemático. Não inclui dependências externas e não representa disponibilidade comprovada.
+
+A arquitetura 24×7 significa operação contínua planejada, não ausência garantida de interrupções.
+
+## 9. Backup, Disaster Recovery e continuidade
+
+A recuperação deverá considerar dois tipos de estado:
+
+1. Estado interno: banco, eventos, configurações, modelos, logs e artefatos.
+2. Estado externo: ordens, posições, saldos e execuções reconhecidas pela Binance.
+
+Restaurar o PostgreSQL não significa restaurar automaticamente a situação financeira atual. Após um incidente, o sistema deverá reconciliar a corretora antes de permitir novas entradas.
+
+### Estratégia de recuperação
+
+	Falha ou incidente detectado
+			↓
+	Bloqueio de novas exposições
+			↓
+	Recuperação da infraestrutura e dos dados
+			↓
+	Reprocessamento de eventos e checkpoints
+			↓
+	Reconciliação com a Binance
+			↓
+	Validação de risco → Retomada autorizada
+
+### RPO e RTO
+
+| Classe                 | RPO                                                               | RTO       | Diretriz                                  |
+| ---------------------- | ----------------------------------------------------------------- | --------- | ----------------------------------------- |
+| Execução e risco       | A definir, com tolerância mínima a perda de registros confirmados | A definir | Prioridade máxima                         |
+| PostgreSQL operacional | A definir                                                         | A definir | Backup e recuperação testados             |
+| Eventos e auditoria    | A definir                                                         | A definir | Preservação e reprocessamento             |
+| Histórico de mercado   | A definir                                                         | A definir | Recuperação e backfill                    |
+| Datasets e modelos     | A definir                                                         | A definir | Artefatos versionados                     |
+| Interface web          | A definir                                                         | A definir | Menor criticidade que execução e proteção |
+
+Não proponho aprovar números de RPO/RTO sem validar a topologia, os mecanismos de backup e os custos.
+
+O RPO próximo de zero para eventos financeiros críticos pode exigir replicação síncrona ou estratégias adicionais, com impactos relevantes em custo e disponibilidade.
+
+## 10. Segurança e governança da plataforma
+
+### Controles mínimos
+
+| Área                  | Política proposta                                       |
+| --------------------- | ------------------------------------------------------- |
+| Rede                  | Segmentação, firewall, mínimo de portas públicas        |
+| Acesso                | MFA, RBAC e identidades de workload                     |
+| Segredos              | Secrets Manager e rotação controlada                    |
+| Containers            | Imagens mínimas, usuário não-root e filesystem restrito |
+| Dependências          | Scan de vulnerabilidades e atualização controlada       |
+| Supply chain          | Artefatos versionados, assinaturas e proveniência       |
+| Banco de dados        | TLS, acesso privado e privilégios mínimos               |
+| Auditoria             | Logs de acesso, deploy, configuração e intervenção      |
+| Resposta a incidentes | Runbooks, responsáveis e escalonamento                  |
+| Governança            | Revisão periódica de acessos e exceções                 |
+
+A política de segurança também deverá prever comprometimento de credenciais, vazamento de segredos, alteração não autorizada de modelos e mudanças indevidas em políticas de risco.
+
+## 11. Contratos operacionais do domínio
+
+Além dos contratos de dados do D05, o D06 deverá definir contratos de implantação, saúde, configuração e recuperação.
+
+| Contrato                   | Responsabilidade                           |
+| -------------------------- | ------------------------------------------ |
+| `DeploymentManifest`       | Versões, imagens, ambientes e dependências |
+| `RuntimeHealthStatus`      | Saúde e prontidão dos componentes          |
+| `ServiceIdentity`          | Identidade e permissões de workloads       |
+| `SecretAccessPolicy`       | Escopo e autorização para segredos         |
+| `ReleaseApproval`          | Aprovação e rastreabilidade de releases    |
+| `ModelDeploymentReference` | Modelo aprovado em produção                |
+| `BackupManifest`           | Backup, integridade e retenção             |
+| `RecoveryCheckpoint`       | Estado e ponto de recuperação              |
+| `IncidentRecord`           | Registro e acompanhamento de incidentes    |
+| `OperationalReadiness`     | Condições para habilitar operação LIVE     |
+
+### Contrato de prontidão para LIVE
+
+Proponho um `OperationalReadiness` com critérios como:
+
+- Serviços críticos saudáveis.
+- Banco e Event Dispatcher operacionais.
+- Estado de ordens e posições reconciliado.
+- Market State atualizado e válido.
+- Modelo e políticas de risco aprovados.
+- Credenciais e permissões válidas.
+- Nenhum Emergency Lock impeditivo ativo.
+- Versões e configurações compatíveis.
+
+A prontidão deve ser reavaliada após reinícios, falhas, deploys e reconciliações relevantes.
+
+Importante: a verificação de saúde do container não substitui a prontidão financeira. Um serviço pode responder HTTP 200 e ainda estar impedido de operar por divergência de posições.
+
+## 12. Decisões arquiteturais propostas — ADR-055 a ADR-070
+
+Proponho 16 decisões arquiteturais para aprovação do Domínio 06.
+
+## Checklist — Domínio 06
+
+Validação das decisões arquiteturais
+
+## 0/16
+
+Avaliadas
+
+Arquitetura do domínio
+
+ADR-055
+
+Adotar seis componentes lógicos: Infrastructure & Runtime, CI/CD, Identity & Secrets, Observability & SRE, Backup & DR e Platform Security.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Infraestrutura cloud
+
+ADR-056
+
+Adotar infraestrutura cloud com seleção do provedor baseada em custo, segurança, latência, disponibilidade e recuperação; não fixar provedor nesta baseline.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Containers e runtime
+
+ADR-057
+
+Adotar containers OCI/Docker com imagens imutáveis e orquestração compatível com os requisitos do MVP, sem obrigatoriedade inicial de Kubernetes.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Segregação de ambientes
+
+ADR-058
+
+Isolar TRAINING, PAPER e LIVE por credenciais, identidades, dados, permissões e caminhos de rede.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Proteção de credenciais Binance
+
+ADR-059
+
+Restringir credenciais LIVE ao Execution Adapter, utilizar Secrets Manager, permissões mínimas e controles de rede.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Identity & Access Management
+
+ADR-060
+
+Adotar MFA, RBAC, menor privilégio, identidades de serviço e auditoria de acessos.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+CI/CD e qualidade
+
+ADR-061
+
+Adotar pipeline versionado com testes, análise de segurança, artefatos imutáveis e promoção controlada entre ambientes.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Governança de releases LIVE
+
+ADR-062
+
+Exigir aprovação reforçada e validação de prontidão antes de releases críticos em LIVE.
+
+Aprovar
+
+Revisar
+
+Postergar
+
+Exibir as outras 8 decisões
+
+Observações e ajustes (opcional)
+
+Aprovar todasLimpar
+
+Consolidar validação do Domínio 06&#x20;
+
+## 13. Pendências técnicas identificadas
+
+| ID  | Pendência                                                    | Responsável          |
+| --- | ------------------------------------------------------------ | -------------------- |
+| P65 | Seleção do provedor cloud e região de implantação            | Arquitetura / Infra  |
+| P66 | Topologia de rede, VPC, sub-redes, firewall e egress         | Infra / Segurança    |
+| P67 | Dimensionamento de CPU, memória, armazenamento e rede        | Infra / SRE          |
+| P68 | Escolha da orquestração e política de reinício de containers | Platform Engineering |
+| P69 | Segregação física/lógica de TRAINING, PAPER e LIVE           | Segurança / Infra    |
+| P70 | Secrets Manager e proteção das chaves Binance                | Segurança            |
+| P71 | IAM, MFA, RBAC e identidades de serviço                      | Segurança            |
+| P72 | Pipeline CI/CD, artefatos e estratégia de promoção           | DevOps               |
+| P73 | Testes e critérios de aprovação de releases LIVE             | QA / DevOps          |
+| P74 | Estratégia de deploy com posições abertas                    | Execution / SRE      |
+| P75 | Stack de métricas, logs, traces e alertas                    | Observability        |
+| P76 | Definição de SLIs, SLOs e error budgets                      | SRE                  |
+| P77 | Política de backup, retenção e restauração                   | Data / SRE           |
+| P78 | RPO, RTO e arquitetura de Disaster Recovery                  | SRE / Infra          |
+| P79 | Runbooks de incidentes e reconciliação pós-falha             | SRE / Trading        |
+| P80 | Hardening, vulnerabilidades e supply chain                   | Segurança            |
+| P81 | Infraestrutura como código e controle de drift               | DevOps               |
+| P82 | Contrato OperationalReadiness e critérios de bloqueio        | Arquitetura / Risk   |
+| P83 | Custos mensais, capacidade e escalabilidade                  | Infra / FinOps       |
+| P84 | Testes de resiliência, failover e recuperação                | QA / SRE             |
+
+Total: 20 novas pendências, P65 a P84.
+
+### Priorização para o MVP
+
+Recomendo priorizar P65–P74, P77–P79 e P82–P84, pois impactam diretamente a capacidade de implantar, operar e recuperar o sistema com segurança.
+
+As demais deverão ser resolvidas conforme os requisitos de observabilidade, segurança e governança necessários para o ambiente LIVE.
+
+## 14. Checklist futuro de aceite técnico
+
+Critérios de implementação
+
+0/12
+
+	TRAINING e PAPER não conseguem acessar credenciais ou rotas de execução LIVE.
+	Somente o Execution Adapter autorizado acessa credenciais de trading.
+	Credenciais de execução não possuem permissão de saque desnecessária.
+	Deploys críticos passam por testes, aprovação e verificação de prontidão.
+	Reinícios não provocam ordens duplicadas ou perda silenciosa de estado.
+	Posições abertas continuam gerenciáveis durante atualizações e incidentes, dentro das capacidades disponíveis.
+	Estados financeiros são reconciliados após falhas e recuperação.
+	Backups e restaurações foram testados com sucesso.
+	Logs e traces permitem investigar decisões e execuções.
+	Alertas críticos possuem responsáveis e runbooks.
+	RPO, RTO e SLOs foram definidos e validados.
+	OperationalReadiness bloqueia novas exposições quando critérios críticos falham.
+
+Checklist de planejamento de testes. Nenhum critério é considerado implementado ou validado nesta etapa.
+
+## 15. Progresso arquitetural
+
+## Trade System V1
+
+D01 — Integração e Dados de Mercado
+6/6
+
+D02 — Inteligência Artificial
+10/10
+
+D03 — Risco e Execução
+12/12
+
+D04 — Operações e Observabilidade
+12/12
+
+D05 — Dados, Eventos e Auditoria
+14/14
+
+D06 — Infraestrutura e Segurança
+16 propostas
+
+# 54
+ADRs aprovadas
+
+# 16
+ADRs em análise
+
+# 84
+Pendências identificadas
+
+## 16. Próxima etapa proposta
+
+## Domínio 07 — Engenharia, Qualidade e Validação Operacional
+
+Engineering Delivery, QA & Operational Validation
+
+Após a aprovação do D06, proponho validar o processo de transformação da arquitetura em um produto operacional.
+
+O domínio deverá estabelecer:
+
+- Estratégia de implementação e decomposição em módulos de software.
+- Backlog técnico e dependências entre componentes.
+- Testes unitários, integração, contratos e E2E.
+- Backtesting, walk-forward, paper trading e testes de resiliência.
+- Critérios de aceite e gates de promoção para LIVE.
+- Testes de risco, execução, reconciliação e recuperação.
+- Gestão de qualidade, defeitos, releases e evidências.
+- Plano de evolução do MVP para operação controlada.
+
+Resultado esperado: definir uma metodologia verificável para implementar, testar, homologar e liberar o Trade System V1 com segurança.
+
+Recomendação arquitetural: aprovar as ADR-055 a ADR-070, mantendo as 20 pendências técnicas para detalhamento e implantação.
+
+Com a aprovação do Domínio 06, o Trade System terá definidos os seis pilares conceituais: Dados de Mercado, Inteligência Artificial, Risco e Execução, Plataforma de Operações, Dados e Auditoria, e Infraestrutura e Segurança.
+
+
+======
+
+# TRADE SYSTEM V1 — Consolidação Arquitetural
+
+TS-ARCH-D06-V1.0 · 10/11/2026
+Aprovado
+
+Domínio 06 — Infraestrutura, Segurança e DevOps
+
+A validação arquitetural do Domínio 06 está concluída. As 16 decisões ADR-055 a ADR-070 foram aprovadas integralmente, sem ressalvas ou solicitações de alteração.
+
+Com essa aprovação, o Trade System V1 estabelece formalmente a arquitetura conceitual de implantação, isolamento de ambientes, segurança de credenciais, entrega contínua, observabilidade técnica e recuperação operacional.
+
+# 16/16
+ADRs aprovadas
+
+# 6
+Componentes lógicos
+
+# 0
+Ressalvas
+
+Baseline conceitual aprovada · Binance Spot e USDⓈ-M Futures · Operação 24×7 como objetivo de disponibilidade
+
+## 1. Registro das decisões aprovadas
+
+| ADR     | Decisão consolidada                                      | Status   |
+| ------- | -------------------------------------------------------- | -------- |
+| ADR-055 | Arquitetura do domínio com seis componentes lógicos      | Aprovado |
+| ADR-056 | Infraestrutura cloud; provedor a selecionar              | Aprovado |
+| ADR-057 | Containers OCI/Docker; sem Kubernetes obrigatório no MVP | Aprovado |
+| ADR-058 | Segregação de TRAINING, PAPER e LIVE                     | Aprovado |
+| ADR-059 | Proteção de credenciais Binance e acesso restrito        | Aprovado |
+| ADR-060 | IAM, MFA, RBAC e menor privilégio                        | Aprovado |
+| ADR-061 | CI/CD com testes, segurança e artefatos versionados      | Aprovado |
+| ADR-062 | Aprovação reforçada para releases críticos LIVE          | Aprovado |
+| ADR-063 | Proteção de posições durante deploys                     | Aprovado |
+| ADR-064 | Observabilidade técnica e correlação operacional         | Aprovado |
+| ADR-065 | SLIs, SLOs e error budgets por criticidade               | Aprovado |
+| ADR-066 | Backup, Disaster Recovery e recuperação testada          | Aprovado |
+| ADR-067 | Reconciliação financeira antes da retomada               | Aprovado |
+| ADR-068 | Hardening, criptografia e segurança da supply chain      | Aprovado |
+| ADR-069 | Infraestrutura como código e controle de drift           | Aprovado |
+| ADR-070 | OperationalReadiness obrigatório para LIVE               | Aprovado |
+
+Resultado: ADR-055 a ADR-070 incorporadas à baseline arquitetural do Trade System V1.
+
+A aprovação não fixa o provedor cloud, o orquestrador definitivo, os valores numéricos dos SLOs ou os tempos de recuperação. Esses elementos continuam sujeitos ao detalhamento técnico.
+
+## 2. Componentes e responsabilidades consolidados
+
+	D06-C01 — Infrastructure & Runtime Platform
+		Infraestrutura cloud, redes privadas, containers, armazenamento, capacidade computacional e isolamento entre ambientes.
+	Entrega: ambientes implantáveis, runtime controlado e infraestrutura versionada.
+
+	D06-C02 — CI/CD & Release Management
+		Build, testes, verificações de segurança, promoção de artefatos, deploys, migrações e rollback controlado.
+	Entrega: releases reproduzíveis, rastreáveis e aprovados.
+
+	D06-C03 — Identity, Access & Secrets Management
+		Identidades humanas e de serviços, MFA, RBAC, credenciais Binance, gerenciamento de segredos e rotação controlada.
+	Entrega: autenticação, autorização e proteção de credenciais.
+
+	D06-C04 — Observability & SRE
+		Métricas técnicas, logs, traces, alertas, indicadores de disponibilidade, SLOs e procedimentos de resposta a incidentes.
+	Entrega: telemetria, diagnósticos e confiabilidade operacional.
+
+	D06-C05 — Backup & Disaster Recovery
+		Backups, retenção, restauração, continuidade, recuperação de serviços e reconciliação após incidentes.
+	Entrega: planos de recuperação, RPO/RTO e testes de restauração.
+
+	D06-C06 — Platform Security & Governance
+		Hardening, proteção da supply chain, vulnerabilidades, criptografia, governança de configurações e auditoria de infraestrutura.
+	Entrega: controles preventivos e evidências de segurança.
+
+## 3. Arquitetura conceitual aprovada
+
+	Operadores e Administradores
+		HTTPS · MFA · RBAC
+			↓ ^
+	Zona de Acesso
+		API Gateway · Web App · Operations BFF
+			↓ ^
+	Zona Operacional Privada
+	LIVE
+
+	Market Data & Features
+	AI Inference Runtime
+	Risk & Control
+	Execution Engine
+	Portfolio Manager
+	Event Dispatcher
+
+	Zona de Dados Privada
+		PostgreSQL · Event Store · Artefatos · Backups
+
+	Zona Independente de Treinamento
+		Learning Engine · Simuladores · Experimentos
+		Sem credenciais ou rotas de execução LIVE
+
+Arquitetura lógica. A topologia física, o provedor e a distribuição dos serviços serão definidos na engenharia.
+
+### Diretrizes técnicas estabelecidas
+
+| Área           | Definição aprovada                                                       |
+| -------------- | ------------------------------------------------------------------------ |
+| Cloud          | Provedor a selecionar com critérios técnicos, financeiros e de segurança |
+| Runtime        | Containers OCI/Docker e imagens imutáveis                                |
+| Orquestração   | Solução proporcional ao MVP, sem Kubernetes obrigatório                  |
+| Infraestrutura | IaC versionada e revisada                                                |
+| Redes          | Serviços privados, exposição mínima e controle de saída                  |
+| Dados          | PostgreSQL e armazenamento persistente protegido                         |
+| Treinamento    | Workloads isolados da execução LIVE                                      |
+| Operação       | Serviços críticos monitorados e recuperáveis                             |
+
+## 4. Políticas operacionais e de segurança aprovadas
+
+### Segregação de ambientes
+
+| Controle                | TRAINING      | PAPER              | LIVE                     |
+| ----------------------- | ------------- | ------------------ | ------------------------ |
+| Ordens com capital real | Proibidas     | Proibidas          | Autorizadas sob política |
+| Chaves Binance LIVE     | Sem acesso    | Sem acesso         | Acesso restrito          |
+| Dados operacionais      | Isolados      | Isolados           | Isolados                 |
+| Modelos                 | Candidatos    | Em validação       | Aprovados                |
+| Releases                | Automatizados | Com gates de teste | Com aprovação reforçada  |
+| Execução                | Simulada      | Simulada/testnet   | Binance real             |
+
+A segregação deverá existir em identidades, credenciais, dados, permissões e caminhos de rede, não apenas em variáveis de ambiente.
+
+### Proteção de credenciais Binance
+
+A baseline determina que somente o componente de execução autorizado tenha acesso às credenciais necessárias para enviar ordens.
+
+Ficam estabelecidos Secrets Manager, menor privilégio, MFA para operadores, controle de rede e rotação auditável.
+
+Credenciais destinadas ao trading não deverão possuir permissões desnecessárias de saque ou transferência.
+
+### Governança de releases
+
+O pipeline de entrega deverá incluir:
+
+1. Código versionado e revisado.
+2. Build de artefato imutável.
+3. Testes automatizados e análise de segurança.
+4. Validação em ambientes não produtivos.
+5. Aprovação reforçada para alterações críticas em LIVE.
+6. Deploy controlado, verificação de prontidão e monitoramento.
+7. Rollback de software e reconciliação financeira quando necessários.
+
+Regra fundamental: reverter um deploy não desfaz ordens executadas. A recuperação financeira exige procedimentos específicos.
+
+### Prontidão operacional LIVE
+
+O contrato `OperationalReadiness` passa a ser um gate obrigatório para habilitar novas exposições financeiras.
+
+Deverá verificar saúde dos serviços, conectividade, consistência dos dados, reconciliação de ordens e posições, validade das credenciais, políticas de risco e versões autorizadas.
+
+Um container saudável não significa necessariamente que a operação financeira esteja pronta.
+
+## 5. Observabilidade, continuidade e recuperação
+
+### Observability & SRE
+
+A baseline estabelece monitoramento de métricas, logs, traces e incidentes, com correlação aos eventos operacionais dos demais domínios.
+
+Os indicadores de serviço deverão abranger disponibilidade, latência, falhas, conectividade, filas, banco de dados e integridade dos fluxos críticos.
+
+As metas numéricas de SLO e os respectivos error budgets permanecem para especificação.
+
+### Disaster Recovery
+
+1. Detectar: identificar a falha ou incidente.
+2. Proteger: bloquear novas exposições no escopo afetado.
+3. Recuperar: restaurar serviços, dados e checkpoints.
+4. Reprocessar: recuperar eventos pendentes com idempotência.
+5. Reconciliar: comparar ordens, fills, saldos e posições com a Binance.
+6. Validar: reavaliar risco, integridade e prontidão.
+7. Retomar: liberar operação somente após autorização.
+
+A reconciliação com a Binance é obrigatória antes de permitir novas entradas após uma recuperação relevante.
+
+A proteção de posições durante indisponibilidades dependerá dos mecanismos efetivamente disponíveis, inclusive ordens protetivas aceitas pela exchange. A arquitetura não presume que seja possível executar uma saída quando a corretora ou a conectividade estiver indisponível.
+
+## 6. Contratos operacionais consolidados
+
+| Contrato                   | Responsabilidade                           |
+| -------------------------- | ------------------------------------------ |
+| `DeploymentManifest`       | Versões, imagens, configurações e ambiente |
+| `RuntimeHealthStatus`      | Saúde e disponibilidade dos componentes    |
+| `ServiceIdentity`          | Identidade e permissões de serviços        |
+| `SecretAccessPolicy`       | Controle de acesso a segredos              |
+| `ReleaseApproval`          | Autorização e rastreabilidade de releases  |
+| `ModelDeploymentReference` | Modelo de IA aprovado e ativo              |
+| `BackupManifest`           | Identificação e integridade dos backups    |
+| `RecoveryCheckpoint`       | Estado e ponto de recuperação              |
+| `IncidentRecord`           | Registro de incidentes e ações             |
+| `OperationalReadiness`     | Gate para habilitação de operações LIVE    |
+
+Os schemas, campos obrigatórios, endpoints e mecanismos de validação permanecem como atividades de engenharia.
+
+## 7. Pendências técnicas consolidadas
+
+As 20 pendências do Domínio 06 permanecem abertas.
+
+| ID  | Pendência                                      | Responsável          |
+| --- | ---------------------------------------------- | -------------------- |
+| P65 | Seleção do provedor cloud e região             | Arquitetura / Infra  |
+| P66 | Topologia de rede, VPC, firewall e egress      | Infra / Segurança    |
+| P67 | Dimensionamento de recursos computacionais     | Infra / SRE          |
+| P68 | Orquestração e reinício de containers          | Platform Engineering |
+| P69 | Isolamento técnico TRAINING/PAPER/LIVE         | Segurança / Infra    |
+| P70 | Secrets Manager e proteção das chaves Binance  | Segurança            |
+| P71 | IAM, MFA, RBAC e identidades de serviço        | Segurança            |
+| P72 | CI/CD, artefatos e promoção entre ambientes    | DevOps               |
+| P73 | Testes e aprovação de releases LIVE            | QA / DevOps          |
+| P74 | Deploy com posições abertas                    | Execution / SRE      |
+| P75 | Stack de métricas, logs, traces e alertas      | Observability        |
+| P76 | SLIs, SLOs e error budgets                     | SRE                  |
+| P77 | Política de backup e restauração               | Data / SRE           |
+| P78 | RPO, RTO e arquitetura de DR                   | SRE / Infra          |
+| P79 | Runbooks e reconciliação pós-falha             | SRE / Trading        |
+| P80 | Hardening e segurança da supply chain          | Segurança            |
+| P81 | Infraestrutura como código e controle de drift | DevOps               |
+| P82 | Contrato OperationalReadiness                  | Arquitetura / Risk   |
+| P83 | Custos, capacidade e escalabilidade            | Infra / FinOps       |
+| P84 | Testes de resiliência, failover e recuperação  | QA / SRE             |
+
+### Priorização para o MVP
+
+Pendências críticas para LIVE
+
+P65–P74, P77–P79 e P82–P84 deverão receber prioridade por afetarem diretamente isolamento, implantação, credenciais, execução, recuperação e prontidão operacional.
+
+P75, P76, P80 e P81 também deverão ser resolvidas antes da liberação LIVE na extensão exigida pelos critérios de segurança, observabilidade e governança aprovados.
+
+A aprovação conceitual não representa aprovação para operar com capital real. A liberação LIVE dependerá de implementação, testes e evidências de conformidade.
+
+## 8. Progresso acumulado — Trade System V1
+
+## Baseline arquitetural
+6 domínios aprovados
+
+D01 — Integração e Dados de Mercado
+6/6
+
+D02 — Inteligência Artificial
+10/10
+
+D03 — Risco e Execução
+12/12
+
+D04 — Operações e Observabilidade
+12/12
+
+D05 — Dados, Eventos e Auditoria
+14/14
+
+D06 — Infraestrutura e Segurança
+16/16
+
+# 70
+ADRs aprovadas
+
+# 27
+Componentes principais
+
+# 84
+Pendências técnicas
+
+Componentes lógicos: D01 (3), D02 (3), D03 (4), D04 (5), D05 (6) e D06 (6). As 84 pendências identificadas não equivalem a 84 defeitos ou bloqueios arquiteturais.
+
+### Visão integrada da arquitetura
+
+	D01 — Market Data → Features → Market State
+				↓
+	D02 — Observation → AI Decision
+				↓
+	D03 — Control → Risk → Execution → Portfolio
+
+	D04 — Operations Platform
+		Administração · Supervisão · Intervenção · Monitoramento
+
+	D05 — Data & Event Platform
+		Persistência · Eventos · Datasets · Auditoria
+
+	D06 — Infrastructure & Security
+		Runtime · CI/CD · IAM · SRE · Backup · DR
+
+## 9. Próximo domínio — Engenharia, Qualidade e Validação Operacional
+
+## Domínio 07 — Engineering Delivery, QA & Operational Validation
+
+Próxima validação arquitetural proposta
+
+O Domínio 07 definirá como transformar os seis domínios aprovados em um sistema implementado, testado e homologado.
+
+| Componente proposto                            | Responsabilidade                                                  |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| Engineering Delivery & Architecture Governance | Backlog, decomposição técnica, padrões e rastreabilidade das ADRs |
+| Automated Testing & Quality Engineering        | Testes unitários, integração, contratos, E2E e segurança          |
+| Strategy Validation & Backtesting              | Backtesting, walk-forward, métricas e avaliação de modelos        |
+| Paper Trading & Operational Simulation         | Execução simulada, cenários de mercado e validação integrada      |
+| Resilience & Failure Testing                   | Testes de falhas, reconciliação, idempotência e recuperação       |
+| Release Acceptance & LIVE Readiness            | Critérios de aceite, evidências, homologação e gates de liberação |
+
+### Questões centrais para validação
+
+- Como decompor os 27 componentes lógicos em módulos de implementação e entregas?
+- Qual a estratégia de testes por camada e por domínio?
+- Quais métricas deverão aprovar um modelo de IA para Paper Trading?
+- Como avaliar slippage, taxas, funding, drawdown e estabilidade?
+- Como comprovar a segurança do fluxo completo de execução?
+- Quais evidências serão obrigatórias para liberar capital real?
+- Como definir critérios de rollback, suspensão e retorno ao PAPER?
+
+Iniciar validação do Domínio 07&#x20;
+
+Conclusão: o Domínio 06 está formalmente aprovado como TS-ARCH-D06-V1.0, consolidando as ADR-055 a ADR-070.
+
+O Trade System V1 possui agora 6 domínios conceitualmente aprovados, 70 ADRs, 27 componentes lógicos principais e 84 pendências técnicas identificadas.
+
+A próxima etapa é estabelecer o processo de engenharia e as evidências necessárias para transformar essa arquitetura em um produto operacional confiável, mantendo a preservação de capital e o controle de risco como requisitos prioritários.

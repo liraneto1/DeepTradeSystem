@@ -1,0 +1,576 @@
+# TEST-SPEC-TEMPLATE.md
+## TRADE SYSTEM V1 — Test Specification Template
+
+**Document ID:** TS-DOC-TPL-TEST-001  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Domain:** GLOBAL / D07  
+**Applicable Increments:** I00–I09  
+**Owner:** Engineering, Quality & Validation  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Document Registry:** TS-DOC-REG-001 — APPROVED  
+**Gap Register:** TS-DOC-GAP-001 — APPROVED  
+**Traceability Matrix:** TS-DOC-TRC-001 — APPROVED  
+**Approval Register:** TS-DOC-APR-001 — APPROVED  
+**Change Log:** TS-DOC-CHG-001 — APPROVED  
+**Story Template:** TS-DOC-TPL-STORY-001 — APPROVED  
+**Contract Template:** TS-DOC-TPL-CONTRACT-001 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Approval Reference:** PENDING  
+**Increment:** I00–I09, conforme aplicabilidade  
+**Source References:** [anexo original](../history/TS-DOC-TPL-TEST-001/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../TS-DOC-STD-V1.0.md) e [fontes oficiais](../../referencias/originais/)  
+**Related ADRs:** especificar por teste, conforme seções 1 e 4.  
+**Related Components:** especificar por teste, conforme seções 1 e 4.  
+**Related Requirements/Pendências:** especificar por teste, conforme seções 4, 23 e 24.  
+**Dependencies:** documentos de governança indicados acima e templates de [História Técnica](STORY-TEMPLATE.md) e [Contrato](CONTRACT-TEMPLATE.md), conforme aplicabilidade.  
+**Acceptance Criteria:** seções 14, 21 e 22 orientam o registro dos critérios de aprovação, da prontidão documental e do aceite do teste.  
+**Last Updated:** 2026-11-16
+
+---
+
+# TEMPLATE — TEST SPECIFICATION
+
+> **Instrução de utilização:** preencher somente com informações verificadas. Não inventar resultados, métricas, arquivos, execuções ou evidências. Valores desconhecidos deverão permanecer `TBD`, com referência à lacuna correspondente.
+
+## 1. Identificação
+
+| Campo | Valor |
+|---|---|
+| Test ID | [TS-TEST-NNN] |
+| Test Name | [Nome] |
+| Specification Version | [Versão] |
+| Document Status | [DRAFT / IN_REVIEW / APPROVED / SUPERSEDED] |
+| Test Type | [Tipo] |
+| Increment | [IXX] |
+| Domain | [DXX] |
+| Related Epic | [TS-EP-XX] |
+| Related Feature | [IXX-FEAT-NNN] |
+| Related Story | [TS-ST-NNN] |
+| Related Acceptance Criteria | [IDs] |
+| Related Contract | [Contrato/Versão ou N/A] |
+| Related ADRs | [IDs] |
+| Related Requirements | [PXX] |
+| Test Owner | [Responsável] |
+| Reviewer | [Responsável] |
+| Priority | [Prioridade] |
+| Approval Reference | [Referência ou PENDING] |
+| Last Updated | [Data] |
+
+A especificação do teste e cada execução deverão possuir identificadores distintos.
+
+O identificador do teste não poderá ser reutilizado para cenários semanticamente diferentes.
+
+## 2. Objetivo do teste
+
+### 2.1 Finalidade
+
+[Descrever o comportamento, propriedade ou requisito a verificar.]
+
+### 2.2 Hipótese verificável
+
+[Definir o resultado esperado.]
+
+### 2.3 Requisito de origem
+
+[Identificar o requisito, ADR, contrato ou critério de aceite.]
+
+### 2.4 Risco coberto
+
+[Descrever o risco de defeito ou falha mitigado pela verificação.]
+
+### 2.5 Limites de comprovação
+
+[Explicitar o que o teste não demonstra.]
+
+## 3. Classificação do teste
+
+Selecionar o tipo principal e os tipos secundários aplicáveis.
+
+| Tipo | Finalidade |
+|---|---|
+| UNIT | Verificar comportamento isolado |
+| CONTRACT | Verificar schema, semântica e compatibilidade |
+| INTEGRATION | Verificar interação entre componentes |
+| PROPERTY_BASED | Verificar invariantes em conjuntos de entradas |
+| END_TO_END | Verificar fluxo completo em ambiente controlado |
+| RESILIENCE | Verificar comportamento sob falhas |
+| SECURITY | Verificar controles de segurança e autorização |
+| PERFORMANCE | Verificar desempenho técnico sob carga |
+| DATA_QUALITY | Verificar qualidade e integridade de dados |
+| QUANT_VALIDATION | Verificar metodologia e resultados quantitativos |
+| OPERATIONAL | Verificar controles e procedimentos operacionais |
+| RECOVERY | Verificar recuperação e reconciliação |
+| REGRESSION | Verificar preservação de comportamento após mudanças |
+
+A classificação não substitui os critérios específicos de cada teste.
+
+## 4. Contexto arquitetural
+
+### 4.1 Baselines
+
+[Relacionar versões aplicáveis.]
+
+### 4.2 ADRs
+
+[Relacionar decisões verificadas.]
+
+### 4.3 Componentes
+
+[Relacionar componentes sob teste.]
+
+### 4.4 Contratos
+
+[Relacionar contratos e versões.]
+
+### 4.5 Fluxos
+
+[Relacionar F01–F10, quando aplicável.]
+
+### 4.6 Invariantes
+
+[Relacionar propriedades que deverão permanecer verdadeiras.]
+
+## 5. Escopo
+
+### 5.1 Incluído
+
+[Descrever o comportamento coberto.]
+
+### 5.2 Excluído
+
+[Descrever comportamentos não cobertos.]
+
+### 5.3 Unidade sob teste
+
+[Identificar função, componente, serviço, fluxo ou modelo.]
+
+### 5.4 Dependências
+
+[Identificar serviços, contratos, fixtures e infraestrutura.]
+
+### 5.5 Premissas
+
+[Registrar condições verificadas ou pendentes.]
+
+## 6. Pré-condições
+
+| Precondition ID | Condição | Método de verificação | Obrigatória |
+|---|---|---|---|
+| [PRE-NNN] | [Condição] | [Método] | [Sim/Não] |
+
+Exemplos de pré-condições:
+
+- Ambiente correto.
+- Versão de código identificada.
+- Schema esperado disponível.
+- Banco de dados inicializado.
+- Fixtures carregadas.
+- Permissões configuradas.
+- Serviços dependentes acessíveis.
+- Relógio e timezone controlados quando necessário.
+
+Pré-condições não atendidas deverão produzir resultado `BLOCKED` ou `INVALID`, conforme o caso, nunca aprovação automática.
+
+## 7. Ambiente de teste
+
+| Campo | Valor |
+|---|---|
+| Environment ID | [ID] |
+| Environment Type | [LOCAL / CI / TRAINING / PAPER / CONTROLLED] |
+| Code Version | [Commit] |
+| Build ID | [ID] |
+| Runtime Version | [Versão] |
+| Database Version | [Versão] |
+| Contract Versions | [Versões] |
+| Model Version | [Versão ou N/A] |
+| Dataset Version | [Versão ou N/A] |
+| Configuration Reference | [Referência] |
+| Execution Identity | [Identidade autorizada] |
+
+Ambientes e credenciais deverão respeitar a segregação aprovada.
+
+Nenhum teste do I00 poderá executar ordens reais.
+
+## 8. Dados de teste
+
+### 8.1 Origem
+
+[Definir fonte dos dados.]
+
+### 8.2 Classificação
+
+[Sintético / Histórico / Fixture / Simulado / Outro.]
+
+### 8.3 Versão
+
+[Identificar dataset ou fixture.]
+
+### 8.4 Integridade
+
+[Definir hash ou mecanismo de verificação.]
+
+### 8.5 Preparação
+
+[Descrever inicialização.]
+
+### 8.6 Isolamento
+
+[Definir prevenção de interferência entre execuções.]
+
+### 8.7 Limpeza
+
+[Definir teardown e restauração.]
+
+### 8.8 Restrições temporais
+
+[Definir regras contra lookahead, vazamento de dados e utilização de informação futura, quando aplicável.]
+
+## 9. Cenário de teste
+
+### 9.1 Given — Estado inicial
+
+[Descrever condições iniciais.]
+
+### 9.2 When — Ação
+
+[Descrever estímulo ou operação.]
+
+### 9.3 Then — Resultado esperado
+
+[Descrever resultado observável.]
+
+### 9.4 And — Invariantes adicionais
+
+[Relacionar propriedades obrigatórias.]
+
+### 9.5 Critérios de falha
+
+[Definir condições que invalidam o resultado.]
+
+## 10. Procedimento de execução
+
+| Step ID | Ação | Entrada | Resultado esperado |
+|---|---|---|---|
+| [STEP-01] | [Ação] | [Entrada] | [Resultado] |
+| [STEP-02] | [Ação] | [Entrada] | [Resultado] |
+
+O procedimento deverá ser reproduzível.
+
+Comandos e scripts deverão ser referenciados por arquivos versionados quando disponíveis.
+
+## 11. Oráculos e assertions
+
+### 11.1 Assertions obrigatórias
+
+[Relacionar verificações objetivas.]
+
+### 11.2 Invariantes
+
+[Relacionar propriedades permanentes.]
+
+### 11.3 Tolerâncias
+
+[Definir tolerâncias numéricas aprovadas.]
+
+### 11.4 Ordenação
+
+[Definir ordem esperada de eventos.]
+
+### 11.5 Idempotência
+
+[Definir comportamento sob repetição.]
+
+### 11.6 Temporalidade
+
+[Definir restrições de tempo, sequência e validade.]
+
+### 11.7 Integridade
+
+[Definir consistência de estado e registros.]
+
+Nenhuma tolerância poderá ser escolhida após observar o resultado apenas para transformar uma falha em aprovação.
+
+## 12. Cenários negativos e de falha
+
+Quando aplicável, especificar:
+
+- Entradas inválidas.
+- Campos obrigatórios ausentes.
+- Versões incompatíveis.
+- Mensagens duplicadas.
+- Mensagens fora de ordem.
+- Timeouts.
+- Falhas de persistência.
+- Falhas de publicação.
+- Interrupções de processo.
+- Perda temporária de conectividade.
+- Falhas de autorização.
+- Divergência de estado.
+- Recuperação após reinício.
+- Condições de corrida.
+- Tentativas de acesso entre ambientes.
+
+Os cenários deverão ser executados exclusivamente em ambientes autorizados e controlados.
+
+## 13. Requisitos de observabilidade
+
+### 13.1 Logs
+
+[Definir registros esperados.]
+
+### 13.2 Métricas
+
+[Definir indicadores observáveis.]
+
+### 13.3 Traces
+
+[Definir correlação.]
+
+### 13.4 Eventos de auditoria
+
+[Definir registros obrigatórios.]
+
+### 13.5 Alertas
+
+[Definir alertas esperados.]
+
+### 13.6 Diagnóstico
+
+[Definir informações necessárias para investigação.]
+
+## 14. Critérios de aprovação do teste
+
+| Acceptance ID | Critério | Método de verificação | Evidência |
+|---|---|---|---|
+| [TEST-AC-NNN] | [Critério] | [Método] | [Evidence ID] |
+
+O teste somente poderá receber resultado `PASS` quando todos os critérios obrigatórios aplicáveis forem atendidos.
+
+Critérios não executados não poderão ser tratados como aprovados.
+
+## 15. Modelo de execução
+
+Cada execução deverá possuir um registro próprio:
+
+| Campo | Valor |
+|---|---|
+| Test Run ID | [TS-TRUN-NNN] |
+| Test ID | [TS-TEST-NNN] |
+| Specification Version | [Versão] |
+| Execution Timestamp | [Timestamp] |
+| Executor | [Pessoa/CI/Agente] |
+| Environment | [ID] |
+| Code Version | [Commit] |
+| Dataset/Fixture Version | [Versão] |
+| Configuration Reference | [Referência] |
+| Actual Result | [Resultado] |
+| Execution Status | [Estado] |
+| Evidence References | [IDs] |
+| Defect References | [IDs ou N/A] |
+
+A execução não altera automaticamente a especificação do teste.
+
+## 16. Estados de execução
+
+| Estado | Significado |
+|---|---|
+| NOT_RUN | Teste ainda não executado |
+| RUNNING | Execução em andamento |
+| PASS | Critérios obrigatórios atendidos |
+| FAIL | Um ou mais critérios não atendidos |
+| BLOCKED | Execução impedida por dependência |
+| INVALID | Execução sem validade metodológica ou técnica |
+| ERROR | Falha na infraestrutura ou no próprio mecanismo de teste |
+| CANCELLED | Execução cancelada |
+
+`ERROR`, `BLOCKED` e `INVALID` não poderão ser contabilizados como `PASS`.
+
+Um resultado `PASS` não implica aceite da história ou do incremento sem as demais verificações exigidas.
+
+## 17. Evidências de execução
+
+| Evidence ID | Tipo | Referência | Integridade |
+|---|---|---|---|
+| [TS-EVB-IXX-NNN] | [Log/Report/Artifact] | [Caminho] | [Hash] |
+
+Evidências poderão incluir:
+
+- Relatório de testes.
+- Logs estruturados.
+- Traces.
+- Métricas.
+- Arquivos de saída.
+- Snapshots controlados.
+- Resultados de comparação.
+- Artefatos de CI.
+- Registros de falha e recuperação.
+
+Evidências deverão identificar o ambiente, a versão do código e a execução correspondente.
+
+Não poderão ser declaradas evidências inexistentes.
+
+## 18. Reprodutibilidade
+
+O teste deverá definir:
+
+- Dependências versionadas.
+- Configuração reproduzível.
+- Dados identificados.
+- Seeds, quando aplicável.
+- Relógio controlado, quando necessário.
+- Isolamento de estado.
+- Procedimento de execução.
+- Critério de comparação.
+- Condições de limpeza.
+
+Para testes estocásticos, deverá ser definida metodologia de avaliação adequada, sem exigir resultados bit a bit idênticos quando isso não for tecnicamente justificável.
+
+## 19. Testes quantitativos e de IA
+
+Quando aplicável, deverão ser especificados:
+
+### 19.1 Separação temporal
+
+[Definir períodos de treino, validação e teste.]
+
+### 19.2 Prevenção de lookahead
+
+[Definir controles contra uso de informação futura.]
+
+### 19.3 Prevenção de vazamento de dados
+
+[Definir separação de datasets e transformações.]
+
+### 19.4 Custos de operação
+
+[Definir taxas, slippage, funding e demais custos aplicáveis.]
+
+### 19.5 Baselines comparativas
+
+[Definir estratégias ou modelos de referência.]
+
+### 19.6 Robustez
+
+[Definir cenários, regimes e testes de sensibilidade.]
+
+### 19.7 Walk-forward
+
+[Definir protocolo temporal.]
+
+### 19.8 Significância e incerteza
+
+[Definir métricas e métodos estatísticos.]
+
+### 19.9 Generalização
+
+[Definir avaliação fora da amostra.]
+
+### 19.10 Limites de interpretação
+
+[Registrar que desempenho histórico ou simulado não garante retorno futuro.]
+
+Métricas e limiares não aprovados deverão permanecer `TBD`.
+
+## 20. Segurança e restrições operacionais
+
+Os testes deverão preservar:
+
+- Segregação TRAINING/PAPER/LIVE.
+- Ausência de ordens reais no I00.
+- Proibição de acesso financeiro direto por agentes de IA.
+- Autoridade Control → Risk → Execution.
+- Idempotência e reconciliação.
+- Auditoria ponta a ponta.
+- Falha segura quando aplicável.
+- Proteção de segredos.
+- Aprovações humanas para ações críticas.
+
+Nenhum resultado de teste poderá autorizar automaticamente LIVE.
+
+## 21. Documentation Readiness
+
+A especificação estará pronta quando:
+
+- O objetivo estiver definido.
+- O requisito de origem estiver identificado.
+- O escopo estiver delimitado.
+- As pré-condições estiverem descritas.
+- Os dados e ambiente estiverem especificados.
+- O procedimento estiver reproduzível.
+- Os resultados esperados estiverem objetivos.
+- As assertions estiverem definidas.
+- Os cenários negativos aplicáveis estiverem cobertos.
+- Os critérios de aprovação estiverem testáveis.
+- As evidências esperadas estiverem identificadas.
+- As lacunas bloqueantes estiverem resolvidas.
+
+**Documentation Readiness Status:** [NOT_READY / READY_WITH_CONDITIONS / READY]
+
+## 22. Test Acceptance
+
+Um teste poderá ser aceito quando:
+
+- A especificação estiver aprovada.
+- A execução estiver identificada.
+- As pré-condições estiverem atendidas.
+- Os resultados estiverem registrados.
+- As assertions obrigatórias tiverem sido verificadas.
+- As evidências estiverem disponíveis.
+- A integridade estiver comprovada quando exigida.
+- Os defeitos relevantes estiverem registrados.
+- A revisão competente estiver concluída.
+
+**Test Acceptance Status:** [NOT_EVALUATED / REJECTED / APPROVED_WITH_CONDITIONS / APPROVED]
+
+A aceitação do teste não substitui a aprovação da história, Feature, épico, incremento ou gate.
+
+## 23. Riscos e lacunas
+
+| Risk/Gap ID | Descrição | Severidade | Tratamento | Status |
+|---|---|---|---|---|
+| [ID] | [Descrição] | [Nível] | [Ação] | [Estado] |
+
+Lacunas que comprometam a validade metodológica deverão impedir o uso do resultado como evidência de aceite.
+
+## 24. Rastreabilidade
+
+O teste deverá integrar a cadeia:
+
+**ADR → Componente → Pendência → Épico → Feature → História → Contrato → Teste → Evidência**
+
+Cada vínculo deverá possuir fonte e estado de verificação.
+
+Relacionamentos não aplicáveis deverão ser justificados.
+
+## 25. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| [Versão] | [Data] | [ID] | [Descrição] | [Referência] |
+
+## 26. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Test ID | [TS-TEST-NNN] |
+| Specification Version | [Versão] |
+| Approval Category | DOC / TECH / STORY, conforme finalidade |
+| Decision | [Resultado] |
+| Approved By | [Autoridade] |
+| Approval Reference | [Referência] |
+| Conditions | [Condições] |
+| Date | [Data] |
+
+---
+
+**Template Status:** IN_REVIEW  
+**Template Approval:** PENDING  
+**Next Artifact:** EVIDENCE-BUNDLE-TEMPLATE.md  
+**Restriction:** não avançar antes da aprovação deste template.
+
+## Histórico da revisão do template
+
+Esta revisão detalhada permanece **IN_REVIEW**, com aprovação **PENDING**. O [template anterior de Teste](TESTE.md) mantém sua aprovação original. A [aprovação comunicada do Approval Register](../history/TS-DOC-APR-001/APPROVAL.md) está registrada e a conferência do seu texto integral no checkout segue pendente.
+
+[G0](../G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

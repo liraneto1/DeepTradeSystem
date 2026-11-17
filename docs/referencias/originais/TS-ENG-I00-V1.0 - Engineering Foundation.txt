@@ -1,0 +1,1231 @@
+# TRADE SYSTEM V1 — Engineering Foundation
+
+TS-ENG-I00-V1.0 · 11/11/2026
+
+Proposta técnica em validação
+
+Iniciamos a fase TS-ENG-I00-V1.0 — Engineering Foundation, utilizando como referência a baseline arquitetural aprovada `TS-ARCH-GLOBAL-V1.0`.
+
+Nesta fase, a prioridade é transformar a arquitetura lógica em uma arquitetura física implementável, sem começar a programação antes da aprovação das decisões técnicas.
+
+O monorepo modular está definido como estratégia de repositório. A stack tecnológica, os contratos físicos, as bibliotecas e a organização dos processos serão submetidos à aprovação.
+
+## 1. Escopo e limites do I00
+
+  Baseline arquitetural - Aprovada
+  Monorepo modular - Definido
+  Stack e arquitetura física - Propostas
+  Implementação I00 - Não iniciada
+  Execução LIVE - Desabilitada
+
+O primeiro incremento deverá entregar uma fundação reproduzível com contratos, banco de dados, eventos, testes, observabilidade e controles de ambiente. Não inclui treinamento PPO, envio de ordens ou operação com capital real.
+
+A arquitetura será preparada para Binance Spot e USDⓈ-M Futures, inicialmente BTCUSDT, sem acoplamento prematuro à corretora.
+
+# 2. Arquitetura física proposta
+
+Recomendo um monorepo Python, com monólito modular para o núcleo transacional e processos separados para funções assíncronas e de maior isolamento.
+
+Essa abordagem preserva a decisão arquitetural já aprovada: não criar um microsserviço para cada um dos 33 componentes lógicos.
+
+  ## Topologia de implantação — I00 e evolução
+
+    Operations UI / API Clients
+      Futuro portal e consumidores internos
+          ↓
+    API / BFF — FastAPI
+      Autenticação, validação, consultas e comandos
+          ↓
+    Modular Trading Core
+      Market Data / State
+      AI Contracts
+      Control / Risk
+      Execution / Portfolio
+  Fronteiras de domínio e ownership de escrita
+                      ↓
+    PostgreSQL              Event Dispatcher  
+      Estado + Outbox         Worker separado 
+
+  TRAINING, PAPER e LIVE serão segregados. No I00, somente os recursos necessários à fundação e aos testes estarão ativos.
+
+### Processos físicos
+
+| Processo             | Responsabilidade                                    | I00                            |
+| -------------------- | --------------------------------------------------- | ------------------------------ |
+| `api`                | Health, contratos, comandos e consultas de fundação | Esqueleto                      |
+| `core`               | Módulos de domínio, casos de uso e políticas        | Esqueleto                      |
+| `event-dispatcher`   | Publicar registros da Outbox                        | Implementar                    |
+| `event-consumer`     | Deduplicação, checkpoints e handlers de teste       | Implementar                    |
+| `postgres`           | Persistência operacional e Outbox                   | Implementar                    |
+| `training-worker`    | Treinamento e avaliação PPO                         | Apenas fronteira               |
+| `market-data-worker` | Binance REST/WS                                     | Apenas fronteira               |
+| `operations-web`     | Portal e gráficos                                   | Posterior                      |
+| `execution-adapter`  | PAPER e futura Binance                              | Interface, sem envio de ordens |
+
+Regra obrigatória: nenhuma dependência de AI, UI ou Market Data poderá conceder autoridade de execução. Control e Risk permanecem obrigatórios antes de qualquer ordem.
+
+## 3. Stack tecnológica proposta
+
+| Camada           | Tecnologia proposta                                         | Justificativa                          |
+| ---------------- | ----------------------------------------------------------- | -------------------------------------- |
+| Linguagem        | Python 3.12+                                         | Ecossistema de IA, dados e integração  |
+| API              | FastAPI + Pydantic v2                                | Contratos tipados e OpenAPI            |
+| Banco            | PostgreSQL 17                                        | Transações, NUMERIC, JSONB e Outbox    |
+| ORM e migrations | SQLAlchemy 2 + Alembic                               | Persistência explícita e versionamento |
+| Empacotamento    | `uv` + `pyproject.toml`                              | Dependências reproduzíveis             |
+| Testes           | pytest, Hypothesis, pytest-asyncio                   | Unitários, propriedades e integração   |
+| Qualidade        | Ruff, mypy, pre-commit                               | Formatação, lint e tipos               |
+| Runtime          | Docker Compose no desenvolvimento                    | Processos reproduzíveis                |
+| CI/CD            | GitHub Actions                                       | Integração com o repositório GitHub    |
+| Observabilidade  | OpenTelemetry + logs JSON                            | Traces, métricas e correlação          |
+| Segurança        | Variáveis protegidas e gerenciador de segredos por ambiente | Separação de credenciais               |
+| Contratos        | JSON Schema + OpenAPI                                | Validação e documentação               |
+| Eventos          | PostgreSQL Outbox + dispatcher                       | Evitar broker prematuro                |
+| IA futura        | Gymnasium, Stable-Baselines3/PyTorch                 | PPO e ambiente RL                      |
+
+As versões exatas deverão ser fixadas e verificadas durante o I00. A escolha do provedor de nuvem, broker externo e Kubernetes permanece fora da decisão inicial.
+
+# 4. Estrutura do monorepo
+
+Proponho utilizar o repositório existente `DeepTradeSystem`, preservando seu histórico Git. A estrutura abaixo é um alvo de organização, não uma alteração já aplicada.
+
+```
+DeepTradeSystem/
+├── README.md
+├── pyproject.toml
+├── uv.lock
+├── .env.example
+├── .gitignore
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── security.yml
+│
+├── apps/
+│   ├── api/
+│   ├── event_dispatcher/
+│   ├── event_consumer/
+│   ├── market_data_worker/
+│   ├── training_worker/
+│   └── operations_web/
+│
+├── src/trade_system/
+│   ├── shared/
+│   │   ├── contracts/
+│   │   ├── identity/
+│   │   ├── errors/
+│   │   ├── telemetry/
+│   │   └── time/
+│   │
+│   ├── market_data/
+│   ├── features/
+│   ├── market_state/
+│   ├── ai/
+│   ├── control/
+│   ├── risk/
+│   ├── execution/
+│   ├── portfolio/
+│   ├── audit/
+│   └── operations/
+│
+├── infrastructure/
+│   ├── database/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   └── migrations/
+│   ├── events/
+│   ├── adapters/
+│   │   ├── binance/
+│   │   └── paper/
+│   └── security/
+│
+├── contracts/
+│   ├── jsonschema/
+│   ├── openapi/
+│   ├── asyncapi/
+│   └── examples/
+│
+├── tests/
+│   ├── unit/
+│   ├── contracts/
+│   ├── integration/
+│   ├── property/
+│   ├── e2e/
+│   └── resilience/
+│
+├── deploy/
+│   ├── compose/
+│   ├── docker/
+│   └── iac/
+│
+├── docs/
+│   ├── architecture/
+│   ├── adr/
+│   ├── domains/
+│   ├── backlog/
+│   ├── runbooks/
+│   └── evidence/
+│
+└── scripts/
+
+```
+### Regras de dependência entre módulos
+
+1. `shared` contém contratos e utilitários transversais, não regras de trading.
+2. Domínios não acessam tabelas pertencentes a outros domínios diretamente.
+3. Casos de uso dependem de interfaces; adapters implementam essas interfaces.
+4. Dependências circulares entre domínios são proibidas.
+5. A API não executa regras de Risk ou Execution por conta própria.
+6. O treinamento PPO não possui dependência operacional do Execution Adapter.
+7. Os serviços de execução não importam módulos da interface web.
+8. O acesso a credenciais da Binance fica restrito ao adapter autorizado, quando implementado.
+
+# 5. Proposta de ADRs técnicas do I00
+
+Estas ADRs são novas propostas, não substituem as ADR-001–088 e ainda não estão aprovadas.
+
+| ADR        | Decisão proposta                                 | Estado   |
+| ---------- | ------------------------------------------------ | -------- |
+| TS-ADR-089 | Python como linguagem principal do backend e IA  | Proposed |
+| TS-ADR-090 | Monorepo modular com processos isoláveis         | Proposed |
+| TS-ADR-091 | FastAPI e Pydantic v2 para APIs e validação      | Proposed |
+| TS-ADR-092 | PostgreSQL, SQLAlchemy e Alembic                 | Proposed |
+| TS-ADR-093 | Transactional Outbox com dispatcher PostgreSQL   | Proposed |
+| TS-ADR-094 | `uv`, Ruff, mypy e pytest como toolchain         | Proposed |
+| TS-ADR-095 | Docker Compose e GitHub Actions no I00           | Proposed |
+| TS-ADR-096 | OpenTelemetry e logs estruturados                | Proposed |
+| TS-ADR-097 | Contratos versionados JSON Schema/OpenAPI        | Proposed |
+| TS-ADR-098 | Segurança fail-closed e LIVE desabilitado no I00 | Proposed |
+
+### Modelo de decisão técnica
+
+  TS-ADR-093 — Transactional Outbox como mecanismo inicial de eventos
+  Estado: PROPOSED · Domínios D05/D06 · Incremento I00
+
+  Contexto: os fluxos F01–F10 exigem rastreabilidade e propagação confiável de eventos, sem presumir transações distribuídas.
+
+  Decisão proposta: utilizar PostgreSQL para armazenar estado de negócio e registro de Outbox na mesma transação. Um dispatcher separado processará registros pendentes, com entrega at-least-once e consumidores idempotentes.
+
+  Consequências: menor complexidade operacional inicial, mas necessidade de monitorar backlog, checkpoints, concorrência, ordenação por agregado e tratamento de falhas.
+
+  Alternativas consideradas: Kafka, RabbitMQ e publicação direta após commit. Não são necessárias no I00 e poderão ser reavaliadas mediante requisitos mensurados.
+
+  Critérios de aceite: demonstrar atomicidade, reprocessamento sem duplicidade financeira, recuperação após falha e ordenação por agregado.
+
+A decisão de utilizar monorepo já foi definida pelo usuário; a TS-ADR-090 formalizará sua organização física e as regras de dependência.
+
+# 6. Contratos iniciais do I00
+
+Os contratos físicos deverão implementar os envelopes lógicos aprovados na Etapa 03. Os exemplos abaixo são propostas de schema, não alterações das decisões G20–G22.
+
+## 6.1 CommandEnvelope v1
+
+```
+{
+  "command_id": "cmd_01...",
+  "command_type": "execution.submit",
+  "schema_version": "1.0.0",
+  "idempotency_key": "execution:req_01...",
+  "correlation_id": "corr_01...",
+  "environment_id": "PAPER",
+  "account_id": "acct_01...",
+  "issued_at": "2026-11-11T13:00:00Z",
+  "expires_at": "2026-11-11T13:00:05Z",
+  "actor": {
+    "type": "SERVICE",
+    "id": "risk-engine"
+  },
+  "authorization_ref": "riskdec_01...",
+  "payload": {
+    "execution_request_id": "req_01..."
+  }
+}
+
+```
+
+O comando deverá ser validado por tipo, versão, escopo, ator, expiração e chave de idempotência. A existência de `authorization_ref` não constitui, isoladamente, autorização válida: o Execution Engine deverá conferir sua integridade, vigência e correspondência com a solicitação.
+
+## 6.2 EventEnvelope v1
+
+```
+{
+  "event_id": "evt_01...",
+  "event_type": "execution.order.filled",
+  "schema_version": "1.0.0",
+  "correlation_id": "corr_01...",
+  "causation_id": "cmd_01...",
+  "aggregate_type": "order",
+  "aggregate_id": "ord_01...",
+  "aggregate_version": 4,
+  "environment_id": "PAPER",
+  "account_id": "acct_01...",
+  "market_type": "USDM_FUTURES",
+  "symbol": "BTCUSDT",
+  "event_time": "2026-11-11T13:00:00Z",
+  "recorded_at": "2026-11-11T13:00:00.120Z",
+  "producer": "execution-service",
+  "payload": {
+    "order_id": "ord_01...",
+    "fill_id": "fill_01...",
+    "executed_quantity": "0.001",
+    "executed_price": "90000.00"
+  }
+}
+
+```
+
+### Invariantes dos contratos
+
+| Área         | Regra                                                                   |
+| ------------ | ----------------------------------------------------------------------- |
+| Identidade   | `command_id` e `event_id` globalmente únicos                            |
+| Idempotência | Mesmo comando lógico não pode duplicar efeito                           |
+| Ordenação    | `aggregate_version` monotônica por agregado                             |
+| Tempo        | UTC; `event_time`, `received_at` e `available_at` para dados de mercado |
+| Finanças     | Decimal exato; sem `float` para valores monetários                      |
+| Consistência | Persistência de estado e Outbox na mesma transação                      |
+| Autorização  | Scope, ambiente, ator e decisão Risk válidos                            |
+| Segurança    | TRAINING/PAPER/LIVE não compartilham credenciais operacionais           |
+| Falhas       | Resultado desconhecido exige consulta e reconciliação                   |
+
+## 6.3 APIs mínimas do I00
+
+| Endpoint proposto                         | Método | Finalidade                                                                          |
+| ----------------------------------------- | ------ | ----------------------------------------------------------------------------------- |
+| `/health/live`                            | GET    | Verificar processo                                                                  |
+| `/health/ready`                           | GET    | Verificar dependências essenciais                                                   |
+| `/v1/system/info`                         | GET    | Versão, build e ambiente                                                            |
+| `/v1/contracts`                           | GET    | Catálogo de contratos                                                               |
+| `/v1/diagnostics/events`                  | POST   | Publicar evento sintético autenticado, somente em ambiente de desenvolvimento/teste |
+| `/v1/diagnostics/traces/{correlation_id}` | GET    | Consultar rastreabilidade sintética                                                 |
+
+As rotas de diagnóstico não serão expostas publicamente nem habilitadas em LIVE. APIs de ordens, risco e posições serão implementadas em incrementos posteriores.
+
+# 7. Backlog refinado do I00
+
+Proponho desdobrar as histórias TS-ST-001 a TS-ST-004 em tarefas executáveis e acrescentar tarefas transversais de segurança, QA e governança.
+
+## Work Packages I00 - 14 tarefas
+
+Todos os responsáveis
+
+I00-01 — Repositório e estrutura modular - Platform
+  Dependências: —
+  Aceite: Monorepo estruturado, build reproduzível, importações verificadas
+
+I00-02 — Toolchain Python - Engineering
+  Dependências: I00-01
+  Aceite: Lockfile, lint, typing e testes em execução
+
+I00-03 — Schemas de contratos v1 - Architecture
+  Dependências: I00-01
+  Aceite: Command/Event schemas, exemplos e testes
+
+I00-04 — PostgreSQL e migrations - Data
+  Dependências: I00-01
+  Aceite: Banco inicial, migrations e rollback testado
+
+I00-05 — Transactional Outbox - Data
+  Dependências: I00-03, I00-04
+  Aceite: Atomicidade comprovada por integração
+
+I00-06 — Dispatcher de eventos - Data
+  Dependências: I00-05
+  Aceite: Polling, retry, leasing e métricas
+
+I00-07 — Consumidores idempotentes - Data
+  Dependências: I00-06
+  Aceite: Dedup, checkpoint e replay controlado
+
+I00-08 — API de fundação - Backend
+  Dependências: I00-02, I00-03
+  Aceite: Health, readiness e info versionada
+
+I00-09 — Segurança e isolamento - Security
+  Dependências: I00-01
+  Aceite: Segredos protegidos, ambientes isolados e LIVE bloqueado
+
+I00-10 — Observabilidade - SRE
+  Dependências: I00-03, I00-08
+  Aceite: Logs JSON, correlation ID e métricas básicas
+
+I00-11 — CI/CD e qualidade - QA / Platform
+  Dependências: I00-02
+  Aceite: Testes e verificações obrigatórios em PR
+
+I00-12 — Rastreabilidade documental - Architecture
+  Dependências: I00-01
+  Aceite: Registro mestre, pendências documentais e vínculos iniciais
+
+I00-13 — Testes de falha e recuperação - QA
+  Dependências: I00-05, I00-07
+  Aceite: Falha antes/depois de commit, replay e duplicação
+
+I00-14 — Evidence Bundle I00 - QA / Architecture
+  Dependências: I00-01–13
+  Aceite: Build, contratos, testes e decisões vinculados
+
+Os owners acima são papéis funcionais. Não representam atribuições nominais a pessoas ou equipes existentes.
+
+## 8. Dependências e caminho crítico
+
+\#chatgpt-mermaid-\_r_jfq\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_jfq\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_jfq\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_jfq\_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-\_r_jfq\_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jfq\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_jfq\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_jfq\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_jfq\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_jfq\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_jfq\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_jfq\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jfq\_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jfq\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_jfq\_ p{margin:0;}#chatgpt-mermaid-\_r_jfq\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jfq\_ .cluster-label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jfq\_ .cluster-label span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jfq\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_jfq\_ .label text,#chatgpt-mermaid-\_r_jfq\_ span{fill:rgb(13, 13, 13);color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jfq\_ .node rect,#chatgpt-mermaid-\_r_jfq\_ .node circle,#chatgpt-mermaid-\_r_jfq\_ .node ellipse,#chatgpt-mermaid-\_r_jfq\_ .node polygon,#chatgpt-mermaid-\_r_jfq\_ .node path{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-\_r_jfq\_ .rough-node .label text,#chatgpt-mermaid-\_r_jfq\_ .node .label text,#chatgpt-mermaid-\_r_jfq\_ .image-shape .label,#chatgpt-mermaid-\_r_jfq\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_jfq\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_jfq\_ .rough-node .label,#chatgpt-mermaid-\_r_jfq\_ .node .label,#chatgpt-mermaid-\_r_jfq\_ .image-shape .label,#chatgpt-mermaid-\_r_jfq\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_jfq\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_jfq\_ .root .anchor path{fill:rgb(143, 143, 143)!important;stroke-width:0;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jfq\_ .arrowheadPath{fill:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jfq\_ .edgePath .path{stroke:rgb(143, 143, 143);stroke-width:1px;}#chatgpt-mermaid-\_r_jfq\_ .flowchart-link{stroke:rgb(143, 143, 143);fill:none;}#chatgpt-mermaid-\_r_jfq\_ .edgeLabel{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_jfq\_ .edgeLabel p{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jfq\_ .edgeLabel rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jfq\_ .labelBkg{background-color:rgba(252, 252, 252, 0.5);}#chatgpt-mermaid-\_r_jfq\_ .cluster rect{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_jfq\_ .cluster text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jfq\_ .cluster span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jfq\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(243, 243, 243);border:1px solid rgba(0, 0, 0, 0.1);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_jfq\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jfq\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_jfq\_ .icon-shape,#chatgpt-mermaid-\_r_jfq\_ .image-shape{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_jfq\_ .icon-shape p,#chatgpt-mermaid-\_r_jfq\_ .image-shape p{background-color:rgb(252, 252, 252);padding:2px;}#chatgpt-mermaid-\_r_jfq\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_jfq\_ .image-shape .label rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jfq\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_jfq\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_jfq\_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_jfq\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_jfq\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_jfq\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_jfq\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jfq\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_jfq\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jfq\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_jfq\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_jfq\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_jfq\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_jfq\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(252, 252, 252);stroke:rgb(219, 219, 219);stroke-width:1px;}#chatgpt-mermaid-\_r_jfq\_ .node rect,#chatgpt-mermaid-\_r_jfq\_ .node circle,#chatgpt-mermaid-\_r_jfq\_ .node ellipse,#chatgpt-mermaid-\_r_jfq\_ .node polygon,#chatgpt-mermaid-\_r_jfq\_ .node path{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_jfq\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_jfq\_ .mermaid-decision .label-container{fill:rgb(249, 249, 249);stroke:rgb(219, 219, 219);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_jfq\_ .edgePaths .flowchart-link{stroke:rgb(143, 143, 143);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_jfq\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jfq\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}I00-01 RepositoryI00-02 ToolchainI00-03 ContractsI00-04 DatabaseI00-05 OutboxI00-06 DispatcherI00-07 ConsumersI00-13 Failure TestsI00-11 CII00-08 APII00-10 ObservabilityI00-09 SecurityI00-14 EvidenceI00 Acceptance
+
+O caminho com maior dependência técnica é:
+
+Repositório → Contratos/Banco → Outbox → Dispatcher → Consumidores → Testes de falha → Evidence Bundle.
+
+Esse é o caminho crítico lógico, ainda não um caminho crítico de cronograma: não há estimativas de duração nem capacidade de equipe suficientes para calcular folgas e datas.
+
+# 9. Critérios de aceite do I00
+
+O I00 será considerado concluído apenas quando houver evidências executáveis para os seguintes critérios.
+
+| ID       | Critério                 | Evidência esperada                           |
+| -------- | ------------------------ | -------------------------------------------- |
+| I00-AC01 | Build reproduzível       | Pipeline CI aprovado                         |
+| I00-AC02 | Dependências controladas | Lockfile e verificações                      |
+| I00-AC03 | Contratos versionados    | JSON Schemas e contract tests                |
+| I00-AC04 | Banco versionado         | Migrations e teste de restauração            |
+| I00-AC05 | Atomicidade da Outbox    | Teste de rollback transacional               |
+| I00-AC06 | Idempotência             | Reprocessamento sem efeito duplicado         |
+| I00-AC07 | Ordenação por agregado   | Teste de sequência e concorrência            |
+| I00-AC08 | Resiliência              | Retry, falha, reinício e recuperação         |
+| I00-AC09 | Observabilidade          | Logs, métricas e correlação                  |
+| I00-AC10 | Segurança                | Credenciais protegidas e LIVE inacessível    |
+| I00-AC11 | Rastreabilidade          | Vínculos entre histórias, contratos e testes |
+| I00-AC12 | Evidence Bundle          | Manifesto e evidências verificáveis          |
+
+### Política de segurança do incremento
+
+A configuração deverá ter `LIVE_ENABLED=false` por padrão. Essa variável será apenas uma camada de proteção, não um mecanismo suficiente por si só.
+
+Além dela, I00 não terá credenciais LIVE, endpoints de envio de ordens habilitados nem permissões de rede e identidade que permitam execução real. Uma futura habilitação exigirá controles independentes e os gates aplicáveis.
+
+# 10. Pendências documentais preservadas
+
+A fase de engenharia não altera automaticamente as decisões da baseline.
+
+| ID     | Pendência                                   | Encaminhamento                                        |
+| ------ | ------------------------------------------- | ----------------------------------------------------- |
+| DOC-01 | Descrições originais P01–P47                | Reconciliação com os documentos dos domínios          |
+| DOC-02 | Classificação de P18                        | Confirmar antes de fechar o registro mestre           |
+| DOC-03 | Rastreabilidade integral das 106 pendências | Completar em I00-12                                   |
+| ENG-01 | Stack e ADRs TS-ADR-089–098                 | Aprovação antes da implementação                      |
+| ENG-02 | Versões exatas de dependências              | Fixar no lockfile                                     |
+| ENG-03 | Owners nominais e capacidade                | Definir antes de estimar cronograma                   |
+| ENG-04 | Provedor cloud                              | Decisão posterior, sem bloquear desenvolvimento local |
+
+Os documentos consolidados anteriormente são úteis como referência, mas não substituem os registros integrais originais que ainda precisem ser recuperados.
+
+# 11. Validação das decisões técnicas
+
+Proponho aprovar a arquitetura física e a stack antes de gerar qualquer código.
+
+## Checklist de aprovação — I00
+
+Decisões técnicas T01–T10
+
+## 10/10
+Avaliadas
+
+Arquitetura física - T01
+Monólito modular com processos separados para dispatcher, consumidores e futuros workers.
+Aprovar
+
+Stack Python - T02
+Python 3.12+, FastAPI, Pydantic v2 e PostgreSQL.
+Aprovar
+
+Persistência - T03
+SQLAlchemy 2, Alembic, PostgreSQL e Outbox transacional.
+Aprovar
+
+Toolchain - T04
+uv, Ruff, mypy, pytest, Hypothesis e pre-commit.
+Aprovar
+
+Infraestrutura I00 - T05
+Docker Compose e GitHub Actions; cloud e orquestrador definitivo pendentes.
+Aprovar
+
+Observabilidade - T06
+OpenTelemetry, logs JSON, métricas e correlação.
+Aprovar
+
+Contratos - T07
+JSON Schema e OpenAPI, compatíveis com os envelopes globais v1.
+Aprovar
+
+Estrutura do monorepo - T08
+Organização apps, src/trade_system, infrastructure, contracts, tests, deploy e docs.
+Aprovar
+
+Backlog e aceite - T09
+14 work packages, 12 critérios de aceite e Evidence Bundle I00.
+Aprovar
+
+Segurança e governança - T10
+LIVE indisponível, segregação de ambientes e pendências documentais preservadas.
+Aprovar
+
+Observações (opcional)
+
+Resultado desta etapa: arquitetura física, stack, contratos, backlog e critérios de aceite apresentados para validação. Nenhuma ADR técnica nova foi aprovada e nenhum código foi implementado.
+
+Após a aprovação, o próximo passo será preparar a estrutura efetiva do repositório `DeepTradeSystem`, iniciar TS-ST-001 e TS-ST-002 e executar os primeiros testes automatizados, mantendo LIVE desabilitado.
+
+
+# TS-ENG-I00-V1.0 — Engineering Foundation
+
+TRADE SYSTEM V1 · Baseline TS-ARCH-GLOBAL-V1.0
+
+Proposta técnica — aguardando aprovação
+
+A fase Engineering Foundation (I00) está aberta para definição técnica. Adotaremos o monorepo modular como estratégia de organização e manteremos a implementação bloqueada até a aprovação da stack e das novas ADRs.
+
+O objetivo do I00 é entregar uma fundação reproduzível, testável, segura e rastreável para os próximos incrementos do Trade System.
+
+# 10
+ADRs propostas
+
+# 14
+Pacotes de trabalho
+
+# 12
+Critérios de aceite
+
+Implementação
+
+Não iniciada
+
+LIVE
+
+Não habilitado
+
+## 1. Arquitetura física proposta
+
+Recomendo Python como linguagem principal, com um núcleo transacional em monólito modular e processos isoláveis para atividades assíncronas.
+
+\#chatgpt-mermaid-\_r_jid\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_jid\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_jid\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_jid\_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-\_r_jid\_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jid\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_jid\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_jid\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_jid\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_jid\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_jid\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_jid\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jid\_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jid\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_jid\_ p{margin:0;}#chatgpt-mermaid-\_r_jid\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jid\_ .cluster-label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jid\_ .cluster-label span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jid\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_jid\_ .label text,#chatgpt-mermaid-\_r_jid\_ span{fill:rgb(13, 13, 13);color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jid\_ .node rect,#chatgpt-mermaid-\_r_jid\_ .node circle,#chatgpt-mermaid-\_r_jid\_ .node ellipse,#chatgpt-mermaid-\_r_jid\_ .node polygon,#chatgpt-mermaid-\_r_jid\_ .node path{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-\_r_jid\_ .rough-node .label text,#chatgpt-mermaid-\_r_jid\_ .node .label text,#chatgpt-mermaid-\_r_jid\_ .image-shape .label,#chatgpt-mermaid-\_r_jid\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_jid\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_jid\_ .rough-node .label,#chatgpt-mermaid-\_r_jid\_ .node .label,#chatgpt-mermaid-\_r_jid\_ .image-shape .label,#chatgpt-mermaid-\_r_jid\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_jid\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_jid\_ .root .anchor path{fill:rgb(143, 143, 143)!important;stroke-width:0;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jid\_ .arrowheadPath{fill:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jid\_ .edgePath .path{stroke:rgb(143, 143, 143);stroke-width:1px;}#chatgpt-mermaid-\_r_jid\_ .flowchart-link{stroke:rgb(143, 143, 143);fill:none;}#chatgpt-mermaid-\_r_jid\_ .edgeLabel{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_jid\_ .edgeLabel p{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jid\_ .edgeLabel rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jid\_ .labelBkg{background-color:rgba(252, 252, 252, 0.5);}#chatgpt-mermaid-\_r_jid\_ .cluster rect{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_jid\_ .cluster text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jid\_ .cluster span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jid\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(243, 243, 243);border:1px solid rgba(0, 0, 0, 0.1);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_jid\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jid\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_jid\_ .icon-shape,#chatgpt-mermaid-\_r_jid\_ .image-shape{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_jid\_ .icon-shape p,#chatgpt-mermaid-\_r_jid\_ .image-shape p{background-color:rgb(252, 252, 252);padding:2px;}#chatgpt-mermaid-\_r_jid\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_jid\_ .image-shape .label rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jid\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_jid\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_jid\_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_jid\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_jid\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_jid\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_jid\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jid\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_jid\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jid\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_jid\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_jid\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_jid\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_jid\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(252, 252, 252);stroke:rgb(219, 219, 219);stroke-width:1px;}#chatgpt-mermaid-\_r_jid\_ .node rect,#chatgpt-mermaid-\_r_jid\_ .node circle,#chatgpt-mermaid-\_r_jid\_ .node ellipse,#chatgpt-mermaid-\_r_jid\_ .node polygon,#chatgpt-mermaid-\_r_jid\_ .node path{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_jid\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_jid\_ .mermaid-decision .label-container{fill:rgb(249, 249, 249);stroke:rgb(219, 219, 219);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_jid\_ .edgePaths .flowchart-link{stroke:rgb(143, 143, 143);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_jid\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jid\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}Operations UI / ClientesFastAPI / BFFModular Trading CoreMarket StateAI ContractsControl & RiskExecution & PortfolioPostgreSQLTransactional OutboxEvent DispatcherIdempotent ConsumersLogs / Metrics / Traces
+
+O núcleo respeitará a sequência obrigatória Trading Intent → Control → Risk → Execution → Portfolio, sem acesso direto do agente PPO à Binance.
+
+No I00, Market Data, AI e Execution serão apenas fronteiras arquiteturais e contratos. Não haverá integração para envio de ordens.
+
+## 2. Stack tecnológica — proposta para aprovação
+
+| Camada           | Tecnologia                            | Decisão         |
+| ---------------- | ------------------------------------- | --------------- |
+| Linguagem        | Python 3.12+                          | Proposta        |
+| APIs             | FastAPI + Pydantic v2                 | Proposta        |
+| Persistência     | PostgreSQL 17                         | Proposta        |
+| ORM / migrations | SQLAlchemy 2 + Alembic                | Proposta        |
+| Dependências     | uv + pyproject.toml                   | Proposta        |
+| Qualidade        | Ruff, mypy, pytest, Hypothesis        | Proposta        |
+| Contêineres      | Docker / Docker Compose               | Proposta        |
+| CI/CD            | GitHub Actions                        | Proposta        |
+| Observabilidade  | OpenTelemetry + logs JSON             | Proposta        |
+| Contratos        | JSON Schema + OpenAPI                 | Proposta        |
+| Eventos          | PostgreSQL Transactional Outbox       | Proposta        |
+| IA posterior     | PyTorch, Gymnasium, Stable-Baselines3 | Proposta futura |
+
+Decisão de arquitetura: não introduzir Kafka, Kubernetes ou uma arquitetura distribuída de microsserviços no I00 sem necessidade demonstrada.
+
+As versões exatas deverão ser fixadas no lockfile após a aprovação técnica.
+
+## 3. Estrutura de diretórios do monorepo
+
+```
+
+DeepTradeSystem/
+├── apps/
+│   ├── api/
+│   ├── event_dispatcher/
+│   ├── event_consumer/
+│   ├── market_data_worker/
+│   ├── training_worker/
+│   └── operations_web/
+│
+├── src/trade_system/
+│   ├── shared/
+│   │   ├── contracts/
+│   │   ├── identity/
+│   │   ├── telemetry/
+│   │   └── errors/
+│   ├── market_data/
+│   ├── features/
+│   ├── market_state/
+│   ├── ai/
+│   ├── control/
+│   ├── risk/
+│   ├── execution/
+│   ├── portfolio/
+│   ├── audit/
+│   └── operations/
+│
+├── infrastructure/
+│   ├── database/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   └── migrations/
+│   ├── events/
+│   ├── adapters/
+│   │   ├── paper/
+│   │   └── binance/
+│   └── security/
+│
+├── contracts/
+│   ├── jsonschema/
+│   ├── openapi/
+│   ├── asyncapi/
+│   └── examples/
+│
+├── tests/
+│   ├── unit/
+│   ├── contracts/
+│   ├── integration/
+│   ├── property/
+│   ├── e2e/
+│   └── resilience/
+│
+├── deploy/
+│   ├── compose/
+│   ├── docker/
+│   └── iac/
+│
+├── docs/
+│   ├── architecture/
+│   ├── adr/
+│   ├── domains/
+│   ├── backlog/
+│   ├── runbooks/
+│   └── evidence/
+│
+├── scripts/
+├── .github/workflows/
+├── pyproject.toml
+├── uv.lock
+└── README.md
+
+```
+
+Os módulos de domínio serão organizados por responsabilidade. Cada módulo possuirá interfaces explícitas, ownership de escrita e testes próprios. O diretório `shared` não poderá se transformar em um módulo de regras financeiras comuns que contorne as fronteiras dos domínios.
+
+## 4. ADRs técnicas propostas
+
+As novas decisões utilizarão a numeração TS-ADR-089 a TS-ADR-098, dando continuidade às 88 ADRs aprovadas.
+
+| ADR        | Decisão proposta                                 |
+| ---------- | ------------------------------------------------ |
+| TS-ADR-089 | Python como linguagem principal                  |
+| TS-ADR-090 | Monorepo modular com isolamento seletivo         |
+| TS-ADR-091 | FastAPI + Pydantic v2                            |
+| TS-ADR-092 | PostgreSQL + SQLAlchemy + Alembic                |
+| TS-ADR-093 | Transactional Outbox + consumidores idempotentes |
+| TS-ADR-094 | uv, Ruff, mypy, pytest e Hypothesis              |
+| TS-ADR-095 | Docker Compose + GitHub Actions                  |
+| TS-ADR-096 | OpenTelemetry + logs estruturados                |
+| TS-ADR-097 | JSON Schema/OpenAPI e contratos versionados      |
+| TS-ADR-098 | Segurança fail-closed e LIVE indisponível no I00 |
+
+Todas permanecem em estado PROPOSED até validação.
+
+### ADR de referência — TS-ADR-093
+
+Transactional Outbox como mecanismo inicial de eventos
+Domínios D05/D06 · Estado: PROPOSED
+
+Contexto: os fluxos críticos exigem consistência entre persistência de estados e emissão de eventos.
+
+Decisão: registrar mudanças de estado e mensagens Outbox na mesma transação PostgreSQL. Um dispatcher separado publicará os eventos para consumidores idempotentes.
+
+Consequências: reduz a complexidade inicial, mas exige controle de retries, concorrência, ordenação por agregado, checkpoints e monitoramento.
+
+Alternativas: Kafka, RabbitMQ ou publicação direta após commit. Permanecem opções futuras mediante necessidade comprovada.
+
+Aceite: demonstrar atomicidade, recuperação após falhas e ausência de duplicação de efeitos financeiros.
+
+## 5. Contratos iniciais
+
+O I00 deverá materializar os envelopes aprovados na Etapa 03.
+
+CommandEnvelope v1
+
+```
+{
+  "command_id": "cmd_example",
+  "command_type": "execution.submit",
+  "schema_version": "1.0.0",
+  "idempotency_key": "execution:req_example",
+  "correlation_id": "corr_example",
+  "environment_id": "PAPER",
+  "account_id": "acct_example",
+  "issued_at": "2026-11-11T13:00:00Z",
+  "expires_at": "2026-11-11T13:00:05Z",
+  "actor": {
+    "type": "SERVICE",
+    "id": "risk-engine"
+  },
+  "authorization_ref": "riskdec_example",
+  "payload": {
+    "execution_request_id": "req_example"
+  }
+}
+    
+```
+
+EventEnvelope v1
+
+```
+{
+  "event_id": "evt_example",
+  "event_type": "execution.order.filled",
+  "schema_version": "1.0.0",
+  "correlation_id": "corr_example",
+  "causation_id": "cmd_example",
+  "aggregate_type": "order",
+  "aggregate_id": "ord_example",
+  "aggregate_version": 4,
+  "environment_id": "PAPER",
+  "account_id": "acct_example",
+  "market_type": "USDM_FUTURES",
+  "symbol": "BTCUSDT",
+  "event_time": "2026-11-11T13:00:00Z",
+  "recorded_at": "2026-11-11T13:00:00.120Z",
+  "producer": "execution-service",
+  "payload": {
+    "fill_id": "fill_example",
+    "executed_quantity": "0.001",
+    "executed_price": "90000.00"
+  }
+}
+    
+```
+
+Invariantes: identificadores únicos, timestamps UTC, valores financeiros decimais exatos, idempotência, ordenação por agregado, escopo de ambiente e autorização válida.
+
+Os contratos são exemplos de proposta física. O I00 deverá gerar JSON Schemas executáveis, validar compatibilidade e preservar os campos obrigatórios da baseline global.
+
+## 6. Backlog refinado I00
+
+| Work Package | Entrega                       | Dependências    |
+| ------------ | ----------------------------- | --------------- |
+| I00-01       | Estrutura do monorepo         | —               |
+| I00-02       | Toolchain Python e lockfile   | I00-01          |
+| I00-03       | Contratos versionados         | I00-01          |
+| I00-04       | PostgreSQL e migrations       | I00-01          |
+| I00-05       | Transactional Outbox          | I00-03, I00-04  |
+| I00-06       | Event Dispatcher              | I00-05          |
+| I00-07       | Consumidores idempotentes     | I00-06          |
+| I00-08       | API de fundação               | I00-02, I00-03  |
+| I00-09       | Segurança e isolamento        | I00-01          |
+| I00-10       | Observabilidade               | I00-03, I00-08  |
+| I00-11       | CI/CD e verificações          | I00-02          |
+| I00-12       | Rastreabilidade documental    | I00-01          |
+| I00-13       | Testes de falha e recuperação | I00-05, I00-07  |
+| I00-14       | Evidence Bundle I00           | I00-01 a I00-13 |
+
+O caminho crítico lógico é:
+
+\#chatgpt-mermaid-\_r_jj6\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_jj6\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_jj6\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_jj6\_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-\_r_jj6\_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jj6\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_jj6\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_jj6\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_jj6\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_jj6\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_jj6\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_jj6\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jj6\_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jj6\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_jj6\_ p{margin:0;}#chatgpt-mermaid-\_r_jj6\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jj6\_ .cluster-label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jj6\_ .cluster-label span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jj6\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_jj6\_ .label text,#chatgpt-mermaid-\_r_jj6\_ span{fill:rgb(13, 13, 13);color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jj6\_ .node rect,#chatgpt-mermaid-\_r_jj6\_ .node circle,#chatgpt-mermaid-\_r_jj6\_ .node ellipse,#chatgpt-mermaid-\_r_jj6\_ .node polygon,#chatgpt-mermaid-\_r_jj6\_ .node path{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-\_r_jj6\_ .rough-node .label text,#chatgpt-mermaid-\_r_jj6\_ .node .label text,#chatgpt-mermaid-\_r_jj6\_ .image-shape .label,#chatgpt-mermaid-\_r_jj6\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_jj6\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_jj6\_ .rough-node .label,#chatgpt-mermaid-\_r_jj6\_ .node .label,#chatgpt-mermaid-\_r_jj6\_ .image-shape .label,#chatgpt-mermaid-\_r_jj6\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_jj6\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_jj6\_ .root .anchor path{fill:rgb(143, 143, 143)!important;stroke-width:0;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jj6\_ .arrowheadPath{fill:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jj6\_ .edgePath .path{stroke:rgb(143, 143, 143);stroke-width:1px;}#chatgpt-mermaid-\_r_jj6\_ .flowchart-link{stroke:rgb(143, 143, 143);fill:none;}#chatgpt-mermaid-\_r_jj6\_ .edgeLabel{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_jj6\_ .edgeLabel p{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jj6\_ .edgeLabel rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jj6\_ .labelBkg{background-color:rgba(252, 252, 252, 0.5);}#chatgpt-mermaid-\_r_jj6\_ .cluster rect{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_jj6\_ .cluster text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jj6\_ .cluster span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jj6\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(243, 243, 243);border:1px solid rgba(0, 0, 0, 0.1);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_jj6\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jj6\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_jj6\_ .icon-shape,#chatgpt-mermaid-\_r_jj6\_ .image-shape{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_jj6\_ .icon-shape p,#chatgpt-mermaid-\_r_jj6\_ .image-shape p{background-color:rgb(252, 252, 252);padding:2px;}#chatgpt-mermaid-\_r_jj6\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_jj6\_ .image-shape .label rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jj6\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_jj6\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_jj6\_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_jj6\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_jj6\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_jj6\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_jj6\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jj6\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_jj6\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jj6\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_jj6\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_jj6\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_jj6\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_jj6\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(252, 252, 252);stroke:rgb(219, 219, 219);stroke-width:1px;}#chatgpt-mermaid-\_r_jj6\_ .node rect,#chatgpt-mermaid-\_r_jj6\_ .node circle,#chatgpt-mermaid-\_r_jj6\_ .node ellipse,#chatgpt-mermaid-\_r_jj6\_ .node polygon,#chatgpt-mermaid-\_r_jj6\_ .node path{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_jj6\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_jj6\_ .mermaid-decision .label-container{fill:rgb(249, 249, 249);stroke:rgb(219, 219, 219);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_jj6\_ .edgePaths .flowchart-link{stroke:rgb(143, 143, 143);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_jj6\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jj6\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}MonorepoContratos + BancoOutboxDispatcherConsumersResilience TestsEvidence BundleI00 Accepted?
+
+Segurança, CI/CD e observabilidade deverão evoluir paralelamente. O caminho crítico de cronograma será calculado somente após estimar esforço e capacidade.
+
+## 7. Critérios de aceite I00
+
+| ID       | Critério                                   |
+| -------- | ------------------------------------------ |
+| I00-AC01 | Build reproduzível em CI                   |
+| I00-AC02 | Dependências fixadas e verificadas         |
+| I00-AC03 | Contratos versionados e testados           |
+| I00-AC04 | Banco com migrations reproduzíveis         |
+| I00-AC05 | Atomicidade de estado + Outbox             |
+| I00-AC06 | Consumidores idempotentes                  |
+| I00-AC07 | Ordenação por agregado demonstrada         |
+| I00-AC08 | Falhas, retries e recuperação testados     |
+| I00-AC09 | Logs, métricas e traces mínimos            |
+| I00-AC10 | Segregação de ambientes e LIVE inacessível |
+| I00-AC11 | Rastreabilidade ADR → História → Teste     |
+| I00-AC12 | Evidence Bundle verificável                |
+
+Nenhum critério será considerado concluído apenas pela existência de código. Será necessária evidência de teste.
+
+## 8. Pendências documentais e de engenharia
+
+Permanecem abertas a reconciliação das descrições originais P01–P47, a confirmação da classificação de P18, o mapeamento integral P01–P106 e a definição de owners nominais.
+
+Também permanecem pendentes a aprovação da stack, as versões exatas das dependências, os limites quantitativos de gates e a seleção de infraestrutura de produção.
+
+LIVE continuará indisponível por desenho: sem credenciais reais, sem adapter de envio de ordens ativo, sem autorização operacional e sem possibilidade de promoção automática.
+
+## 9. Validação técnica antes da implementação
+
+## Decisões T01–T10 - 10/10
+
+Arquitetura física - T01
+Monólito modular com processos separados para dispatcher e workers.
+Aprovar
+
+Stack Python - T02
+Python, FastAPI, Pydantic e PostgreSQL.
+Aprovar
+
+Persistência - T03
+SQLAlchemy, Alembic e Transactional Outbox.
+Aprovar
+
+Toolchain - T04
+uv, Ruff, mypy, pytest e Hypothesis.
+Aprovar
+
+Infraestrutura - T05
+Docker Compose e GitHub Actions no I00.
+Aprovar
+
+Observabilidade - T06
+OpenTelemetry e logs estruturados.
+Aprovar
+
+Contratos - T07
+JSON Schema, OpenAPI e envelopes v1.
+Aprovar
+
+Estrutura de diretórios - T08
+Monorepo organizado por apps, domínios, infraestrutura, contratos, testes e docs.
+Aprovar
+
+Backlog e aceite - T09
+14 work packages e 12 critérios de aceite.
+Aprovar
+
+Segurança e governança - T10
+LIVE desabilitado, isolamento e pendências preservadas.
+Aprovar
+
+Observações (opcional)
+
+Status final desta entrega: arquitetura física, stack, contratos, backlog, dependências e critérios de aceite I00 apresentados. As ADRs TS-ADR-089–098 permanecem propostas, aguardando sua aprovação. Nenhuma implementação foi iniciada e LIVE permanece não autorizado.
+
+
+# TRADE SYSTEM V1 — Engineering Foundation
+
+==============================
+TS-ENG-I00-V1.0 · 11/11/2026
+Baseline técnica aprovada
+==============================
+
+A validação técnica da fase TS-ENG-I00-V1.0 está consolidada. As dez decisões T01–T10 foram aprovadas integralmente, sem observações.
+
+Com isso, ficam aprovadas as ADRs TS-ADR-089 a TS-ADR-098, estabelecendo a base técnica para iniciar a implementação do incremento I00 — Engineering Foundation.
+
+A baseline global `TS-ARCH-GLOBAL-V1.0` permanece preservada.
+
+## 1. Registro formal da aprovação
+
+# 10/10
+Decisões técnicas
+
+# 98
+ADRs acumuladas
+
+# 14
+Pacotes I00
+
+Arquitetura global - Aprovada
+Arquitetura técnica I00 - Aprovada
+Implementação I00 - Não iniciada
+LIVE - Não autorizado
+
+### ADRs incorporadas à baseline técnica
+
+| ADR        | Decisão aprovada                                      |
+| ---------- | ----------------------------------------------------- |
+| TS-ADR-089 | Python como linguagem principal do backend e IA       |
+| TS-ADR-090 | Monorepo modular com isolamento seletivo de processos |
+| TS-ADR-091 | FastAPI e Pydantic v2                                 |
+| TS-ADR-092 | PostgreSQL, SQLAlchemy 2 e Alembic                    |
+| TS-ADR-093 | Transactional Outbox e consumidores idempotentes      |
+| TS-ADR-094 | uv, Ruff, mypy, pytest e Hypothesis                   |
+| TS-ADR-095 | Docker Compose e GitHub Actions                       |
+| TS-ADR-096 | OpenTelemetry e logs estruturados                     |
+| TS-ADR-097 | JSON Schema, OpenAPI e contratos versionados          |
+| TS-ADR-098 | Segurança fail-closed e LIVE indisponível no I00      |
+
+Registro: `TS-ENG-I00-V1.0 / TECHNICAL-BASELINE / APPROVED`.
+
+As 98 ADRs acumuladas correspondem às 88 ADRs da arquitetura global e às dez novas decisões técnicas. A aprovação não significa que as respectivas implementações já estejam concluídas.
+
+# 2. Plano de implementação I00 
+
+A execução será organizada em quatro ondas técnicas, com dependências explícitas e entregas verificáveis.
+
+### 01 Repository & Development Foundation - Planejada
+  Monorepo, toolchain, CI inicial e documentação
+  I00-01, 02, 11, 12
+    ↓
+### 02 Contracts & Persistence - Planejada
+  Schemas, PostgreSQL, migrations e Outbox
+  I00-03, 04, 05
+    ↓
+### 03 Events & Platform Services - Planejada
+  Dispatcher, consumidores, API, segurança e telemetria
+  I00-06, 07, 08, 09, 10
+    ↓
+### 04 Quality & Acceptance - Planejada
+  Testes de falha, rastreabilidade e Evidence Bundle
+  I00-13, 14
+
+## 3. Onda 01 — Repository & Development Foundation
+
+A primeira entrega será o monorepo Python reproduzível, preservando o histórico do repositório `DeepTradeSystem`.
+
+### Estrutura inicial
+
+```
+
+DeepTradeSystem/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── security.yml
+├── apps/
+│   ├── api/
+│   ├── event_dispatcher/
+│   └── event_consumer/
+├── src/
+│   └── trade_system/
+│       ├── shared/
+│       ├── market_data/
+│       ├── features/
+│       ├── market_state/
+│       ├── ai/
+│       ├── control/
+│       ├── risk/
+│       ├── execution/
+│       ├── portfolio/
+│       ├── audit/
+│       └── operations/
+├── infrastructure/
+│   ├── database/
+│   ├── events/
+│   └── security/
+├── contracts/
+│   ├── jsonschema/
+│   ├── openapi/
+│   └── examples/
+├── tests/
+│   ├── unit/
+│   ├── contracts/
+│   ├── integration/
+│   └── property/
+├── deploy/
+│   ├── compose/
+│   └── docker/
+├── docs/
+│   ├── architecture/
+│   ├── adr/
+│   ├── domains/
+│   ├── backlog/
+│   └── evidence/
+├── scripts/
+├── .env.example
+├── .gitignore
+├── pyproject.toml
+├── uv.lock
+└── README.md
+
+```
+
+### Entregas da primeira onda
+
+| Pacote | Entrega               | Critério de conclusão                       |
+| ------ | --------------------- | ------------------------------------------- |
+| I00-01 | Monorepo modular      | Estrutura, imports e fronteiras verificadas |
+| I00-02 | Toolchain Python      | Lockfile, Ruff, mypy e pytest executáveis   |
+| I00-11 | CI inicial            | Pipeline de lint, typing e testes           |
+| I00-12 | Governança documental | ADRs, backlog e lacunas registradas         |
+
+A configuração deverá seguir `src-layout`, com empacotamento explícito e imports absolutos. Módulos não deverão depender de caminhos relativos de execução ou manipulação manual de `PYTHONPATH`.
+
+# 4. Onda 02 — Contracts & Persistence
+
+A segunda onda implementará os contratos fundamentais e a persistência transacional.
+
+### Contratos prioritários
+
+| Contrato             | Responsabilidade                               |
+| -------------------- | ---------------------------------------------- |
+| `CommandEnvelope.v1` | Identidade, escopo, autorização e idempotência |
+| `EventEnvelope.v1`   | Identidade, causalidade, tempo e versionamento |
+| `ErrorEnvelope.v1`   | Erros tipados e rastreáveis                    |
+| `HealthStatus.v1`    | Estado operacional do serviço                  |
+| `OutboxRecord.v1`    | Persistência e entrega de eventos              |
+
+Os contratos deverão ser formalizados em JSON Schema Draft 2020-12, com exemplos válidos e inválidos, validação automatizada e política de compatibilidade.
+
+### Persistência inicial
+
+### PostgreSQL — Modelo mínimo I00
+
+| Tabela                 | Finalidade                                       |
+| ---------------------- | ------------------------------------------------ |
+| `outbox_events`        | Eventos persistidos atomicamente                 |
+| `consumer_inbox`       | Deduplicação de consumo                          |
+| `consumer_checkpoints` | Controle de processamento                        |
+| `schema_migrations`    | Histórico de migrations, gerenciado pelo Alembic |
+| `system_audit`         | Auditoria de operações de fundação               |
+
+A implementação deverá garantir que uma alteração de estado e seu evento Outbox sejam confirmados ou revertidos conjuntamente. O dispatcher terá entrega at-least-once; portanto, os consumidores precisam suportar repetição.
+
+# 5. Onda 03 — Events & Platform Services
+
+A terceira onda implementará o ciclo de eventos e os serviços operacionais mínimos.
+
+\#chatgpt-mermaid-\_r_jmg\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_jmg\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_jmg\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_jmg\_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-\_r_jmg\_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jmg\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_jmg\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_jmg\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_jmg\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_jmg\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_jmg\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_jmg\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jmg\_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jmg\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_jmg\_ p{margin:0;}#chatgpt-mermaid-\_r_jmg\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jmg\_ .cluster-label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jmg\_ .cluster-label span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jmg\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_jmg\_ .label text,#chatgpt-mermaid-\_r_jmg\_ span{fill:rgb(13, 13, 13);color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jmg\_ .node rect,#chatgpt-mermaid-\_r_jmg\_ .node circle,#chatgpt-mermaid-\_r_jmg\_ .node ellipse,#chatgpt-mermaid-\_r_jmg\_ .node polygon,#chatgpt-mermaid-\_r_jmg\_ .node path{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-\_r_jmg\_ .rough-node .label text,#chatgpt-mermaid-\_r_jmg\_ .node .label text,#chatgpt-mermaid-\_r_jmg\_ .image-shape .label,#chatgpt-mermaid-\_r_jmg\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_jmg\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_jmg\_ .rough-node .label,#chatgpt-mermaid-\_r_jmg\_ .node .label,#chatgpt-mermaid-\_r_jmg\_ .image-shape .label,#chatgpt-mermaid-\_r_jmg\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_jmg\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_jmg\_ .root .anchor path{fill:rgb(143, 143, 143)!important;stroke-width:0;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jmg\_ .arrowheadPath{fill:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jmg\_ .edgePath .path{stroke:rgb(143, 143, 143);stroke-width:1px;}#chatgpt-mermaid-\_r_jmg\_ .flowchart-link{stroke:rgb(143, 143, 143);fill:none;}#chatgpt-mermaid-\_r_jmg\_ .edgeLabel{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_jmg\_ .edgeLabel p{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jmg\_ .edgeLabel rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jmg\_ .labelBkg{background-color:rgba(252, 252, 252, 0.5);}#chatgpt-mermaid-\_r_jmg\_ .cluster rect{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_jmg\_ .cluster text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jmg\_ .cluster span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jmg\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(243, 243, 243);border:1px solid rgba(0, 0, 0, 0.1);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_jmg\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_jmg\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_jmg\_ .icon-shape,#chatgpt-mermaid-\_r_jmg\_ .image-shape{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_jmg\_ .icon-shape p,#chatgpt-mermaid-\_r_jmg\_ .image-shape p{background-color:rgb(252, 252, 252);padding:2px;}#chatgpt-mermaid-\_r_jmg\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_jmg\_ .image-shape .label rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_jmg\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_jmg\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_jmg\_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_jmg\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_jmg\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_jmg\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_jmg\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jmg\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_jmg\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_jmg\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_jmg\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_jmg\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_jmg\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_jmg\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(252, 252, 252);stroke:rgb(219, 219, 219);stroke-width:1px;}#chatgpt-mermaid-\_r_jmg\_ .node rect,#chatgpt-mermaid-\_r_jmg\_ .node circle,#chatgpt-mermaid-\_r_jmg\_ .node ellipse,#chatgpt-mermaid-\_r_jmg\_ .node polygon,#chatgpt-mermaid-\_r_jmg\_ .node path{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_jmg\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_jmg\_ .mermaid-decision .label-container{fill:rgb(249, 249, 249);stroke:rgb(219, 219, 219);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_jmg\_ .edgePaths .flowchart-link{stroke:rgb(143, 143, 143);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_jmg\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_jmg\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}Application Use CasePostgreSQL TransactionState + OutboxCommitDispatcherEvent ConsumerAlready processed?AcknowledgeApply HandlerInbox + CheckpointTelemetryYesNo
+
+### Requisitos operacionais
+
+- Dispatcher com controle de concorrência, retries limitados, backoff e tratamento de mensagens não processáveis.
+- Consumidores com deduplicação persistente e processamento transacional quando aplicável.
+- Identidade de ambiente propagada nos contratos e nos registros.
+- Health checks distintos para liveness e readiness.
+- Logs estruturados com `correlation_id`, `causation_id`, `event_id` e `environment_id`.
+- Métricas de atraso, tentativas, falhas e backlog de Outbox.
+- Segurança fail-closed para configurações ausentes ou inválidas.
+
+Apenas eventos sintéticos serão utilizados para validar o pipeline no I00. Não haverá ordens reais nem integração de execução com Binance.
+
+# 6. Onda 04 — Quality & Acceptance
+
+O aceite final do incremento dependerá de evidências, não apenas da conclusão das tarefas.
+
+| Cenário                 | Resultado esperado                                           |
+| ----------------------- | ------------------------------------------------------------ |
+| Falha antes do commit   | Nenhum estado ou evento persistido                           |
+| Falha após o commit     | Evento recuperável pela Outbox                               |
+| Reinício do dispatcher  | Continuidade sem perda de eventos                            |
+| Entrega duplicada       | Sem duplicação de efeito                                     |
+| Consumidor indisponível | Retry controlado e backlog observável                        |
+| Eventos fora de ordem   | Sequência por agregado preservada ou processamento bloqueado |
+| Contrato incompatível   | Rejeição explícita                                           |
+| Ambiente inválido       | Inicialização ou operação bloqueada                          |
+| Configuração LIVE       | Execução financeira indisponível                             |
+| Evidência ausente       | Aceite do I00 bloqueado                                      |
+
+### Evidence Bundle I00
+
+O pacote deverá incluir commit, digest do build, lockfile, versões de contratos, migrations, resultados de testes, relatórios de qualidade, configuração de ambiente sanitizada, ADRs aplicáveis e decisão de aceite.
+
+# 7. Dependências e marcos de implementação
+
+| Marco   | Resultado                               | Pré-requisito  |
+| ------- | --------------------------------------- | -------------- |
+| I00-M01 | Repositório e CI funcionais             | ADRs aprovadas |
+| I00-M02 | Contratos v1 validados                  | I00-M01        |
+| I00-M03 | PostgreSQL e Outbox transacional        | I00-M02        |
+| I00-M04 | Dispatcher e consumidores idempotentes  | I00-M03        |
+| I00-M05 | Testes de resiliência e observabilidade | I00-M04        |
+| I00-M06 | Evidence Bundle e aceite                | I00-M01–M05    |
+
+Não foram atribuídas datas artificiais. O cronograma dependerá da capacidade da equipe, da infraestrutura disponível e das estimativas de cada pacote.
+
+# 8. Pendências e restrições preservadas
+
+| Item                              | Estado          |
+| --------------------------------- | --------------- |
+| Reconciliação P01–P47             | Aberta          |
+| Confirmação de P18                | Aberta          |
+| Rastreabilidade completa P01–P106 | Em planejamento |
+| Owners nominais                   | A definir       |
+| Limites quantitativos G0–G5       | A definir       |
+| Provedor cloud                    | Não selecionado |
+| Implementação de PPO              | Fora do I00     |
+| Integração Binance para ordens    | Fora do I00     |
+| Credenciais LIVE                  | Não permitidas  |
+| Promoção automática para LIVE     | Proibida        |
+
+A aprovação técnica não modifica o escopo da baseline global nem autoriza operações financeiras.
+
+# 9. Próxima ação de engenharia
+
+A próxima execução deverá começar por I00-01 — Bootstrap do Monorepo, seguida de I00-02 e I00-11, para que o repositório possa ser instalado, testado e validado desde o primeiro commit.
+
+O resultado esperado será uma primeira entrega verificável contendo `pyproject.toml`, estrutura de pacotes, configuração de qualidade, testes básicos, Docker Compose inicial e pipeline GitHub Actions.
+
+Primeiro pacote de implementação
+
+I00-01 + I00-02 + I00-11
+
+Iniciar implementação do bootstrap&#x20;
+
+Status consolidado: `TS-ENG-I00-V1.0 / TECHNICAL-BASELINE / APPROVED`. A engenharia está autorizada a iniciar a implementação do I00, mantendo o controle de mudanças, a produção de evidências e a proibição de LIVE.
+
+
+# TRADE SYSTEM V1 — TS-ENG-I00-V1.0
+
+Engineering Foundation · 16/11/2026
+Baseline técnica aprovada
+
+A fase TS-ENG-I00-V1.0 — Engineering Foundation já possui aprovação registrada nesta conversa. As decisões T01–T10 e as ADRs técnicas TS-ADR-089 a TS-ADR-098 foram aprovadas anteriormente, sem observações.
+
+Portanto, não precisamos reiniciar a aprovação. Vou consolidar o plano técnico vigente para utilização no Codex, preservando `TS-ARCH-GLOBAL-V1.0`, as pendências documentais e a proibição de LIVE.
+
+## 1. Arquitetura física aprovada
+
+\#chatgpt-mermaid-\_r_p1l\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_p1l\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_p1l\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_p1l\_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-\_r_p1l\_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p1l\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_p1l\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_p1l\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_p1l\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_p1l\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_p1l\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_p1l\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p1l\_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p1l\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_p1l\_ p{margin:0;}#chatgpt-mermaid-\_r_p1l\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p1l\_ .cluster-label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p1l\_ .cluster-label span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p1l\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_p1l\_ .label text,#chatgpt-mermaid-\_r_p1l\_ span{fill:rgb(13, 13, 13);color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p1l\_ .node rect,#chatgpt-mermaid-\_r_p1l\_ .node circle,#chatgpt-mermaid-\_r_p1l\_ .node ellipse,#chatgpt-mermaid-\_r_p1l\_ .node polygon,#chatgpt-mermaid-\_r_p1l\_ .node path{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-\_r_p1l\_ .rough-node .label text,#chatgpt-mermaid-\_r_p1l\_ .node .label text,#chatgpt-mermaid-\_r_p1l\_ .image-shape .label,#chatgpt-mermaid-\_r_p1l\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_p1l\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_p1l\_ .rough-node .label,#chatgpt-mermaid-\_r_p1l\_ .node .label,#chatgpt-mermaid-\_r_p1l\_ .image-shape .label,#chatgpt-mermaid-\_r_p1l\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_p1l\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_p1l\_ .root .anchor path{fill:rgb(143, 143, 143)!important;stroke-width:0;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p1l\_ .arrowheadPath{fill:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p1l\_ .edgePath .path{stroke:rgb(143, 143, 143);stroke-width:1px;}#chatgpt-mermaid-\_r_p1l\_ .flowchart-link{stroke:rgb(143, 143, 143);fill:none;}#chatgpt-mermaid-\_r_p1l\_ .edgeLabel{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_p1l\_ .edgeLabel p{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_p1l\_ .edgeLabel rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_p1l\_ .labelBkg{background-color:rgba(252, 252, 252, 0.5);}#chatgpt-mermaid-\_r_p1l\_ .cluster rect{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_p1l\_ .cluster text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p1l\_ .cluster span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p1l\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(243, 243, 243);border:1px solid rgba(0, 0, 0, 0.1);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_p1l\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p1l\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_p1l\_ .icon-shape,#chatgpt-mermaid-\_r_p1l\_ .image-shape{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_p1l\_ .icon-shape p,#chatgpt-mermaid-\_r_p1l\_ .image-shape p{background-color:rgb(252, 252, 252);padding:2px;}#chatgpt-mermaid-\_r_p1l\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_p1l\_ .image-shape .label rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_p1l\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_p1l\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_p1l\_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_p1l\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_p1l\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_p1l\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_p1l\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p1l\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_p1l\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p1l\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_p1l\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_p1l\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_p1l\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_p1l\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(252, 252, 252);stroke:rgb(219, 219, 219);stroke-width:1px;}#chatgpt-mermaid-\_r_p1l\_ .node rect,#chatgpt-mermaid-\_r_p1l\_ .node circle,#chatgpt-mermaid-\_r_p1l\_ .node ellipse,#chatgpt-mermaid-\_r_p1l\_ .node polygon,#chatgpt-mermaid-\_r_p1l\_ .node path{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_p1l\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_p1l\_ .mermaid-decision .label-container{fill:rgb(249, 249, 249);stroke:rgb(219, 219, 219);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_p1l\_ .edgePaths .flowchart-link{stroke:rgb(143, 143, 143);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_p1l\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p1l\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}Operations UI — futuroFastAPI / BFFMonólito modular PythonMarket Data / StateAI ContractsControl / RiskExecution / PortfolioPostgreSQLTransactional OutboxEvent DispatcherConsumidores idempotentesOpenTelemetry / Logs
+
+O I00 implementará apenas a fundação: estrutura de módulos, contratos, persistência, eventos, testes e infraestrutura local. Os componentes financeiros permanecerão como interfaces ou estruturas preparatórias.
+
+Invariante arquitetural: nenhum agente de IA pode acessar diretamente a Binance para executar operações. O fluxo futuro será `Trading Intent → Control → Risk → Execution`.
+
+## 2. Stack tecnológica aprovada
+
+| Camada                        | Tecnologia                      |
+| ----------------------------- | ------------------------------- |
+| Linguagem                     | Python 3.12+                    |
+| API                           | FastAPI + Pydantic v2           |
+| Banco de dados                | PostgreSQL 17                   |
+| ORM / Migrations              | SQLAlchemy 2 + Alembic          |
+| Gerenciamento de dependências | uv                              |
+| Qualidade                     | Ruff, mypy, pytest, Hypothesis  |
+| Infraestrutura local          | Docker Compose                  |
+| CI/CD                         | GitHub Actions                  |
+| Observabilidade               | OpenTelemetry e logs JSON       |
+| Contratos                     | JSON Schema + OpenAPI           |
+| Eventos                       | PostgreSQL Transactional Outbox |
+
+A arquitetura evita Kafka, Kubernetes e microsserviços prematuros. Versões específicas de bibliotecas deverão ser fixadas no lockfile e verificadas durante a implementação.
+
+## 3. Estrutura do monorepo
+
+```
+
+DeepTradeSystem/
+├── AGENTS.md
+├── apps/
+│   ├── api/
+│   ├── event_dispatcher/
+│   ├── event_consumer/
+│   ├── market_data_worker/
+│   └── training_worker/
+├── src/trade_system/
+│   ├── shared/
+│   ├── market_data/
+│   ├── features/
+│   ├── market_state/
+│   ├── ai/
+│   ├── control/
+│   ├── risk/
+│   ├── execution/
+│   ├── portfolio/
+│   ├── audit/
+│   └── operations/
+├── infrastructure/
+│   ├── database/
+│   ├── events/
+│   └── security/
+├── contracts/
+│   ├── jsonschema/
+│   ├── openapi/
+│   └── examples/
+├── tests/
+│   ├── unit/
+│   ├── contracts/
+│   ├── integration/
+│   ├── property/
+│   └── resilience/
+├── deploy/
+│   ├── compose/
+│   └── docker/
+├── docs/
+│   ├── architecture/
+│   ├── adr/
+│   ├── domains/
+│   ├── backlog/
+│   ├── governance/
+│   └── evidence/
+├── .github/workflows/
+├── pyproject.toml
+├── uv.lock
+└── README.md
+
+```
+
+A estrutura é o alvo aprovado. Ainda será necessário verificar o estado atual do repositório antes de criar ou substituir arquivos.
+
+## 4. Contratos iniciais
+
+| Contrato             | Finalidade                       | Regras fundamentais                                 |
+| -------------------- | -------------------------------- | --------------------------------------------------- |
+| `CommandEnvelope.v1` | Identificar e autorizar comandos | Idempotência, ambiente, ator, expiração, correlação |
+| `EventEnvelope.v1`   | Registrar eventos de domínio     | Identidade, causalidade, versão, timestamps UTC     |
+| `ErrorEnvelope.v1`   | Padronizar falhas                | Código, categoria, contexto e correlação            |
+| `HealthStatus.v1`    | Informar saúde dos serviços      | Liveness, readiness e dependências                  |
+| `OutboxRecord.v1`    | Controlar publicação de eventos  | Estado, tentativas, sequência e checkpoint          |
+
+Os schemas deverão ser implementados e validados por testes de contrato.
+
+Valores financeiros deverão utilizar representação decimal exata. Os consumidores deverão tolerar entrega repetida sem duplicar efeitos financeiros.
+
+## 5. Backlog refinado I00
+
+| Pacote | Entrega                       | Dependências    |
+| ------ | ----------------------------- | --------------- |
+| I00-01 | Bootstrap do monorepo         | —               |
+| I00-02 | Toolchain Python              | I00-01          |
+| I00-03 | Contratos versionados         | I00-01          |
+| I00-04 | PostgreSQL e migrations       | I00-01          |
+| I00-05 | Transactional Outbox          | I00-03, I00-04  |
+| I00-06 | Event Dispatcher              | I00-05          |
+| I00-07 | Consumidores idempotentes     | I00-06          |
+| I00-08 | API de fundação               | I00-02, I00-03  |
+| I00-09 | Segurança e isolamento        | I00-01          |
+| I00-10 | Observabilidade               | I00-03, I00-08  |
+| I00-11 | CI/CD e qualidade             | I00-02          |
+| I00-12 | Rastreabilidade documental    | I00-01          |
+| I00-13 | Testes de falha e recuperação | I00-05, I00-07  |
+| I00-14 | Evidence Bundle               | I00-01 a I00-13 |
+
+### Caminho crítico lógico
+
+\#chatgpt-mermaid-\_r_p20\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(13, 13, 13);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_p20\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_p20\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_p20\_ .error-icon{fill:rgb(243, 243, 243);}#chatgpt-mermaid-\_r_p20\_ .error-text{fill:rgb(13, 13, 13);stroke:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p20\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_p20\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_p20\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_p20\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_p20\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_p20\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_p20\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p20\_ .marker.cross{stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p20\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_p20\_ p{margin:0;}#chatgpt-mermaid-\_r_p20\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p20\_ .cluster-label text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p20\_ .cluster-label span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p20\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_p20\_ .label text,#chatgpt-mermaid-\_r_p20\_ span{fill:rgb(13, 13, 13);color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p20\_ .node rect,#chatgpt-mermaid-\_r_p20\_ .node circle,#chatgpt-mermaid-\_r_p20\_ .node ellipse,#chatgpt-mermaid-\_r_p20\_ .node polygon,#chatgpt-mermaid-\_r_p20\_ .node path{fill:rgb(222, 234, 251);stroke:rgb(83, 154, 248);stroke-width:1px;}#chatgpt-mermaid-\_r_p20\_ .rough-node .label text,#chatgpt-mermaid-\_r_p20\_ .node .label text,#chatgpt-mermaid-\_r_p20\_ .image-shape .label,#chatgpt-mermaid-\_r_p20\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_p20\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_p20\_ .rough-node .label,#chatgpt-mermaid-\_r_p20\_ .node .label,#chatgpt-mermaid-\_r_p20\_ .image-shape .label,#chatgpt-mermaid-\_r_p20\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_p20\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_p20\_ .root .anchor path{fill:rgb(143, 143, 143)!important;stroke-width:0;stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p20\_ .arrowheadPath{fill:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p20\_ .edgePath .path{stroke:rgb(143, 143, 143);stroke-width:1px;}#chatgpt-mermaid-\_r_p20\_ .flowchart-link{stroke:rgb(143, 143, 143);fill:none;}#chatgpt-mermaid-\_r_p20\_ .edgeLabel{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_p20\_ .edgeLabel p{background-color:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_p20\_ .edgeLabel rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_p20\_ .labelBkg{background-color:rgba(252, 252, 252, 0.5);}#chatgpt-mermaid-\_r_p20\_ .cluster rect{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_p20\_ .cluster text{fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p20\_ .cluster span{color:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p20\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(243, 243, 243);border:1px solid rgba(0, 0, 0, 0.1);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_p20\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(13, 13, 13);}#chatgpt-mermaid-\_r_p20\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_p20\_ .icon-shape,#chatgpt-mermaid-\_r_p20\_ .image-shape{background-color:rgb(252, 252, 252);text-align:center;}#chatgpt-mermaid-\_r_p20\_ .icon-shape p,#chatgpt-mermaid-\_r_p20\_ .image-shape p{background-color:rgb(252, 252, 252);padding:2px;}#chatgpt-mermaid-\_r_p20\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_p20\_ .image-shape .label rect{opacity:0.5;background-color:rgb(252, 252, 252);fill:rgb(252, 252, 252);}#chatgpt-mermaid-\_r_p20\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_p20\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_p20\_ .node .neo-node{stroke:rgb(83, 154, 248);}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_p20\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_p20\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].node .neo-line path{stroke:rgb(83, 154, 248);filter:none;}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_p20\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_p20\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p20\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_p20\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_p20\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_p20\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(65, 65, 65);}#chatgpt-mermaid-\_r_p20\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_p20\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_p20\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(252, 252, 252);stroke:rgb(219, 219, 219);stroke-width:1px;}#chatgpt-mermaid-\_r_p20\_ .node rect,#chatgpt-mermaid-\_r_p20\_ .node circle,#chatgpt-mermaid-\_r_p20\_ .node ellipse,#chatgpt-mermaid-\_r_p20\_ .node polygon,#chatgpt-mermaid-\_r_p20\_ .node path{fill:rgb(243, 243, 243);stroke:rgba(0, 0, 0, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_p20\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_p20\_ .mermaid-decision .label-container{fill:rgb(249, 249, 249);stroke:rgb(219, 219, 219);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_p20\_ .edgePaths .flowchart-link{stroke:rgb(143, 143, 143);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_p20\_ .marker{fill:rgb(143, 143, 143);stroke:rgb(143, 143, 143);}#chatgpt-mermaid-\_r_p20\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}MonorepoContratos + BancoOutboxDispatcherConsumidoresTestes de falhaEvidence Bundle
+
+Segurança, observabilidade e CI/CD serão desenvolvidos paralelamente, respeitando as dependências.
+
+## 6. Critérios de aceite
+
+| ID       | Evidência obrigatória                  |
+| -------- | -------------------------------------- |
+| I00-AC01 | Build reproduzível em CI               |
+| I00-AC02 | Dependências fixadas e verificadas     |
+| I00-AC03 | Contratos versionados com testes       |
+| I00-AC04 | Migrations reproduzíveis               |
+| I00-AC05 | Atomicidade entre estado e Outbox      |
+| I00-AC06 | Consumidores idempotentes              |
+| I00-AC07 | Ordenação por agregado                 |
+| I00-AC08 | Recuperação de falhas demonstrada      |
+| I00-AC09 | Logs, métricas e correlação            |
+| I00-AC10 | Segregação e LIVE inacessível          |
+| I00-AC11 | Rastreabilidade ADR → História → Teste |
+| I00-AC12 | Evidence Bundle verificável            |
+
+Nenhum desses critérios deve ser marcado como concluído sem evidência executada.
+
+## 7. Pendências documentais preservadas
+
+Permanecem abertas a reconciliação das descrições originais P01–P47, a confirmação da classificação de P18, o mapeamento integral das 106 pendências e a definição dos responsáveis nominais.
+
+Também permanecem pendentes os thresholds quantitativos dos gates G0–G5. Eles não bloqueiam a preparação do monorepo, mas deverão estar aprovados antes dos respectivos gates operacionais.
+
+## 8. Próximo passo no Codex
+
+Como a arquitetura e a stack já foram aprovadas, recomendo iniciar com uma inspeção do repositório e a implementação controlada de I00-01, I00-02 e I00-11.
+
+Prompt para iniciar o Codex
+
+Leia `AGENTS.md` e toda a documentação em `docs/`. Considere aprovadas as baselines `TS-ARCH-GLOBAL-V1.0` e `TS-ENG-I00-V1.0`, incluindo as ADRs 089–098. Inspecione o estado atual do repositório antes de alterar arquivos. Identifique lacunas documentais e conflitos com as decisões aprovadas. Implemente exclusivamente I00-01 (monorepo), I00-02 (toolchain Python) e I00-11 (CI inicial). Execute testes, apresente os resultados e produza evidências. Não implemente PPO, envio de ordens ou integração LIVE. Não avance para I00-03 sem aprovação.
+
+Copiar prompt
+
+Situação consolidada: o planejamento técnico do I00 está aprovado; a implementação ainda precisa ser verificada no repositório. O próximo marco é produzir um bootstrap funcional, com CI e testes, mantendo LIVE indisponível.

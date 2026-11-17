@@ -1,0 +1,908 @@
+# I00-FEAT-001.md
+## TRADE SYSTEM V1 — Monorepo Bootstrap
+
+**Document ID:** I00-FEAT-001  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-01  
+**Primary Epic:** TS-EP-01 — Engineering Foundation  
+**Primary Domain:** D07 — Engineering, Quality & Validation  
+**Supporting Domains:** D05 / D06  
+**Functional Owner:** Engineering Architecture  
+**Technical Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 — APPROVED  
+**Epic Baseline:** TS-EP-01 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Approval Reference:** PENDING  
+**Domain:** D07, com apoio de D05 e D06  
+**Owner:** Engineering Architecture, conforme responsabilidade funcional acima.  
+**Source References:** [anexo original](../governance/history/I00-FEAT-001/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md) e [fontes oficiais](../referencias/originais/)  
+**Related ADRs:** referências da seção 2.  
+**Related Components:** seção 2 e [matriz DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** referências das seções 18, 22 e 25.  
+**Dependencies:** [catálogo do I00](../increments/I00-FEATURE-CATALOG.md), [TS-EP-01](../epics/TS-EP-01.md), [template de Feature](../governance/templates/FEATURE-TEMPLATE.md) e dependências da seção 13.  
+**Acceptance Criteria:** seções 18, 23 e 24, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-16
+
+---
+
+## 1. Identificação e objetivo
+
+### 1.1 Objetivo
+
+Estabelecer a estrutura inicial do monorepo modular do TRADE SYSTEM V1, permitindo organizar componentes, contratos, testes, infraestrutura e documentação de maneira consistente com as baselines arquitetural e técnica.
+
+### 1.2 Necessidade atendida
+
+O sistema deverá evoluir por meio de múltiplos domínios, componentes e incrementos.
+
+Sem uma estrutura padronizada, poderão surgir:
+
+- Acoplamento indevido entre domínios.
+- Dependências circulares.
+- Duplicação de contratos.
+- Inconsistência de configuração.
+- Dificuldade de testes isolados.
+- Problemas de rastreabilidade.
+- Divergências entre ambientes.
+- Dificuldade de manutenção e evolução.
+
+### 1.3 Resultado esperado
+
+Uma estrutura de repositório que permita:
+
+1. Localizar componentes por responsabilidade.
+2. Separar contratos de implementações.
+3. Organizar testes por nível e domínio.
+4. Centralizar configurações compartilhadas.
+5. Preservar documentação de governança.
+6. Suportar múltiplos processos quando necessário.
+7. Evoluir sem reestruturações arbitrárias.
+8. Executar verificações estruturais automatizadas.
+
+### 1.4 Declaração da Feature
+
+**Como** equipe de engenharia do TRADE SYSTEM V1,  
+**quero** um monorepo modular, padronizado e verificável,  
+**para** desenvolver e integrar componentes com isolamento de responsabilidades, qualidade e rastreabilidade.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines normativas
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001.
+- TS-EP-01.
+- TS-I00-FEAT-CAT-001.
+- TS-DOC-STD-V1.0.
+- TS-DOC-TRC-001.
+- TS-DOC-GAP-001.
+- TS-DOC-APR-001.
+- TS-DOC-CHG-001.
+
+### 2.2 Decisões técnicas
+
+A baseline de engenharia estabelece:
+
+- Monorepo modular.
+- Python 3.12+.
+- Organização por responsabilidades.
+- Contratos versionados.
+- Testes automatizados.
+- Toolchain padronizada.
+- Observabilidade.
+- Segurança e segregação de ambientes.
+- Documentação por domínio.
+- Evolução incremental.
+
+Os vínculos individuais com TS-ADR-089–098 deverão ser confirmados mediante consulta aos registros originais.
+
+**ADR Traceability:** UNVERIFIED.
+
+### 2.3 Domínios arquiteturais
+
+A estrutura deverá contemplar os sete domínios aprovados:
+
+| Domínio | Responsabilidade |
+|---|---|
+| D01 | Integração e Dados de Mercado |
+| D02 | Inteligência Artificial |
+| D03 | Risco e Execução |
+| D04 | Operações e Observabilidade |
+| D05 | Dados, Eventos e Auditoria |
+| D06 | Infraestrutura, Segurança e DevOps |
+| D07 | Engenharia, Qualidade e Validação |
+
+Os nomes representam as responsabilidades gerais aprovadas. A nomenclatura final dos módulos deverá ser reconciliada com o catálogo arquitetural autoritativo.
+
+### 2.4 Componentes
+
+A arquitetura possui 33 componentes lógicos aprovados.
+
+Esta Feature deverá permitir sua organização no repositório, mas não exige que todos os componentes sejam implementados no I00.
+
+Os identificadores e owners individuais deverão ser verificados antes de registrar relações como VERIFIED.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Estrutura inicial de diretórios.
+- Organização modular.
+- Convenções de nomes.
+- Separação de contratos.
+- Organização de testes.
+- Organização de configurações.
+- Organização da infraestrutura.
+- Organização da documentação.
+- Arquivos fundamentais de projeto.
+- Pontos de extensão para incrementos futuros.
+- Verificações estruturais.
+- Regras de dependência entre módulos.
+
+### 3.2 Excluído
+
+- Implementação de estratégias financeiras.
+- Integração operacional com a Binance.
+- Treinamento de agentes PPO.
+- Implementação do motor de risco.
+- Implementação do motor de execução.
+- Criação do banco de dados operacional.
+- Implementação da Outbox.
+- Implementação do Dispatcher.
+- Interface gráfica de trading.
+- Operação PAPER qualificada.
+- Operação LIVE.
+
+Essas capacidades pertencem a outras Features e incrementos.
+
+### 3.3 Fronteiras
+
+A Feature estabelecerá a estrutura necessária para receber implementações futuras, mas não deverá antecipar funcionalidades não aprovadas.
+
+Diretórios vazios, marcadores ou estruturas preparatórias não poderão ser interpretados como componentes implementados.
+
+---
+
+## 4. Estrutura lógica proposta
+
+A estrutura abaixo é uma proposta de organização para implementação posterior.
+
+```text
+DeepTradeSystem/
+├── README.md
+├── AGENTS.md
+├── pyproject.toml
+├── uv.lock
+├── .python-version
+├── .gitignore
+├── .env.example
+│
+├── apps/
+│   └── foundation_api/
+│
+├── packages/
+│   ├── common/
+│   ├── contracts/
+│   ├── d01_market_data/
+│   ├── d02_ai/
+│   ├── d03_risk_execution/
+│   ├── d04_operations/
+│   └── d05_data_events/
+│
+├── infrastructure/
+│   ├── compose/
+│   ├── database/
+│   ├── observability/
+│   └── security/
+│
+├── tests/
+│   ├── unit/
+│   ├── contract/
+│   ├── integration/
+│   ├── property/
+│   ├── resilience/
+│   ├── security/
+│   └── e2e/
+│
+├── docs/
+│   ├── architecture/
+│   ├── engineering/
+│   ├── governance/
+│   ├── increments/
+│   ├── epics/
+│   ├── features/
+│   ├── stories/
+│   ├── contracts/
+│   ├── tests/
+│   ├── evidence/
+│   └── runbooks/
+│
+├── scripts/
+│
+└── .github/
+    └── workflows/
+```
+
+### 4.1 Estado da proposta
+
+**Structure Status:** PROPOSED.
+
+A estrutura não representa uma inspeção do repositório existente.
+
+A criação ou alteração dos diretórios dependerá de autorização posterior de implementação.
+
+### 4.2 Compatibilidade com a baseline
+
+A estrutura deverá preservar a arquitetura modular aprovada.
+
+A localização física de componentes e processos poderá ser refinada quando as interfaces e os owners forem confirmados.
+
+### 4.3 D06 e D07
+
+D06 e D07 são domínios arquiteturais, mas suas responsabilidades podem estar distribuídas entre infraestrutura, automação, testes e documentação.
+
+A ausência de pacotes Python específicos `d06` e `d07` não implica ausência desses domínios.
+
+Caso sejam necessários módulos executáveis desses domínios, sua criação deverá ser formalizada.
+
+---
+
+## 5. Organização de aplicações
+
+### 5.1 Diretório apps/
+
+O diretório `apps/` deverá conter pontos de entrada executáveis.
+
+### 5.2 Foundation API
+
+O módulo `foundation_api` deverá receber futuramente a implementação da Feature I00-FEAT-008.
+
+### 5.3 Separação de responsabilidades
+
+Aplicações deverão orquestrar capacidades de pacotes sem concentrar indevidamente regras de domínio.
+
+### 5.4 Processos independentes
+
+Componentes que exijam isolamento de processo poderão possuir entradas próprias.
+
+A definição desses processos deverá respeitar a arquitetura e as especificações individuais.
+
+---
+
+## 6. Organização de pacotes
+
+### 6.1 packages/common
+
+Deverá conter apenas capacidades técnicas compartilhadas e justificadas.
+
+Exemplos possíveis:
+
+- Tipos técnicos comuns.
+- Utilitários sem dependência de domínio.
+- Interfaces técnicas compartilhadas.
+- Mecanismos genéricos de correlação.
+
+Não deverá se transformar em repositório indiscriminado de regras de negócio.
+
+### 6.2 packages/contracts
+
+Deverá conter contratos e schemas compartilhados.
+
+A propriedade normativa de cada contrato deverá permanecer identificada.
+
+### 6.3 Pacotes de domínio
+
+Os pacotes de domínio deverão preservar:
+
+- Ownership.
+- Fronteiras.
+- Interfaces explícitas.
+- Dependências controladas.
+- Testabilidade.
+- Evolução independente quando aplicável.
+
+### 6.4 Dependências entre domínios
+
+Um domínio não deverá acessar diretamente detalhes internos de outro domínio sem interface autorizada.
+
+### 6.5 Ciclos de dependência
+
+Dependências circulares entre pacotes de domínio deverão ser proibidas, salvo exceção arquitetural expressamente aprovada.
+
+---
+
+## 7. Convenções de nomenclatura
+
+### 7.1 Diretórios e módulos Python
+
+Utilizar nomes consistentes com convenções Python, preferencialmente `snake_case`.
+
+### 7.2 Classes
+
+Utilizar `PascalCase`.
+
+### 7.3 Funções e variáveis
+
+Utilizar `snake_case`.
+
+### 7.4 Constantes
+
+Utilizar `UPPER_SNAKE_CASE`.
+
+### 7.5 Contratos
+
+Utilizar identificadores estáveis e versões explícitas.
+
+### 7.6 Testes
+
+Os testes deverão possuir nomes descritivos e relacionáveis aos cenários verificados.
+
+### 7.7 Documentação
+
+Os arquivos normativos deverão preservar os identificadores e convenções definidos no padrão documental aprovado.
+
+### 7.8 Alterações
+
+Mudanças nas convenções deverão seguir Change Control quando afetarem contratos, módulos ou documentação aprovada.
+
+---
+
+## 8. Configuração do projeto
+
+### 8.1 pyproject.toml
+
+Deverá concentrar a configuração Python aplicável.
+
+### 8.2 uv.lock
+
+Deverá permitir reprodução das dependências fixadas.
+
+### 8.3 .python-version
+
+Deverá identificar a versão de Python selecionada.
+
+### 8.4 .gitignore
+
+Deverá excluir arquivos temporários, ambientes locais, caches e informações sensíveis.
+
+### 8.5 .env.example
+
+Deverá documentar variáveis esperadas sem incluir valores secretos.
+
+### 8.6 Configurações por ambiente
+
+Deverão respeitar a segregação TRAINING/PAPER/LIVE.
+
+### 8.7 Responsabilidade de implementação
+
+A criação e configuração técnica desses arquivos pertence principalmente à I00-FEAT-002 e à I00-FEAT-009.
+
+Esta Feature estabelece sua organização e integração estrutural.
+
+---
+
+## 9. Organização dos testes
+
+O diretório `tests/` deverá permitir distinguir:
+
+- Testes unitários.
+- Testes de contrato.
+- Testes de integração.
+- Testes baseados em propriedades.
+- Testes de resiliência.
+- Testes de segurança.
+- Testes end-to-end.
+
+### 9.1 Isolamento
+
+Testes deverão evitar dependências implícitas de estado compartilhado.
+
+### 9.2 Fixtures
+
+Fixtures deverão ser identificadas e versionadas quando necessário.
+
+### 9.3 Dados de teste
+
+Dados sensíveis e credenciais reais não deverão ser incluídos no repositório.
+
+### 9.4 Execução
+
+A execução dos testes será detalhada na I00-FEAT-002 e na I00-FEAT-011.
+
+### 9.5 Evidências
+
+Resultados de execução deverão ser associados aos testes e critérios correspondentes.
+
+---
+
+## 10. Organização documental
+
+O diretório `docs/` deverá permitir localizar:
+
+- Baselines arquiteturais.
+- Baselines técnicas.
+- Registros de governança.
+- Especificações de incrementos.
+- Especificações de épicos.
+- Especificações de Features.
+- Histórias técnicas.
+- Contratos.
+- Testes.
+- Evidências.
+- Runbooks.
+
+### 10.1 Documentos por domínio
+
+A documentação de cada domínio deverá identificar responsabilidades, decisões, interfaces e restrições.
+
+### 10.2 AGENTS.md
+
+O arquivo raiz `AGENTS.md` deverá orientar agentes de desenvolvimento quanto a:
+
+- Escopo autorizado.
+- Fontes normativas.
+- Convenções de engenharia.
+- Restrições de segurança.
+- Regras de mudança.
+- Critérios de qualidade.
+- Limites de autonomia.
+
+Arquivos `AGENTS.md` específicos poderão existir em subdiretórios quando houver necessidade de instruções locais.
+
+### 10.3 Precedência
+
+Instruções operacionais não poderão substituir ADRs ou baselines aprovadas.
+
+### 10.4 Governança
+
+A organização documental deverá ser compatível com TS-DOC-GOV-AGENT-001.
+
+---
+
+## 11. Infraestrutura e automação
+
+### 11.1 infrastructure/
+
+Deverá agrupar configurações relacionadas a:
+
+- Containers.
+- Banco de dados.
+- Observabilidade.
+- Segurança.
+- Recursos de execução.
+
+### 11.2 scripts/
+
+Deverá conter scripts auxiliares aprovados para desenvolvimento, verificação e manutenção.
+
+### 11.3 .github/workflows/
+
+Deverá conter os workflows de CI/CD.
+
+### 11.4 Limites
+
+Esta Feature não implementará a infraestrutura completa.
+
+A responsabilidade de configuração e execução pertencerá às Features correspondentes.
+
+---
+
+## 12. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação proposta |
+|---|---|---|
+| Modularidade | Fronteiras explícitas | Revisão estrutural |
+| Reprodutibilidade | Organização consistente | Bootstrap em ambiente limpo |
+| Manutenibilidade | Convenções uniformes | Inspeção automatizada |
+| Testabilidade | Testes organizados | Descoberta de testes |
+| Segurança | Ausência de segredos | Verificação de arquivos |
+| Isolamento | Configuração por ambiente | Revisão de configuração |
+| Auditabilidade | Arquivos versionados | Inspeção Git |
+| Evolutividade | Suporte aos domínios | Revisão arquitetural |
+| Rastreabilidade | Documentos localizáveis | Validação de referências |
+
+Os limites quantitativos deverão ser aprovados antes de serem exigidos.
+
+---
+
+## 13. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| TS-ARCH-GLOBAL-V1.0 | Normativa | APPROVED |
+| TS-ENG-I00-V1.0 | Normativa | APPROVED |
+| TS-INC-I00-001 | Normativa | APPROVED |
+| TS-EP-01 | Normativa | APPROVED |
+| TS-I00-FEAT-CAT-001 | Normativa | APPROVED |
+| Catálogo de componentes | Arquitetural | UNVERIFIED |
+| ADRs individuais | Arquitetural | UNVERIFIED |
+| Repositório existente | Técnica | NOT_INSPECTED |
+| Owners individuais | Governança | TBD |
+
+### 13.1 Dependências posteriores
+
+A Feature deverá fornecer estrutura para:
+
+- I00-FEAT-002 — Python Toolchain & Quality.
+- I00-FEAT-003 — Versioned Contracts.
+- I00-FEAT-004 — PostgreSQL & Migrations.
+- I00-FEAT-008 — Foundation API.
+- I00-FEAT-011 — CI/CD Foundation.
+
+### 13.2 Relação com histórias
+
+**TS-ST-001:** vínculo PROPOSED.
+
+O texto original e os critérios da história deverão ser conferidos antes de formalizar sua especificação.
+
+---
+
+## 14. Comportamento esperado
+
+### 14.1 Cenário principal
+
+**Given:** um workspace autorizado com a baseline de engenharia disponível.
+
+**When:** a estrutura inicial do monorepo for criada conforme especificação.
+
+**Then:**
+
+- Os diretórios obrigatórios existirão.
+- Os arquivos estruturais estarão localizados corretamente.
+- Os módulos terão responsabilidades identificáveis.
+- As convenções serão consistentes.
+- A estrutura poderá ser inspecionada e validada.
+- Nenhuma funcionalidade financeira será executada.
+
+### 14.2 Cenário de repositório preexistente
+
+**Given:** um repositório com arquivos ou diretórios existentes.
+
+**When:** a estrutura proposta for comparada ao estado real.
+
+**Then:**
+
+- Os arquivos existentes deverão ser preservados.
+- Divergências deverão ser registradas.
+- Conflitos deverão ser analisados.
+- Alterações destrutivas exigirão autorização.
+- Nenhuma estrutura existente será sobrescrita silenciosamente.
+
+### 14.3 Cenário de dependência circular
+
+**Given:** uma dependência entre módulos que produza um ciclo não autorizado.
+
+**When:** a verificação estrutural for executada.
+
+**Then:** a violação deverá ser reportada e impedir a aprovação do critério correspondente.
+
+### 14.4 Cenário de arquivo sensível
+
+**Given:** um arquivo que contenha credencial ou segredo.
+
+**When:** a verificação de segurança for executada.
+
+**Then:** o problema deverá ser sinalizado e tratado antes do aceite.
+
+### 14.5 Cenário de fonte normativa ausente
+
+**Given:** uma decisão arquitetural necessária não disponível.
+
+**When:** a estrutura depender dessa decisão.
+
+**Then:** o item correspondente deverá permanecer pendente e ser registrado no Gap Register.
+
+---
+
+## 15. Contratos e interfaces
+
+### 15.1 Contratos de software
+
+Esta Feature não define diretamente os schemas de CommandEnvelope.v1, EventEnvelope.v1 ou demais contratos.
+
+A responsabilidade pertence à I00-FEAT-003.
+
+### 15.2 Interface estrutural
+
+A Feature estabelece convenções de localização e organização dos contratos.
+
+### 15.3 Compatibilidade
+
+Mudanças futuras de localização deverão preservar referências ou possuir plano de migração aprovado.
+
+### 15.4 Integração
+
+Os demais componentes deverão consumir contratos pelas interfaces definidas, evitando dependências diretas de detalhes internos de implementação.
+
+---
+
+## 16. Dados e persistência
+
+### 16.1 Persistência operacional
+
+Não aplicável à implementação desta Feature.
+
+### 16.2 Arquivos versionados
+
+A estrutura deverá ser gerenciada por controle de versão.
+
+### 16.3 Configuração
+
+Arquivos de configuração deverão ser organizados sem exposição de segredos.
+
+### 16.4 Migrações de banco
+
+Responsabilidade da I00-FEAT-004.
+
+### 16.5 Auditoria
+
+As alterações no repositório deverão preservar histórico e rastreabilidade.
+
+---
+
+## 17. Estratégia de testes
+
+### 17.1 Testes estruturais
+
+Verificar presença dos diretórios e arquivos obrigatórios.
+
+### 17.2 Testes de organização
+
+Verificar convenções de nomes e localização.
+
+### 17.3 Testes de dependências
+
+Verificar ausência de ciclos e dependências proibidas, conforme regras formalizadas.
+
+### 17.4 Testes de bootstrap
+
+Verificar que a estrutura pode ser inicializada em ambiente limpo.
+
+### 17.5 Testes de segurança
+
+Verificar ausência de credenciais reais e arquivos sensíveis indevidos.
+
+### 17.6 Testes de documentação
+
+Verificar localização, nomenclatura e referências dos documentos.
+
+### 17.7 Testes de regressão
+
+Verificar que alterações estruturais não invalidem importações e interfaces existentes.
+
+### 17.8 Limites
+
+Os testes deverão ocorrer em ambiente controlado.
+
+Nenhum teste deverá executar operações financeiras.
+
+---
+
+## 18. Critérios de aceite da Feature
+
+Os critérios abaixo são propostos para aceite da implementação de I00-FEAT-001.
+
+| ID | Critério | Verificação |
+|---|---|---|
+| FEAT001-AC01 | Estrutura modular criada | Inspeção do repositório |
+| FEAT001-AC02 | Diretórios e responsabilidades identificados | Revisão estrutural |
+| FEAT001-AC03 | Convenções de nomes aplicadas | Verificação automatizada |
+| FEAT001-AC04 | Fronteiras entre módulos preservadas | Análise de dependências |
+| FEAT001-AC05 | Estrutura de testes disponível | Descoberta e inspeção |
+| FEAT001-AC06 | Estrutura documental organizada | Auditoria documental |
+| FEAT001-AC07 | Configurações e segredos separados | Verificação de segurança |
+| FEAT001-AC08 | Bootstrap reproduzível | Execução em ambiente limpo |
+| FEAT001-AC09 | Repositório existente preservado | Revisão de diferenças |
+| FEAT001-AC10 | Evidências e rastreabilidade disponíveis | Evidence Bundle |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+Esses critérios contribuem para os critérios do TS-EP-01 e do I00, sem substituí-los.
+
+---
+
+## 19. Segurança e governança
+
+### 19.1 Segregação
+
+A estrutura deverá permitir segregação TRAINING/PAPER/LIVE.
+
+### 19.2 LIVE
+
+Nenhum componente do I00 poderá acessar LIVE.
+
+### 19.3 Segredos
+
+Credenciais não deverão ser armazenadas em arquivos versionados.
+
+### 19.4 Autoridade
+
+A estrutura não poderá estabelecer caminhos que permitam bypass de Control → Risk → Execution.
+
+### 19.5 Agentes
+
+O Codex deverá respeitar AGENTS.md, baselines aprovadas e permissões do workspace.
+
+### 19.6 Alterações
+
+Mudanças normativas deverão seguir Change Control.
+
+### 19.7 Preservação
+
+Arquivos existentes não deverão ser removidos ou sobrescritos sem análise e autorização.
+
+---
+
+## 20. Observabilidade
+
+Esta Feature não implementará a telemetria operacional completa.
+
+Deverá, porém, estabelecer locais e convenções que permitam:
+
+- Configuração de logs.
+- Instrumentação.
+- Organização de diagnósticos.
+- Identificação de builds.
+- Armazenamento de relatórios de testes.
+- Referências a evidências.
+
+A implementação da observabilidade pertence à I00-FEAT-010.
+
+---
+
+## 21. Evidências esperadas
+
+| Evidence | Descrição |
+|---|---|
+| EV-FEAT001-01 | Inventário da estrutura |
+| EV-FEAT001-02 | Relatório de convenções |
+| EV-FEAT001-03 | Relatório de dependências |
+| EV-FEAT001-04 | Resultado do bootstrap |
+| EV-FEAT001-05 | Verificação de segurança |
+| EV-FEAT001-06 | Auditoria documental |
+| EV-FEAT001-07 | Revisão de diferenças |
+| EV-FEAT001-08 | Manifesto de integridade |
+
+Os identificadores são referências propostas para planejamento e deverão ser reconciliados com a convenção aprovada de Evidence Bundle antes de uso formal.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência foi produzida ou validada.
+
+---
+
+## 22. Riscos e lacunas
+
+| Referência | Risco ou lacuna | Tratamento |
+|---|---|---|
+| DOC-GAP-003 | ADRs individuais não verificadas | Conferir registros |
+| DOC-GAP-004 | ADRs técnicas não formalizadas integralmente | Recuperar textos |
+| DOC-GAP-005 | Rastreabilidade incompleta | Validar vínculos |
+| DOC-GAP-006 | Histórias e Features em refinamento | Especificar artefatos |
+| DOC-GAP-007 | Estado real do repositório desconhecido | Auditar antes de alterar |
+| DOC-GAP-008 | Owners e referências pendentes | Designar responsáveis |
+
+A classificação de bloqueio deverá respeitar o Gap Register.
+
+Nenhuma lacuna será encerrada pela simples aprovação deste documento.
+
+---
+
+## 23. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. Estrutura proposta estiver validada.
+3. Estado real do repositório estiver inspecionado.
+4. ADRs aplicáveis estiverem identificadas.
+5. Componentes responsáveis estiverem confirmados.
+6. A história TS-ST-001 estiver refinada e aprovada, caso seu vínculo seja confirmado.
+7. Dependências bloqueantes estiverem resolvidas.
+8. Critérios de aceite estiverem testáveis.
+9. Estratégia de testes estiver definida.
+10. Owners e responsabilidades estiverem registrados.
+11. Riscos e restrições estiverem avaliados.
+12. A revisão documental estiver registrada.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação da especificação não altera automaticamente esse estado.
+
+---
+
+## 24. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- A estrutura estiver implementada.
+- Os critérios FEAT001-AC01–10 estiverem atendidos.
+- Os testes obrigatórios tiverem sido executados.
+- As fronteiras arquiteturais estiverem preservadas.
+- O repositório existente tiver sido tratado sem alterações destrutivas não autorizadas.
+- As verificações de segurança estiverem concluídas.
+- As evidências estiverem registradas e validadas.
+- A rastreabilidade estiver atualizada.
+- As lacunas bloqueantes estiverem resolvidas.
+- A aprovação competente estiver registrada.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite desta Feature não implica aceite do TS-EP-01, I00 ou G0.
+
+---
+
+## 25. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-01 → I00-FEAT-001 → TS-ST-001 → Teste → Evidência**
+
+Contratos deverão ser relacionados quando efetivamente aplicáveis.
+
+### 25.1 Estados iniciais
+
+- Epic Link: VERIFIED documentalmente pelo catálogo aprovado.
+- Work Package Link: VERIFIED documentalmente pelo catálogo aprovado.
+- Story Link: PROPOSED.
+- ADR Links: UNVERIFIED.
+- Component Links: UNVERIFIED.
+- Requirement Links: UNVERIFIED.
+- Test Links: PLANNED.
+- Evidence Links: PLANNED.
+
+O estado VERIFIED documentalmente indica confirmação da relação nos documentos aprovados, não comprovação de implementação.
+
+---
+
+## 26. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-16 | PENDING | Especificação inicial Monorepo Bootstrap | PENDING |
+
+---
+
+## 27. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-001 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEAT-002.md
+
+**Restriction:** não avançar antes da aprovação desta Feature.
+
+## 28. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/I00-FEAT-001/IN-REVIEW.txt) está arquivado. A especificação permanece **IN_REVIEW**, com aprovação **PENDING**.
+
+A seção 21 descreve as evidências planejadas para esta especificação. A [evidência histórica de bootstrap](../evidence/I00-bootstrap.md) e o [registro mestre de I00](../backlog/registro-mestre-i00.md) documentam verificações do pacote I00-01. O aceite da implementação da Feature permanece pendente. [G0](../governance/G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.

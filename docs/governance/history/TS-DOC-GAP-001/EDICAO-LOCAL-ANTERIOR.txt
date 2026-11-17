@@ -1,0 +1,25 @@
+# Gap Register — lacunas e decisões pendentes
+
+**Estado:** DRAFT · **Corte:** 16/11/2026 · **Escopo:** bloqueios de I00/G0 e lacunas documentais preservadas
+
+## Bloqueios para submeter G0 a aceite
+
+O usuário aprovou a classificação destes itens como bloqueantes em 16/11/2026. O fechamento de cada item segue pendente. [Decisão](APPROVAL-REGISTER.md) · [Validações de Engenharia](G0-REVIEW-DOSSIER.md#validações-pendentes-de-engenharia-para-g0)
+
+| Referência | Situação comprovada | O que falta e quem atua |
+|---|---|---|
+| DOC-06 · I00-AC02 | Repetição PostgreSQL por digest passou em 38 testes para d561026. Triagem da imagem e inventário estático Linux parciais. | Engenharia completa disposição dos achados da imagem, prova seleção e carregamento de componentes nativos no runner e captura versões efetivas, resolução de build isolado, avisos, hashes e logs de wheel/sdist. QA confere identidade e Segurança decide correções ou exceções. [Retorno](../evidence/AC02-d561026-retorno-engenharia.md) |
+| DOC-04 · I00-AC07 | Política aprovada. O candidato local 184e8b3 tem 153 testes em PostgreSQL 17.11 e inclui a correção de event_id divergente. Pré-checagem de legados validada com fixture. | Engenharia e donos dos produtores confirmam cardinalidade e fonte autoritativa. Administração do banco e QA identificam snapshot autorizado anterior à migração 0016, executam a pré-checagem somente leitura e registram eventual reconciliação. Revisar controles de operação e parâmetros testados da política. Engenharia e QA emitem parecer e submetem ao aceite humano. [Dossiê](G0-REVIEW-DOSSIER.md) · [Parâmetros](../evidence/AC07-parametros-operacionais.md) |
+| DOC-05 · I00-AC09 | Definições aprovadas. Coletor validado em integração com 146 testes registrados no snapshot do ensaio. | Engenharia e QA vinculam ou repetem o ensaio no candidato submetido, demonstram a duração desde a detecção do bloqueio e apresentam frequência, janela, limiares, retenção, tratamento de timestamps e responsáveis para decisão. [DOC-05](DOC-05-OUTBOX-METRICS.md) · [Evidência](../evidence/AC09-coletor-outbox.md) |
+| G0 · DOC-07 · AC12 | I00-14 e bundle RC1 aceitos no recorte original, com oito hashes conferidos na recuperação. | Identificar o candidato submetido a G0 e consolidar evidências e ressalvas de I00–I04 no escopo da decisão. Explicitar o que pode ser reutilizado por versão/ambiente e o que exige repetição. Registrar a decisão humana em ata. [DOC-07](DOC-07-RC1-ACCEPTANCE.md) · [Dossiê](G0-REVIEW-DOSSIER.md) |
+
+## Lacunas de documentação e fontes para revisão
+
+| Referência | Lacuna preservada | Encaminhamento |
+|---|---|---|
+| Contratos de I00 | OpenAPI em runtime e propostas ErrorEnvelope.v1, HealthStatus.v1 e OutboxRecord.v1. A obrigação de publicar cada artefato individual depende de decisão. | Confirmar o recorte do catálogo mínimo já aprovado e apontar a decisão por artefato se aplicável. [Contratos](../03-CONTRATOS.md) |
+| TS-ADR-089–098 | Decisões aprovadas, com resumos e fonte original. Campos de fichas individuais ainda exigem conferência por ID. | Fornecer registros específicos quando disponíveis ou autorizar fichas retrospectivas com indicação explícita dos campos sem fonte. [Reconciliação](ADR-RECONCILIATION.md) |
+| DOC-01–03 | Reconciliação de IDs disponível. Permanecem vínculos sem fonte e responsáveis nominais. P18 segue M3 provisório. | Decidir P18 separadamente e indicar fontes/owners para os vínculos identificados. [Ressalvas](RECONCILIATION-DECISIONS.md) · [DOC-03](DOC-03-CONSOLIDATION.md) |
+| Demais lacunas históricas | A recuperação trouxe novas fontes e resultados após a primeira auditoria. | Consultar o [levantamento histórico](DOCUMENT-GAP-ANALYSIS.md) e a [recuperação](SOURCE-RECOVERY.md). Confirmar impacto antes de classificar uma lacuna documental como bloqueio de G0. |
+
+LIVE permanece indisponível.

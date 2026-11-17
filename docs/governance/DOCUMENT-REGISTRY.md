@@ -1,0 +1,241 @@
+# DOCUMENT-REGISTRY.md
+## TRADE SYSTEM V1 — Master Document Registry
+
+**Document ID:** TS-DOC-REG-001  
+**Version:** 1.0  
+**Status:** APPROVED  
+**Domain:** GLOBAL / D07  
+**Increment:** I00–I09  
+**Owner:** Architecture & Documentation Governance  
+**Governing Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Approval Reference:** [16/11/2026 · R01–R10 aprovadas sem ressalvas](history/TS-DOC-REG-001/APPROVAL.md)  
+**Source References:** [TS-DOC-STD-V1.0](TS-DOC-STD-V1.0.md), [originais TXT](../referencias/originais/) e [texto submetido](history/TS-DOC-REG-001/IN-REVIEW.txt)  
+**Related ADRs:** ADR-001–088 e TS-ADR-089–098, conforme seção 7  
+**Related Components:** catálogo global, com vínculos de implementação na [Traceability Matrix](REQUIREMENTS-TRACEABILITY-MATRIX.md)  
+**Related Requirements/Pendências:** P01–P106 e DOC-GAP-001–008, conforme seções 8 e 11  
+**Dependencies:** padrão documental, baselines de referência e [inventário anterior](history/TS-DOC-REG-001/INVENTARIO-ANTERIOR.md)  
+**Acceptance Criteria:** seção 13  
+**Last Updated:** 2026-11-16
+
+---
+
+## 1. Objetivo
+
+Manter o inventário central de documentos do TRADE SYSTEM V1, registrando identificação, localização, versão, aprovação, integridade, dependências e necessidade de revisão.
+
+O Document Registry será a referência para verificar a prontidão documental de cada incremento, de I00 a I09.
+
+## 2. Escopo
+
+O registro contempla:
+
+- Baselines arquiteturais e técnicas.
+- Documentos dos sete domínios.
+- Architecture Decision Records (ADRs).
+- Incrementos, épicos, Features e histórias técnicas.
+- Requisitos e pendências.
+- Contratos e modelos de dados.
+- Estratégias, especificações e resultados de testes.
+- Evidências e registros de homologação.
+- Documentos de segurança e operação.
+- Documentação de governança.
+
+## 3. Modelo de registro
+
+Cada documento deverá possuir os seguintes campos:
+
+| Campo | Descrição |
+|---|---|
+| Document ID | Identificador único e imutável |
+| Document Name | Nome oficial |
+| File Path | Localização no repositório |
+| Version | Versão do documento |
+| Status | Estado documental |
+| Domain | Domínio responsável |
+| Increment | Incremento relacionado |
+| Owner | Responsável funcional |
+| Source References | Documentos e decisões de origem |
+| Related ADRs | ADRs relacionadas |
+| Related Components | Componentes relacionados |
+| Related Requirements | Pendências e requisitos |
+| Dependencies | Dependências documentais |
+| Acceptance Criteria | Critérios de completude |
+| Approval Reference | Referência da aprovação |
+| Last Updated | Data da última revisão |
+| File Verification | Verificação de existência e integridade |
+| Gap Reference | Lacuna associada, quando houver |
+
+Os campos poderão ser representados em Markdown ou em um catálogo estruturado, desde que exista uma única fonte autoritativa.
+
+## 4. Estados documentais
+
+- **MISSING:** documento obrigatório ainda não encontrado ou não criado.
+- **DRAFT:** documento em elaboração.
+- **IN_REVIEW:** documento submetido à revisão.
+- **APPROVED:** documento aprovado por autoridade definida.
+- **SUPERSEDED:** documento substituído por versão posterior.
+
+A verificação do arquivo será registrada separadamente como:
+
+- **VERIFIED:** arquivo encontrado, legível e associado à versão esperada.
+- **UNVERIFIED:** arquivo ainda não inspecionado.
+- **MISMATCH:** arquivo encontrado, mas divergente da versão ou conteúdo esperado.
+
+Essas condições não substituem os estados documentais.
+
+## 5. Inventário das baselines
+
+| ID | Documento | Aprovação conhecida | Arquivo |
+|---|---|---|---|
+| TS-ARCH-GLOBAL-V1.0 | Architecture & MVP Blueprint | APPROVED | UNVERIFIED |
+| TS-ENG-I00-V1.0 | Engineering Foundation | APPROVED | UNVERIFIED |
+| TS-DOC-STD-V1.0 | Documentation & Traceability Standard | APPROVED | UNVERIFIED |
+| TS-DOC-REG-001 | Document Registry | APPROVED | VERIFIED · versão 1.0 |
+
+As aprovações acima foram registradas no processo de validação do projeto. A correspondência com os arquivos presentes no repositório deverá ser auditada.
+
+## 6. Inventário dos domínios
+
+| ID | Documento | ADRs | Status da referência |
+|---|---|---|---|
+| TS-ARCH-D01-V1.0 | Market Data & Features | 001–006 | Consolidação disponível; integralidade não verificada |
+| TS-ARCH-D02-V1.0 | AI & Learning | 007–016 | Consolidação disponível; integralidade não verificada |
+| TS-ARCH-D03-V1.0 | Risk, Execution & Control | 017–028 | Consolidação disponível; integralidade não verificada |
+| TS-ARCH-D04-V1.0 | Operations & Observability UI | 029–040 | Consolidação disponível; integralidade não verificada |
+| TS-ARCH-D05-V1.0 | Data, Events & Audit | 041–054 | Consolidação disponível; integralidade não verificada |
+| TS-ARCH-D06-V1.0 | Infrastructure, Security & DevOps | 055–070 | Consolidação disponível; integralidade não verificada |
+| TS-ARCH-D07-V1.0 | Engineering, Quality & Validation | 071–088 | Consolidação disponível; integralidade não verificada |
+
+Os sete domínios foram aprovados arquiteturalmente. Os documentos consolidados anteriormente não devem ser considerados transcrições integrais das ADRs e pendências originais sem verificação.
+
+## 7. Inventário das ADRs
+
+| Grupo | Quantidade | Situação |
+|---|---:|---|
+| ADR-001–088 | 88 | Decisões arquiteturais aprovadas; textos individuais a verificar |
+| TS-ADR-089–098 | 10 | Decisões técnicas aprovadas; registros individuais a formalizar/verificar |
+| **Total** | **98** | **Aprovações registradas** |
+
+Cada ADR deverá possuir registro individual ou referência inequívoca a uma fonte autoritativa, incluindo contexto, decisão, alternativas, consequências, status e aprovação.
+
+Não deverão ser criados textos históricos presumidos para ADRs cujo conteúdo original não esteja disponível.
+
+## 8. Inventário do planejamento
+
+| Artefato | Quantidade | Situação |
+|---|---:|---|
+| Incrementos I00–I09 | 10 | Roadmap aprovado |
+| Épicos TS-EP-01–14 | 14 | Catálogo aprovado |
+| Histórias TS-ST-001–024 | 24 | Backlog inicial aprovado |
+| Pendências P01–P106 | 106 | Classificação aprovada; reconciliação pendente |
+| Fluxos F01–F10 | 10 | Definição lógica aprovada |
+| Gates G0–G5 | 6 | Governança aprovada; execução pendente |
+
+As Features ainda precisam ser identificadas e formalizadas no refinamento dos incrementos.
+
+## 9. Catálogo documental obrigatório do I00
+
+| ID | Documento | Prioridade | Situação inicial |
+|---|---|---|---|
+| I00-DOC-001 | I00 Increment Specification | Obrigatória | A formalizar |
+| I00-DOC-002 | TS-EP-01 Specification | Obrigatória | A detalhar |
+| I00-DOC-003 | TS-EP-02 Specification | Obrigatória | A detalhar |
+| I00-DOC-004 | I00 Feature Catalog | Obrigatória | A criar |
+| I00-DOC-005 | Technical Story Specifications | Obrigatória | A refinar |
+| I00-DOC-006 | Physical Architecture Specification | Obrigatória | A formalizar |
+| I00-DOC-007 | Contract Specifications v1 | Obrigatória | Exemplos existentes; schemas pendentes |
+| I00-DOC-008 | Data & Outbox Design | Obrigatória | A especificar |
+| I00-DOC-009 | Environment & Security Specification | Obrigatória | A especificar |
+| I00-DOC-010 | Test Strategy & Acceptance Criteria | Obrigatória | Critérios definidos; formalização pendente |
+| I00-DOC-011 | Traceability Matrix I00 | Obrigatória | A criar |
+| I00-DOC-012 | Evidence Bundle I00 | Obrigatória para aceite | Evidências ainda não produzidas |
+
+Os IDs I00-DOC-001–012 constituem a proposta inicial de catálogo documental e deverão ser confirmados antes da publicação definitiva.
+
+Documentos podem ser consolidados quando isso não prejudicar a rastreabilidade. A existência de doze registros não exige necessariamente doze arquivos separados.
+
+## 10. Inventário de evidências
+
+Nenhum gate G0–G5 foi homologado.
+
+As evidências deverão ser registradas progressivamente, incluindo:
+
+- Identificação do build.
+- Commit e versões de dependências.
+- Contratos aplicáveis.
+- Testes executados.
+- Resultados e métricas.
+- Ambiente de execução.
+- Defeitos e exceções.
+- Referências de aprovação.
+- Manifesto de integridade.
+
+O registro de uma evidência planejada não poderá ser confundido com uma evidência produzida.
+
+## 11. Lacunas documentais conhecidas
+
+| Gap ID | Descrição | Impacto |
+|---|---|---|
+| DOC-GAP-001 | Recuperar e reconciliar descrições originais P01–P47 | Rastreabilidade |
+| DOC-GAP-002 | Confirmar escopo e classificação de P18 | Planejamento |
+| DOC-GAP-003 | Verificar integralidade das ADR-001–088 | Conformidade arquitetural |
+| DOC-GAP-004 | Formalizar registros individuais TS-ADR-089–098 | Engenharia I00 |
+| DOC-GAP-005 | Completar vínculos entre ADRs, componentes, pendências e backlog | Rastreabilidade |
+| DOC-GAP-006 | Formalizar Features e histórias do I00 | Documentation Readiness |
+| DOC-GAP-007 | Verificar arquivos e versões efetivamente presentes no repositório | Integridade documental |
+| DOC-GAP-008 | Definir owners nominais e referências formais de aprovação | Governança |
+
+A criticidade definitiva e o caráter bloqueante de cada lacuna deverão ser estabelecidos no Gap Register, considerando o incremento afetado.
+
+## 12. Regras de atualização
+
+1. Todo novo documento normativo deverá ser registrado.
+2. IDs existentes não poderão ser reutilizados.
+3. Alterações materiais deverão gerar revisão versionada.
+4. Aprovações deverão possuir referência verificável.
+5. Documentos substituídos deverão preservar seu histórico.
+6. Arquivos não encontrados deverão permanecer UNVERIFIED ou MISSING, conforme aplicável.
+7. O Codex poderá propor atualizações, mas não aprová-las automaticamente.
+8. Divergências entre documentos deverão ser registradas como lacunas.
+9. Mudanças em contratos deverão identificar histórias e testes impactados.
+10. O registro deverá ser atualizado antes do aceite de cada incremento.
+
+## 13. Critérios de aceite do Document Registry
+
+O registro será considerado pronto quando:
+
+- As baselines conhecidas estiverem catalogadas.
+- Os sete domínios estiverem identificados.
+- As 98 ADRs estiverem contabilizadas sem duplicação.
+- Os 10 incrementos e 14 épicos estiverem referenciados.
+- As 24 histórias iniciais estiverem contabilizadas.
+- As 106 pendências estiverem referenciadas.
+- Os estados e metadados seguirem TS-DOC-STD-V1.0.
+- As lacunas documentais estiverem identificadas.
+- A distinção entre aprovação e verificação física estiver preservada.
+- O catálogo inicial do I00 estiver definido.
+- Nenhuma evidência inexistente for declarada concluída.
+- As restrições de segurança e LIVE forem mantidas.
+
+---
+
+**Status:** APPROVED  
+**Approval Reference:** [16/11/2026 · R01–R10 aprovadas sem ressalvas](history/TS-DOC-REG-001/APPROVAL.md)  
+**Próximo documento:** GAP-REGISTER.md  
+**Próxima etapa:** aguardar instrução para revisar o Gap Register.
+
+## 14. Verificação no checkout oficial e histórico
+
+A versão **1.0** foi aprovada em 16/11/2026. O histórico preserva o [texto submetido](history/TS-DOC-REG-001/IN-REVIEW.txt), a [revisão local antes da aprovação](history/TS-DOC-REG-001/REVISAO-LOCAL-IN-REVIEW.txt), o [inventário anterior](history/TS-DOC-REG-001/INVENTARIO-ANTERIOR.md) e o [bloco recebido durante a revisão](history/TS-DOC-REG-001/TEXTO-DE-APROVACAO-RECEBIDO.md).
+
+| Referência | Situação observada no checkout |
+|---|---|
+| Baselines e padrão | Blueprint, Engineering Foundation e os sete domínios estão localizados em [originais TXT](../referencias/originais/). O [padrão aprovado](TS-DOC-STD-V1.0.md) está presente. Localização e legibilidade são registradas separadamente da conferência integral de versão, integridade e conteúdo. |
+| I00-DOC-007 · contratos | Há schemas versionados para CommandEnvelope v1 e EventEnvelope v1 e exemplos vinculados. A publicação dos contratos complementares continua sujeita à decisão já registrada. [Contratos](../03-CONTRATOS.md) · [Lacunas](GAP-REGISTER.md) |
+| I00-DOC-011 · rastreabilidade | A [matriz de requisitos](REQUIREMENTS-TRACEABILITY-MATRIX.md) e a [matriz DOC-03 de I00](DOC-03-I00-TRACEABILITY.md) existem. Os vínculos incompletos seguem registrados. |
+| I00-DOC-012 · evidência | O [Evidence Bundle I00 RC1](DOC-07-RC1-ACCEPTANCE.md) tem aceite registrado no escopo de I00-14 e AC12. O [dossiê G0](G0-REVIEW-DOSSIER.md) continua em revisão. |
+| DOC-GAP-001 e DOC-GAP-002 | As descrições e fases estão vinculadas às fontes na [reconciliação de P01–P106](PENDING-ITEM-RECONCILIATION.md). As [ressalvas](RECONCILIATION-DECISIONS.md) permanecem registradas, incluindo P18 em M3 provisório. |
+
+LIVE permanece indisponível.

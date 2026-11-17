@@ -1,0 +1,1229 @@
+# I00-FEAT-012.md
+## TRADE SYSTEM V1 — Documentation & Traceability
+
+**Document ID:** I00-FEAT-012  
+**Document Type:** Feature Specification  
+**Version:** 1.0.0-draft.1  
+**Status:** IN_REVIEW  
+**Work Status:** IDENTIFIED  
+**Increment:** I00 — Engineering Foundation  
+**Work Package:** I00-12  
+**Primary Epic:** TS-EP-01 — Engineering Foundation  
+**Primary Domain:** D07 — Engineering, Quality & Validation  
+**Supporting Domains:** D01–D06, conforme ownership  
+**Functional Owner:** Engineering Governance  
+**Technical Owner:** TBD  
+**Documentation Owner:** TBD  
+**QA Owner:** TBD  
+**Architecture Baseline:** TS-ARCH-GLOBAL-V1.0 — APPROVED  
+**Engineering Baseline:** TS-ENG-I00-V1.0 — APPROVED  
+**Increment Baseline:** TS-INC-I00-001 / V1.0 — APPROVED  
+**Epic Baseline:** TS-EP-01 / V1.0 — APPROVED  
+**Feature Catalog:** TS-I00-FEAT-CAT-001 / V1.0 — APPROVED  
+**Documentation Standard:** TS-DOC-STD-V1.0 — APPROVED  
+**Feature Template:** TS-DOC-TPL-FEAT-001 — APPROVED  
+**Approval Reference:** PENDING  
+**Domain:** D07, com apoio de D01–D06 conforme responsabilidade.  
+**Owner:** Engineering Governance, conforme responsabilidade funcional acima.  
+**Source References:** [anexo original](../governance/history/I00-FEAT-012/IN-REVIEW.txt), [TS-DOC-STD-V1.0](../governance/TS-DOC-STD-V1.0.md) e [fontes oficiais](../referencias/originais/)  
+**Related ADRs:** referências da seção 2.  
+**Related Components:** seção 2 e [matriz DOC-03 I00](../governance/DOC-03-I00-TRACEABILITY.md).  
+**Related Requirements/Pendências:** AC11 e referências das seções 22, 24 e 27.  
+**Dependencies:** [catálogo I00](../increments/I00-FEATURE-CATALOG.md), [TS-EP-01](../epics/TS-EP-01.md), [template de Feature](../governance/templates/FEATURE-TEMPLATE.md) e dependências da seção 20.  
+**Acceptance Criteria:** seções 22, 25 e 26, conforme o objeto avaliado.  
+**Last Updated:** 2026-11-17
+
+---
+
+## 1. Objetivo
+
+### 1.1 Objetivo principal
+
+Estabelecer uma capacidade verificável de organização documental, controle de baselines, gestão de lacunas e rastreabilidade bidirecional entre decisões arquiteturais, requisitos, componentes, entregáveis, testes, evidências e aprovações do TRADE SYSTEM V1.
+
+### 1.2 Necessidade atendida
+
+A arquitetura aprovada possui múltiplos domínios, componentes, decisões, requisitos e incrementos.
+
+Sem governança documental integrada, podem ocorrer:
+
+- Documentos sem identificação ou versão.
+- Requisitos sem implementação correspondente.
+- Componentes sem decisão arquitetural rastreável.
+- Critérios de aceite sem testes.
+- Testes sem requisito de origem.
+- Evidências sem identificação de execução.
+- Aprovações sem referência à versão aprovada.
+- Mudanças sem análise de impacto.
+- Lacunas tratadas como resolvidas sem comprovação.
+- Divergência entre documentação e repositório.
+- Declarações incorretas de readiness ou aceite.
+
+### 1.3 Resultado demonstrável
+
+Ao final da implementação, deverá ser possível:
+
+1. Localizar os documentos normativos aplicáveis.
+2. Identificar suas versões e estados.
+3. Consultar a baseline documental vigente.
+4. Navegar pelos vínculos de rastreabilidade.
+5. Identificar vínculos ausentes ou inválidos.
+6. Registrar e acompanhar lacunas.
+7. Associar testes aos critérios de aceite.
+8. Associar evidências às execuções verificáveis.
+9. Rastrear aprovações e alterações.
+10. Detectar divergências entre referências documentais.
+11. Produzir relatórios de completude.
+12. Preparar informações verificáveis para a avaliação de G0.
+
+### 1.4 Declaração da Feature
+
+**Como** responsável pela engenharia e governança do TRADE SYSTEM V1,  
+**quero** documentação versionada e rastreabilidade verificável,  
+**para** controlar a evolução do sistema e impedir declarações de conformidade sem sustentação técnica.
+
+---
+
+## 2. Contexto arquitetural
+
+### 2.1 Baselines principais
+
+- TS-ARCH-GLOBAL-V1.0.
+- TS-ENG-I00-V1.0.
+- TS-INC-I00-001 / V1.0.
+- TS-EP-01 / V1.0.
+- TS-EP-02 / V1.0.
+- TS-I00-FEAT-CAT-001 / V1.0.
+- I00-FEAT-001–011 / V1.0.
+
+As baselines anteriores estão aprovadas documentalmente nesta conversa, sem comprovação de publicação no repositório.
+
+### 2.2 Artefatos de governança aprovados
+
+| Document ID | Artefato | Responsabilidade |
+|---|---|---|
+| TS-DOC-STD-V1.0 | Documentation & Traceability Standard | Padrões normativos |
+| TS-DOC-REG-001 | DOCUMENT-REGISTRY.md | Inventário documental |
+| TS-DOC-GAP-001 | GAP-REGISTER.md | Gestão de lacunas |
+| TS-DOC-TRC-001 | TRACEABILITY-MATRIX.md | Vínculos de rastreabilidade |
+| TS-DOC-APR-001 | APPROVAL-REGISTER.md | Decisões e aprovações |
+| TS-DOC-CHG-001 | CHANGE-LOG.md | Histórico de alterações |
+| TS-DOC-GOV-AGENT-001 | TS-DOC-GOV-AGENT-SPEC.md | Governança documental assistida |
+
+### 2.3 Templates aprovados
+
+- Increment Template.
+- Epic Template.
+- Feature Template.
+- Story Template.
+- Contract Template.
+- Test Specification Template.
+- Evidence Bundle Template.
+- Gate Checklist Template.
+
+Cada documento deverá utilizar o template aplicável ou registrar exceção formalmente autorizada.
+
+### 2.4 Inventário arquitetural
+
+A arquitetura possui, conforme a baseline registrada:
+
+- 7 domínios: D01–D07.
+- 33 componentes lógicos.
+- 88 ADRs arquiteturais.
+- 10 ADRs técnicas adicionais: TS-ADR-089–098.
+- 106 pendências técnicas: P01–P106.
+- 10 fluxos: F01–F10.
+- 14 épicos.
+- 24 histórias iniciais.
+- 10 incrementos: I00–I09.
+- 6 gates: G0–G5.
+
+A existência dos identificadores não comprova que seus textos originais tenham sido integralmente recuperados e reconciliados.
+
+### 2.5 Estado das fontes
+
+Os textos normativos individuais ainda não recuperados deverão permanecer identificados como UNVERIFIED ou SOURCE_MISSING, conforme o padrão aplicável.
+
+Não será permitido reconstruir decisões ou requisitos originais por inferência e apresentá-los como verificados.
+
+---
+
+## 3. Escopo
+
+### 3.1 Incluído
+
+- Organização do acervo documental.
+- Convenções de identificação.
+- Controle de versões e estados.
+- Registro de baselines.
+- Registro de ownership.
+- Validação de referências.
+- Matriz de rastreabilidade.
+- Gestão de lacunas.
+- Gestão de aprovações.
+- Registro de alterações.
+- Análise de impacto documental.
+- Verificação de completude.
+- Verificação de consistência.
+- Integração com testes e evidências.
+- Integração com CI/CD.
+- Preparação documental para G0.
+- Relatórios de conformidade.
+- Testes de governança documental.
+
+### 3.2 Excluído
+
+- Implementação dos componentes financeiros.
+- Execução de ordens.
+- Treinamento de agentes PPO.
+- Aprovação automática de documentos.
+- Encerramento automático de lacunas.
+- Alteração unilateral de ADRs.
+- Reinterpretação de decisões aprovadas.
+- Homologação automática de Features.
+- Aprovação automática de G0.
+- Ativação de LIVE.
+
+### 3.3 Fronteiras
+
+**I00-FEAT-012:** mantém a consistência documental e os vínculos.
+
+**I00-FEAT-011:** executa verificações automatizadas no CI/CD.
+
+**I00-FEAT-013:** executa testes de falha e recuperação.
+
+**I00-FEAT-014:** consolida evidências e prepara a avaliação de G0.
+
+O mecanismo documental não poderá substituir os responsáveis técnicos, os aprovadores ou os registros autoritativos de execução.
+
+---
+
+## 4. Organização do repositório documental
+
+### 4.1 Estrutura conceitual
+
+A organização deverá respeitar a estrutura do monorepo aprovada na FEAT-001.
+
+```text
+docs/
+├── architecture/
+├── engineering/
+├── governance/
+├── increments/
+├── epics/
+├── features/
+├── stories/
+├── contracts/
+├── tests/
+├── evidence/
+└── runbooks/
+
+AGENTS.md
+```
+
+**Structure Status:** PROPOSED / NOT_INSPECTED.
+
+### 4.2 Localização
+
+Cada documento deverá possuir localização canônica.
+
+### 4.3 Referências
+
+Referências internas deverão apontar para documentos identificáveis e versões apropriadas.
+
+### 4.4 Duplicidade
+
+Cópias não controladas de documentos normativos deverão ser evitadas.
+
+### 4.5 Fonte autoritativa
+
+O Registry deverá identificar a localização da versão autoritativa.
+
+### 4.6 Histórico
+
+Versões anteriores deverão permanecer rastreáveis conforme a política aprovada.
+
+### 4.7 Integridade
+
+A integridade dos artefatos deverá ser verificável quando exigida.
+
+---
+
+## 5. Identificação, versionamento e estados
+
+### 5.1 Identificação
+
+Cada artefato deverá possuir Document ID estável.
+
+### 5.2 Versão
+
+A versão deverá ser explícita.
+
+### 5.3 Estado
+
+O estado deverá representar a condição documental real.
+
+### 5.4 Draft
+
+Uma versão em elaboração não poderá ser apresentada como aprovada.
+
+### 5.5 In Review
+
+Um documento em revisão deverá preservar as decisões pendentes.
+
+### 5.6 Approved
+
+A aprovação deverá estar vinculada à versão específica e ao registro correspondente.
+
+### 5.7 Superseded
+
+Uma versão substituída deverá manter referência à sua sucessora e ao histórico.
+
+### 5.8 Retired
+
+Documentos retirados deverão preservar justificativa e histórico quando aplicável.
+
+### 5.9 Estado de implementação
+
+A aprovação documental não deverá alterar automaticamente o estado de implementação.
+
+### 5.10 Estado de Gate
+
+Nenhum documento poderá declarar Gate aprovado sem decisão formal correspondente.
+
+A taxonomia definitiva deverá seguir o padrão TS-DOC-STD-V1.0; as descrições acima não substituem seu texto normativo.
+
+---
+
+## 6. Document Registry
+
+### 6.1 Objetivo
+
+Manter inventário controlado dos artefatos documentais.
+
+### 6.2 Informações mínimas
+
+O registro deverá permitir identificar:
+
+- Document ID.
+- Título.
+- Tipo.
+- Versão.
+- Estado.
+- Owner.
+- Localização canônica.
+- Baseline.
+- Data de atualização.
+- Referência de aprovação.
+- Documentos relacionados.
+
+### 6.3 Inclusão
+
+Novos artefatos deverão ser registrados conforme o fluxo aprovado.
+
+### 6.4 Atualização
+
+Alterações de versão, estado e localização deverão manter histórico.
+
+### 6.5 Consistência
+
+O Registry não poderá apontar para uma versão inexistente ou não verificada como se estivesse disponível.
+
+### 6.6 Aprovações da conversa
+
+As baselines aprovadas nesta conversa deverão ser tratadas como registros documentais a sincronizar com o repositório.
+
+Não será presumido que essa sincronização já ocorreu.
+
+---
+
+## 7. Traceability Matrix
+
+### 7.1 Objetivo
+
+Permitir rastreabilidade bidirecional entre origem normativa, implementação, validação e evidência.
+
+### 7.2 Cadeia de referência
+
+**ADR → Componente → Pendência/Requisito → Épico → Feature → História → Contrato → Teste → Evidência → Aprovação**
+
+A aplicabilidade de cada nó dependerá da natureza do requisito.
+
+### 7.3 Direção descendente
+
+Deverá permitir identificar como um requisito aprovado é realizado e validado.
+
+### 7.4 Direção ascendente
+
+Deverá permitir identificar a origem normativa de uma implementação, teste ou evidência.
+
+### 7.5 Identidade
+
+Cada vínculo deverá utilizar identificadores estáveis.
+
+### 7.6 Estado do vínculo
+
+Deverá distinguir:
+
+- PROPOSED.
+- UNVERIFIED.
+- VERIFIED.
+- PENDING.
+- INVALID, quando aplicável.
+
+A taxonomia deverá ser reconciliada com TS-DOC-STD-V1.0.
+
+### 7.7 Fonte
+
+A verificação de um vínculo deverá identificar a fonte consultada.
+
+### 7.8 Vínculos ausentes
+
+Deverão ser registrados como pendências ou lacunas conforme sua criticidade.
+
+### 7.9 Vínculos inválidos
+
+Referências a IDs inexistentes, versões incompatíveis ou artefatos não localizados deverão ser sinalizadas.
+
+### 7.10 Regra de promoção
+
+Nenhum vínculo poderá ser promovido a VERIFIED apenas por coerência aparente.
+
+---
+
+## 8. Gestão de requisitos e critérios
+
+### 8.1 Requisitos
+
+Cada requisito aplicável deverá possuir identidade, fonte e responsável.
+
+### 8.2 Critérios de aceite
+
+Cada critério deverá ser verificável.
+
+### 8.3 Testes
+
+Critérios que exigem comprovação técnica deverão estar associados a testes ou procedimentos de validação aprovados.
+
+### 8.4 Evidências
+
+O resultado de teste deverá possuir evidência identificável.
+
+### 8.5 Resultado inconclusivo
+
+Não poderá ser tratado como PASS.
+
+### 8.6 Ausência de teste
+
+Não poderá ser tratada como requisito atendido.
+
+### 8.7 Critério documental
+
+A aprovação do texto de um critério não significa que ele tenha sido executado.
+
+### 8.8 Cobertura
+
+A completude deverá ser avaliada por vínculos efetivos, não somente por contagem de identificadores.
+
+---
+
+## 9. Gap Register
+
+### 9.1 Objetivo
+
+Manter registro explícito das lacunas que impedem verificação, readiness ou aceite.
+
+### 9.2 Informações necessárias
+
+Cada lacuna deverá permitir identificar:
+
+- Gap ID.
+- Descrição.
+- Origem.
+- Impacto.
+- Artefatos afetados.
+- Owner.
+- Estado.
+- Ação necessária.
+- Dependências.
+- Evidência de resolução.
+- Aprovação de encerramento, quando exigida.
+
+### 9.3 Lacunas existentes
+
+As lacunas DOC-GAP-001–008 permanecem OPEN conforme o registro documental desta sequência.
+
+### 9.4 Encerramento
+
+Uma lacuna somente poderá ser encerrada após comprovação suficiente e procedimento de aprovação aplicável.
+
+### 9.5 Encerramento automático
+
+Não será permitido encerrar lacunas simplesmente porque um documento relacionado foi aprovado.
+
+### 9.6 Reabertura
+
+Uma lacuna poderá exigir reabertura quando sua resolução for invalidada por mudança posterior.
+
+### 9.7 Propagação
+
+Lacunas bloqueantes deverão afetar os estados de readiness e aceite correspondentes.
+
+---
+
+## 10. Approval Register
+
+### 10.1 Objetivo
+
+Preservar as decisões formais sobre versões e artefatos.
+
+### 10.2 Registro
+
+Uma aprovação deverá identificar:
+
+- Artifact ID.
+- Versão.
+- Decisão.
+- Responsável pela decisão.
+- Data.
+- Condições.
+- Referência da aprovação.
+
+### 10.3 Escopo
+
+A aprovação será válida para o artefato e versão identificados.
+
+### 10.4 Alterações posteriores
+
+Mudanças normativas deverão exigir avaliação de impacto e nova aprovação quando aplicável.
+
+### 10.5 Distinção de estados
+
+Deverão permanecer separados:
+
+- Aprovação documental.
+- Documentation Readiness.
+- Implementation Acceptance.
+- Aprovação de Incremento.
+- Aprovação de Gate.
+- Autorização LIVE.
+
+### 10.6 Histórico da conversa
+
+As decisões já registradas nesta conversa poderão fundamentar a sincronização documental, mas não deverão ser apresentadas como registros de repositório previamente verificados.
+
+### 10.7 Autoridade
+
+A automação poderá preparar propostas de registro, mas não substituirá a autoridade de aprovação.
+
+---
+
+## 11. Change Log e controle de mudanças
+
+### 11.1 Objetivo
+
+Preservar o histórico das alterações materiais.
+
+### 11.2 Identificação
+
+Cada mudança deverá possuir referência identificável.
+
+### 11.3 Impacto
+
+Alterações deverão avaliar efeitos sobre:
+
+- ADRs.
+- Componentes.
+- Requisitos.
+- Épicos.
+- Features.
+- Histórias.
+- Contratos.
+- Testes.
+- Evidências.
+- Gates.
+
+### 11.4 Compatibilidade
+
+Mudanças em contratos deverão considerar produtores e consumidores.
+
+### 11.5 Baselines
+
+Uma baseline aprovada não poderá ser alterada silenciosamente.
+
+### 11.6 Histórico
+
+Versões anteriores e decisões relacionadas deverão permanecer rastreáveis.
+
+### 11.7 Exceções
+
+Exceções deverão seguir o procedimento normativo aprovado.
+
+---
+
+## 12. Documentation Readiness
+
+### 12.1 Objetivo
+
+Avaliar se um artefato possui informações suficientes e verificadas para orientar a etapa seguinte.
+
+### 12.2 Verificações
+
+Deverão considerar, conforme aplicabilidade:
+
+- Identificação.
+- Versão.
+- Aprovação.
+- Owner.
+- Escopo.
+- Dependências.
+- ADRs.
+- Componentes.
+- Requisitos.
+- Contratos.
+- Histórias.
+- Critérios.
+- Testes.
+- Evidências esperadas.
+- Lacunas bloqueantes.
+
+### 12.3 Estado
+
+Documentação aprovada poderá permanecer NOT_READY.
+
+### 12.4 Lacunas
+
+Vínculos obrigatórios não verificados deverão impedir readiness quando forem bloqueantes.
+
+### 12.5 Automação
+
+Verificações automatizadas poderão apoiar a avaliação, mas não substituirão a decisão competente.
+
+### 12.6 I00
+
+O estado global de Documentation Readiness permanece NOT_READY.
+
+---
+
+## 13. Integração com testes e evidências
+
+### 13.1 Test Specifications
+
+Os testes deverão possuir identificação e referência aos critérios que verificam.
+
+### 13.2 Execução
+
+Cada resultado deverá identificar a execução correspondente.
+
+### 13.3 Evidence Bundle
+
+As evidências deverão seguir o template aprovado.
+
+### 13.4 Integridade
+
+Artefatos deverão possuir mecanismo de verificação de integridade aplicável.
+
+### 13.5 Reprodutibilidade
+
+Deverão existir informações suficientes para reconstruir o contexto da execução.
+
+### 13.6 Falhas
+
+Resultados FAIL ou INCONCLUSIVE deverão permanecer explícitos.
+
+### 13.7 Evidências ausentes
+
+Não poderão ser substituídas por afirmações documentais.
+
+### 13.8 Fonte
+
+A referência deverá apontar para o artefato de evidência efetivamente produzido.
+
+### 13.9 Limites
+
+A consolidação do Evidence Bundle do I00 pertence à I00-FEAT-014.
+
+---
+
+## 14. Integração com CI/CD
+
+### 14.1 Objetivo
+
+Executar verificações automatizadas de consistência documental.
+
+### 14.2 Verificações propostas
+
+- Identificadores duplicados.
+- Referências quebradas.
+- Documentos sem metadados obrigatórios.
+- Versões incompatíveis.
+- Estados inválidos.
+- Aprovações sem referência.
+- Critérios sem testes exigidos.
+- Testes sem referência normativa.
+- Evidências obrigatórias ausentes.
+- Lacunas bloqueantes não resolvidas.
+- Divergências entre Registry e arquivos.
+- Referências a baselines inexistentes.
+
+### 14.3 Falhas bloqueantes
+
+Violações classificadas como obrigatórias deverão bloquear o resultado correspondente.
+
+### 14.4 Fonte não disponível
+
+Uma referência não verificada deverá permanecer UNVERIFIED ou SOURCE_MISSING, sem promoção automática.
+
+### 14.5 Resultados
+
+As verificações deverão produzir relatórios identificáveis.
+
+### 14.6 Ownership
+
+A FEAT-012 define as verificações documentais; a FEAT-011 executa a integração no CI/CD.
+
+---
+
+## 15. Agente de governança documental
+
+### 15.1 Referência
+
+TS-DOC-GOV-AGENT-SPEC.md — documento aprovado.
+
+### 15.2 Papel
+
+O agente poderá auxiliar na identificação de inconsistências, lacunas e referências.
+
+### 15.3 Atividades permitidas
+
+Conforme suas permissões aprovadas, poderá:
+
+- Inspecionar metadados.
+- Sugerir correções.
+- Identificar referências inválidas.
+- Propor vínculos.
+- Produzir relatórios.
+- Preparar solicitações de revisão.
+
+### 15.4 Limitações
+
+Não poderá:
+
+- Inventar ADRs ou requisitos originais.
+- Declarar fontes não inspecionadas como verificadas.
+- Aprovar documentos autonomamente.
+- Encerrar lacunas sem evidência.
+- Alterar baselines sem autorização.
+- Declarar G0 aprovado.
+- Habilitar LIVE.
+
+### 15.5 Controle
+
+As ações deverão respeitar AGENTS.md, as permissões e o registro de auditoria aplicáveis.
+
+### 15.6 Implementação
+
+Esta Feature não pressupõe que o agente já esteja implementado ou conectado ao repositório.
+
+---
+
+## 16. Segurança e segregação
+
+### 16.1 Documentos sensíveis
+
+O acesso deverá respeitar a classificação e as permissões aprovadas.
+
+### 16.2 Segredos
+
+Credenciais não poderão constar em documentação versionada ou evidências públicas.
+
+### 16.3 Integridade
+
+Documentos aprovados deverão estar protegidos contra alteração não autorizada.
+
+### 16.4 Autoria
+
+Mudanças deverão ser atribuíveis a responsáveis ou identidades autorizadas.
+
+### 16.5 Ambientes
+
+As referências deverão preservar a segregação TRAINING/PAPER/LIVE quando aplicável.
+
+### 16.6 LIVE
+
+Nenhum documento ou mecanismo de governança poderá habilitar operações LIVE.
+
+### 16.7 Fail-closed
+
+A ausência de evidência obrigatória deverá impedir declarações de conformidade.
+
+---
+
+## 17. Observabilidade e auditoria
+
+### 17.1 Eventos relevantes
+
+Deverão ser rastreáveis:
+
+- Inclusão de documento.
+- Alteração de versão.
+- Alteração de estado.
+- Registro de aprovação.
+- Inclusão ou alteração de vínculo.
+- Identificação de lacuna.
+- Encerramento de lacuna.
+- Falha de validação.
+- Atualização de baseline.
+
+### 17.2 Identidade
+
+As ações deverão permitir identificar o responsável ou processo autorizado.
+
+### 17.3 Correlação
+
+Mudanças relacionadas deverão possuir referência comum quando aplicável.
+
+### 17.4 Evidência
+
+Relatórios de verificação deverão identificar versão, execução e resultado.
+
+### 17.5 Limite
+
+Logs operacionais não substituem Approval Register e Change Log.
+
+---
+
+## 18. Comportamento esperado
+
+### 18.1 Documento válido
+
+**Given:** documento com metadados, versão e referências conformes.
+
+**When:** a verificação documental for executada.
+
+**Then:** os critérios estruturais aplicáveis poderão ser considerados atendidos.
+
+### 18.2 Referência inexistente
+
+**Given:** vínculo para artefato não localizado.
+
+**When:** a verificação ocorrer.
+
+**Then:** a referência deverá ser sinalizada, sem criação automática de fonte substituta.
+
+### 18.3 ADR não recuperada
+
+**Given:** identificador de ADR cujo texto original não está disponível.
+
+**When:** a rastreabilidade for avaliada.
+
+**Then:** o vínculo deverá permanecer UNVERIFIED ou SOURCE_MISSING, conforme a taxonomia aprovada.
+
+### 18.4 Documento aprovado sem implementação
+
+**Given:** Feature documentalmente aprovada.
+
+**When:** o estado de implementação for consultado.
+
+**Then:** não poderá ser declarado IMPLEMENTED ou ACCEPTED sem evidências correspondentes.
+
+### 18.5 Critério sem teste
+
+**Given:** critério que exige validação técnica sem teste associado.
+
+**When:** a cobertura for avaliada.
+
+**Then:** a lacuna deverá ser identificada.
+
+### 18.6 Evidência ausente
+
+**Given:** teste obrigatório sem relatório verificável.
+
+**When:** a conformidade for consolidada.
+
+**Then:** o critério não poderá ser declarado comprovado.
+
+### 18.7 Alteração de baseline
+
+**Given:** mudança proposta em documento aprovado.
+
+**When:** o impacto for avaliado.
+
+**Then:** deverão ser identificados os artefatos afetados e exigida a aprovação aplicável.
+
+### 18.8 Gate não avaliado
+
+**Given:** documentos e testes parcialmente concluídos.
+
+**When:** o estado de G0 for consultado.
+
+**Then:** G0 permanecerá NOT_EVALUATED até avaliação formal.
+
+---
+
+## 19. Requisitos não funcionais
+
+| Categoria | Requisito | Verificação |
+|---|---|---|
+| Integridade | Identificadores e versões consistentes | Validação documental |
+| Rastreabilidade | Vínculos bidirecionais | Testes de matriz |
+| Auditabilidade | Mudanças e decisões identificáveis | Registros de governança |
+| Reprodutibilidade | Baselines identificáveis | Testes de referências |
+| Segurança | Alterações autorizadas | Revisão de permissões |
+| Confiabilidade | Falhas não mascaradas | Testes negativos |
+| Manutenibilidade | Organização padronizada | Revisão estrutural |
+| Completude | Lacunas identificadas | Relatórios de cobertura |
+| Governança | Aprovações segregadas | Testes de estados |
+| Evolutividade | Impacto de mudanças rastreável | Testes de alteração |
+
+Limiares quantitativos e regras adicionais deverão ser definidos conforme o padrão normativo aprovado.
+
+---
+
+## 20. Dependências
+
+| Dependência | Tipo | Estado |
+|---|---|---|
+| TS-DOC-STD-V1.0 | Padrão documental | APPROVED |
+| TS-DOC-REG-001 | Registry | APPROVED |
+| TS-DOC-GAP-001 | Gap Register | APPROVED |
+| TS-DOC-TRC-001 | Traceability Matrix | APPROVED |
+| TS-DOC-APR-001 | Approval Register | APPROVED |
+| TS-DOC-CHG-001 | Change Log | APPROVED |
+| TS-DOC-GOV-AGENT-001 | Especificação de agente | APPROVED |
+| Templates documentais | Normativa | APPROVED |
+| I00-FEAT-001 | Monorepo | APPROVED documentalmente |
+| I00-FEAT-011 | CI/CD | APPROVED documentalmente |
+| Catálogo original de ADRs | Fonte normativa | UNVERIFIED |
+| Catálogo original de componentes | Fonte arquitetural | UNVERIFIED |
+| Pendências P01–P106 | Fonte de requisitos | PARTIALLY_UNVERIFIED |
+| Histórias TS-ST-001–024 | Backlog | UNVERIFIED individualmente |
+| Repositório | Fonte técnica | NOT_INSPECTED |
+| Owners | Governança | TBD |
+
+### 20.1 Dependências posteriores
+
+- I00-FEAT-013 — Failure & Recovery Validation.
+- I00-FEAT-014 — Evidence & G0 Preparation.
+
+### 20.2 Histórias técnicas
+
+O vínculo com histórias do backlog deverá ser confirmado nos registros originais.
+
+**Story Mapping:** PENDING.
+
+Nenhum Story ID será atribuído por inferência.
+
+---
+
+## 21. Estratégia de testes
+
+### 21.1 Document Identity
+
+Verificar unicidade de IDs.
+
+### 21.2 Metadata Validation
+
+Verificar metadados obrigatórios.
+
+### 21.3 Version Validation
+
+Verificar versões e referências.
+
+### 21.4 Registry Consistency
+
+Verificar correspondência entre Registry e artefatos disponíveis.
+
+### 21.5 Traceability Integrity
+
+Verificar integridade de vínculos.
+
+### 21.6 Bidirectional Navigation
+
+Verificar navegação entre origem e destino.
+
+### 21.7 Missing Source
+
+Verificar comportamento diante de fonte indisponível.
+
+### 21.8 Gap Management
+
+Verificar identificação e controle de lacunas.
+
+### 21.9 Approval Integrity
+
+Verificar vinculação de decisões às versões corretas.
+
+### 21.10 Change Impact
+
+Verificar identificação de artefatos afetados.
+
+### 21.11 Acceptance Coverage
+
+Verificar associação entre critérios e testes.
+
+### 21.12 Evidence Coverage
+
+Verificar associação entre testes e evidências.
+
+### 21.13 CI Integration
+
+Verificar execução automatizada das validações documentais.
+
+### 21.14 Security
+
+Verificar controle de acesso e proteção de segredos.
+
+### 21.15 Fail-Closed
+
+Verificar que ausência de fonte ou evidência obrigatória não resulte em aprovação.
+
+### 21.16 Regression
+
+Verificar preservação dos vínculos após mudanças.
+
+### 21.17 Gate Isolation
+
+Verificar que validação documental não aprove G0 automaticamente.
+
+### 21.18 End-to-End
+
+Verificar a cadeia controlada:
+
+**Fonte normativa → Requisito → Feature → Critério → Teste → Evidência → Decisão.**
+
+Os testes deverão utilizar artefatos controlados e não executar operações financeiras.
+
+---
+
+## 22. Critérios de aceite
+
+Os critérios abaixo são propostos para o aceite da implementação de I00-FEAT-012.
+
+| ID | Critério | Evidência esperada |
+|---|---|---|
+| FEAT012-AC01 | Organização documental conforme baseline | Auditoria estrutural |
+| FEAT012-AC02 | Identificadores únicos e estáveis | Testes de IDs |
+| FEAT012-AC03 | Metadados obrigatórios verificáveis | Relatório de validação |
+| FEAT012-AC04 | Registry consistente com artefatos | Testes de Registry |
+| FEAT012-AC05 | Versões e estados controlados | Testes de versionamento |
+| FEAT012-AC06 | Rastreabilidade bidirecional disponível | Testes de matriz |
+| FEAT012-AC07 | Referências inválidas detectadas | Testes negativos |
+| FEAT012-AC08 | Fontes ausentes não promovidas a VERIFIED | Testes de fontes |
+| FEAT012-AC09 | Lacunas registradas e controladas | Testes de Gap Register |
+| FEAT012-AC10 | Aprovações vinculadas às versões | Testes de Approval Register |
+| FEAT012-AC11 | Mudanças e impactos rastreáveis | Testes de Change Log |
+| FEAT012-AC12 | Critérios associados a testes | Relatório de cobertura |
+| FEAT012-AC13 | Testes associados a evidências | Relatório de evidências |
+| FEAT012-AC14 | Validação documental integrada ao CI | Relatório de pipeline |
+| FEAT012-AC15 | Segurança e integridade preservadas | Testes de segurança |
+| FEAT012-AC16 | Estados de readiness e aceite segregados | Testes de governança |
+| FEAT012-AC17 | G0 não aprovado automaticamente | Testes de Gate |
+| FEAT012-AC18 | Relatório de completude disponível | Relatório de cobertura |
+| FEAT012-AC19 | Rastreabilidade consistente | Matriz verificada |
+| FEAT012-AC20 | Evidências verificáveis | Evidence Bundle I00 |
+
+**Acceptance Criteria Status:** PROPOSED / NOT_EVALUATED.
+
+### 22.1 Critérios superiores relacionados
+
+- TS-EP-01 — Critérios de documentação, rastreabilidade e evidências, sujeitos à reconciliação normativa.
+- I00-AC11 — Rastreabilidade.
+- I00-AC12 — Evidências verificáveis.
+
+Os vínculos individuais deverão ser confirmados na Traceability Matrix.
+
+---
+
+## 23. Evidências esperadas
+
+| Referência provisória | Evidência |
+|---|---|
+| EV-FEAT012-01 | Auditoria da estrutura documental |
+| EV-FEAT012-02 | Testes de identificadores |
+| EV-FEAT012-03 | Validação de metadados |
+| EV-FEAT012-04 | Consistência do Registry |
+| EV-FEAT012-05 | Testes de versões e estados |
+| EV-FEAT012-06 | Verificação de rastreabilidade |
+| EV-FEAT012-07 | Testes de referências inválidas |
+| EV-FEAT012-08 | Testes de fontes ausentes |
+| EV-FEAT012-09 | Verificação do Gap Register |
+| EV-FEAT012-10 | Verificação do Approval Register |
+| EV-FEAT012-11 | Verificação do Change Log |
+| EV-FEAT012-12 | Cobertura de critérios e testes |
+| EV-FEAT012-13 | Cobertura de testes e evidências |
+| EV-FEAT012-14 | Relatório de integração CI |
+| EV-FEAT012-15 | Testes de segurança documental |
+| EV-FEAT012-16 | Testes de segregação de estados |
+| EV-FEAT012-17 | Testes de isolamento de Gate |
+| EV-FEAT012-18 | Relatório de completude |
+| EV-FEAT012-19 | Matriz reconciliada |
+| EV-FEAT012-20 | Manifesto de integridade |
+
+Os identificadores são provisórios e deverão ser reconciliados com a convenção oficial de Evidence Bundle.
+
+**Evidence Status:** PLANNED.
+
+Nenhuma evidência é declarada produzida.
+
+---
+
+## 24. Riscos e lacunas
+
+### 24.1 Lacunas documentais existentes
+
+As lacunas DOC-GAP-001–008 permanecem OPEN.
+
+O conteúdo individual de cada lacuna deverá ser consultado no Gap Register autoritativo antes de atualização, classificação ou encerramento.
+
+### 24.2 Riscos específicos
+
+- Fontes originais não recuperadas.
+- IDs duplicados.
+- Referências quebradas.
+- Versões inconsistentes.
+- Aprovações sem referência.
+- Vínculos inferidos apresentados como verificados.
+- Histórias sem requisitos rastreáveis.
+- Critérios sem testes.
+- Testes sem evidências.
+- Lacunas encerradas sem comprovação.
+- Divergência entre documentos e código.
+- Alterações normativas sem Change Control.
+- Baselines aprovadas somente em conversa não sincronizadas com o repositório.
+- Declaração prematura de readiness.
+- Aprovação indevida de G0.
+
+### 24.3 Tratamento
+
+Os riscos deverão ser classificados e vinculados a responsáveis, verificações e evidências.
+
+Nenhuma lacuna será encerrada automaticamente pela aprovação desta Feature.
+
+---
+
+## 25. Feature Documentation Readiness
+
+A Feature poderá ser considerada READY quando:
+
+1. Objetivo e escopo estiverem aprovados.
+2. Padrão documental aplicável estiver verificado.
+3. Owners estiverem definidos.
+4. Registry estiver reconciliado.
+5. Gap Register estiver reconciliado.
+6. Traceability Matrix estiver reconciliada.
+7. Approval Register estiver atualizado.
+8. Change Log estiver consistente.
+9. Templates estiverem disponíveis.
+10. Fontes arquiteturais obrigatórias estiverem recuperadas ou lacunas formalmente tratadas.
+11. Regras de verificação estiverem especificadas.
+12. Estados e critérios estiverem formalizados.
+13. Integração com CI estiver definida.
+14. Histórias relacionadas estiverem refinadas.
+15. Critérios de aceite estiverem testáveis.
+16. Testes e evidências estiverem especificados.
+17. Segurança e permissões estiverem definidas.
+18. Lacunas bloqueantes estiverem resolvidas.
+
+**Documentation Readiness:** NOT_READY.
+
+A aprovação desta especificação não altera automaticamente esse estado.
+
+---
+
+## 26. Feature Implementation Acceptance
+
+A Feature poderá ser aceita quando:
+
+- O acervo documental estiver organizado.
+- O Registry estiver implementado e consistente.
+- A Traceability Matrix estiver operacional.
+- O Gap Register estiver operacional.
+- Approval Register e Change Log estiverem integrados ao processo.
+- Os critérios FEAT012-AC01–AC20 estiverem atendidos.
+- As referências inválidas forem detectadas.
+- Os vínculos obrigatórios estiverem verificados.
+- A cobertura de critérios, testes e evidências estiver demonstrada.
+- As verificações documentais estiverem integradas ao CI.
+- A segurança e a integridade estiverem preservadas.
+- As evidências estiverem verificadas.
+- As lacunas bloqueantes estiverem resolvidas.
+- A autoridade competente registrar o aceite.
+
+**Implementation Acceptance:** NOT_EVALUATED.
+
+O aceite desta Feature não substitui o aceite de TS-EP-01, I00 ou G0.
+
+---
+
+## 27. Rastreabilidade
+
+A Feature deverá integrar:
+
+**ADR → Componente → Pendência → TS-EP-01 → I00-FEAT-012 → História → Teste → Evidência**
+
+Os artefatos de governança deverão ser vinculados às verificações que lhes correspondem.
+
+### Estados iniciais
+
+| Relação | Estado |
+|---|---|
+| Epic Link | VERIFIED documentalmente |
+| Work Package Link | VERIFIED documentalmente |
+| Feature Catalog Link | VERIFIED documentalmente |
+| Governance Artifact Links | VERIFIED documentalmente |
+| Related Feature Links | VERIFIED documentalmente |
+| Story Link | PENDING |
+| ADR Links | UNVERIFIED |
+| Component Links | UNVERIFIED |
+| Requirement Links | PARTIALLY_UNVERIFIED |
+| Test Links | PLANNED |
+| Evidence Links | PLANNED |
+| Repository Synchronization | NOT_VERIFIED |
+
+VERIFIED documentalmente não comprova implementação nem sincronização com o repositório.
+
+---
+
+## 28. Histórico de alterações
+
+| Version | Date | Change ID | Description | Approval |
+|---|---|---|---|---|
+| 1.0.0-draft.1 | 2026-11-17 | PENDING | Especificação inicial Documentation & Traceability | PENDING |
+
+---
+
+## 29. Registro de aprovação
+
+| Campo | Valor |
+|---|---|
+| Artifact ID | I00-FEAT-012 |
+| Version | 1.0.0-draft.1 |
+| Approval Category | DOC / TECH |
+| Decision | PENDING |
+| Approved By | PENDING |
+| Approval Reference | PENDING |
+| Conditions | PENDING |
+| Date | PENDING |
+
+---
+
+**Document Status:** IN_REVIEW  
+**Documentation Readiness:** NOT_READY  
+**Implementation Acceptance:** NOT_EVALUATED  
+**Gate G0:** NOT_EVALUATED  
+**LIVE Authorization:** NOT_AUTHORIZED
+
+**Next Artifact:** I00-FEAT-013.md — Failure & Recovery Validation
+
+**Restriction:** não avançar antes da aprovação desta Feature.
+
+## 30. Histórico da revisão e evidências existentes
+
+O [anexo original](../governance/history/I00-FEAT-012/IN-REVIEW.txt) está arquivado. A especificação permanece **IN_REVIEW**, com aprovação **PENDING**.
+
+A [evidência histórica de I00-12](../evidence/I00-12-rastreabilidade.md) registra a conferência de IDs e referências de testes. O [registro mestre de I00](../backlog/registro-mestre-i00.md) vincula o pacote a AC11 e registra a entrega para revisão. A [consolidação DOC-03](../governance/DOC-03-CONSOLIDATION.md) reúne os vínculos e as lacunas de I00 a I09.
+
+A [aprovação comunicada do Approval Register](../governance/history/TS-DOC-APR-001/APPROVAL.md) consta do histórico. A conferência do texto integral aprovado na pasta oficial segue pendente. As lacunas e seus estados permanecem no [Gap Register](../governance/GAP-REGISTER.md).
+
+O aceite consolidado da implementação permanece pendente. [G0](../governance/G0-REVIEW-DOSSIER.md) segue em revisão e LIVE permanece indisponível.
