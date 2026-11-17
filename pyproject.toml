@@ -9,7 +9,8 @@ dependencies = [
     "fastapi>=0.115,<1",
     "opentelemetry-api>=1.30,<2",
     "opentelemetry-sdk>=1.30,<2",
-    "psycopg[binary]>=3.2,<4",
+    "psycopg[c]==3.3.8; sys_platform == 'linux'",
+    "psycopg[binary]==3.3.8; sys_platform != 'linux'",
     "pydantic>=2,<3",
     "sqlalchemy>=2.0,<3",
     "uvicorn>=0.34,<1",
@@ -21,6 +22,12 @@ requires = ["hatchling==1.28.0"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
+build = [
+    "editables==0.6",
+    "hatchling==1.28.0",
+    "setuptools==83.0.0; sys_platform == 'linux'",
+    "wheel==0.48.0",
+]
 dev = [
     "httpx2>=2.16.0",
     "hypothesis>=6.140,<7",
