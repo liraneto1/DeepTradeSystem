@@ -1,0 +1,136 @@
+name: AC02 maintained Psycopg client experiment
+on:
+  push:
+    branches: ["review/ac02-maintained-client-ac51f91"]
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ac51f91cfc08dadae3a3bb411908b0b9a26f11af
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
+        with:
+          enable-cache: false
+      - name: Prepare isolated experiment
+        run: |
+          set -euo pipefail
+          mkdir -p audit/results
+          context="$RUNNER_TEMP/client-build"
+          mkdir -p "$context/project"
+          git archive ac51f91cfc08dadae3a3bb411908b0b9a26f11af | tar -x -C "$context/project"
+          git rev-parse HEAD > audit/candidate.txt
+          sha256sum pyproject.toml uv.lock > audit/candidate-input-hashes.txt
+          cp "$(command -v uv)" "$context/uv"
+          uv --version > audit/uv-version.txt
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          root=Path(os.environ["RUNNER_TEMP"])/"client-build"
+          files={"Dockerfile":"ARG BASE\nFROM ${BASE} AS test\nENV UV_PYTHON_DOWNLOADS=never UV_NO_PROGRESS=1 UV_LINK_MODE=copy\nWORKDIR /workspace\nCOPY uv /usr/local/bin/uv\nRUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends build-essential libpq-dev binutils ca-certificates\nCOPY project/ /workspace/\nCOPY prepare.py inventory.py /tools/\nRUN python /tools/prepare.py\nENV PATH=\"/workspace/.venv/bin:${PATH}\" PSYCOPG_IMPL=c LIVE_ENABLED=false TRADE_SYSTEM_ENVIRONMENT=PAPER\nRUN python /tools/inventory.py /audit/test-inventory\n\nFROM ${BASE} AS runtime\nRUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends libpq5 ca-certificates\nCOPY --from=test /opt/runtime /opt/runtime\nCOPY inventory.py /tools/inventory.py\nCOPY --from=test /workspace/src /workspace/src\nCOPY --from=test /workspace/infrastructure /workspace/infrastructure\nCOPY --from=test /workspace/apps /workspace/apps\nENV PATH=\"/opt/runtime/bin:${PATH}\" PSYCOPG_IMPL=c LIVE_ENABLED=false TRADE_SYSTEM_ENVIRONMENT=PAPER\nWORKDIR /workspace\nRUN python /tools/inventory.py /audit/runtime-inventory\nCMD [\"python\",\"-c\",\"import psycopg;print(psycopg.__version__)\"]\n","prepare.py":"import hashlib,json,subprocess,tarfile,urllib.request\nfrom pathlib import Path\naudit=Path(\"/audit\");audit.mkdir(exist_ok=True)\ndef run(args,log):\n    p=subprocess.run(args,capture_output=True,text=True)\n    (audit/log).write_text(p.stdout+\"\\n\"+p.stderr)\n    print(log,p.returncode,flush=True)\n    if p.returncode:print(p.stdout,p.stderr);raise SystemExit(p.returncode)\ndef snapshot(file):\n    run([\".venv/bin/python\",\"-c\",\"import importlib.metadata as m,json; print(json.dumps(sorted([(d.metadata['Name'],d.version) for d in m.distributions()]),indent=2))\"],file)\nrun([\"uv\",\"sync\",\"--locked\",\"--python\",\"/usr/local/bin/python3.12\"],\"baseline-install.log\")\nsnapshot(\"baseline-python.json\")\np=Path(\"pyproject.toml\");p.write_text(p.read_text().replace('psycopg[binary]>=3.2,<4','psycopg[c]==3.3.8'))\nrun([\"uv\",\"pip\",\"install\",\"--python\",\".venv/bin/python\",\"setuptools==83.0.0\",\"wheel==0.45.1\",\"hatchling==1.28.0\"],\"build-tools-install.log\")\ndata=json.load(urllib.request.urlopen(\"https://pypi.org/pypi/psycopg-c/3.3.8/json\",timeout=60))\nf=next(x for x in data[\"urls\"] if x[\"packagetype\"]==\"sdist\")\nraw=urllib.request.urlopen(f[\"url\"],timeout=90).read()\nassert hashlib.sha256(raw).hexdigest()==f[\"digests\"][\"sha256\"]\narchive=audit/f[\"filename\"];archive.write_bytes(raw)\n(audit/\"psycopg-c-pypi.json\").write_text(json.dumps(data,indent=2))\nsrc=audit/\"source\";src.mkdir(exist_ok=True)\nwith tarfile.open(archive) as t:t.extractall(src,filter=\"data\")\nsource=next(src.iterdir())\nrun([\"uv\",\"build\",\"--wheel\",\"--no-build-isolation\",str(source),\"--out-dir\",\"/audit/wheels\"],\"psycopg-c-build.log\")\nrun([\"uv\",\"lock\"],\"overlay-lock.log\")\nrun([\"uv\",\"sync\",\"--locked\",\"--inexact\",\"--no-build-isolation-package\",\"psycopg-c\"],\"overlay-install.log\")\nsnapshot(\"test-python.json\")\nassert not Path(\".venv/lib/python3.12/site-packages/psycopg_binary.libs\").exists()\nrun([\"uv\",\"pip\",\"check\"],\"dependency-check.log\")\nrun([\"uv\",\"build\",\"--no-sources\"],\"project-build.log\")\nrun([\"uv\",\"export\",\"--frozen\",\"--no-dev\",\"--no-emit-project\",\"--no-hashes\",\"--no-header\",\"--output-file\",\"/audit/runtime-requirements.txt\"],\"export.log\")\nrequirements=(audit/\"runtime-requirements.txt\").read_text()\nwheel=next((audit/\"wheels\").glob(\"psycopg_c-*.whl\"))\nrequirements=requirements.replace(\"psycopg-c==3.3.8\",str(wheel))\n(audit/\"runtime-requirements-local.txt\").write_text(requirements)\nrun([\"uv\",\"venv\",\"--python\",\"/usr/local/bin/python3.12\",\"/opt/runtime\"],\"runtime-venv.log\")\nrun([\"uv\",\"pip\",\"sync\",\"--python\",\"/opt/runtime/bin/python\",\"--no-build\",\"/audit/runtime-requirements-local.txt\"],\"runtime-install.log\")\nappwheel=next(Path(\"dist\").glob(\"*.whl\"))\nrun([\"uv\",\"pip\",\"install\",\"--python\",\"/opt/runtime/bin/python\",\"--no-deps\",str(appwheel)],\"runtime-app.log\")\nrun([\"uv\",\"pip\",\"check\",\"--python\",\"/opt/runtime/bin/python\"],\"runtime-dependency-check.log\")\nfor f in [\"pyproject.toml\",\"uv.lock\"]:\n    (audit/(\"overlay-\"+f)).write_bytes(Path(f).read_bytes())\n","inventory.py":"import hashlib,importlib.metadata as md,json,subprocess,sys\nfrom pathlib import Path\nimport psycopg\nimport psycopg.pq\nout=Path(sys.argv[1]);out.mkdir(exist_ok=True,parents=True)\nassert psycopg.pq.__impl__==\"c\",psycopg.pq.__impl__\nassert psycopg.__version__==\"3.3.8\"\nassert psycopg.pq.version()//10000==17\nassert not any(d.metadata[\"Name\"].lower().replace(\"_\",\"-\")==\"psycopg-binary\" for d in md.distributions())\n(out/\"python-packages.json\").write_text(json.dumps(sorted((d.metadata[\"Name\"],d.version) for d in md.distributions()),indent=2))\nlines=Path(\"/proc/self/maps\").read_text().splitlines()\nlibs=sorted(set(l.split()[-1] for l in lines if \"/\" in l and \".so\" in l.split()[-1]))\nrecords=[]\nfor file in libs:\n    path=Path(file)\n    if not path.is_file():continue\n    owner=subprocess.run([\"dpkg-query\",\"-S\",file],capture_output=True,text=True)\n    if owner.returncode and file.startswith(\"/usr/lib/\"):\n        owner=subprocess.run([\"dpkg-query\",\"-S\",file.removeprefix(\"/usr\")],capture_output=True,text=True)\n    records.append({\"file\":file,\"sha256\":hashlib.sha256(path.read_bytes()).hexdigest(),\"dpkg_owner\":owner.stdout.strip()})\nresult={\"psycopg\":psycopg.__version__,\"implementation\":psycopg.pq.__impl__,\"libpq_runtime\":psycopg.pq.version(),\"libpq_build\":getattr(psycopg.pq,\"__build_version__\",None),\"python\":sys.version,\"loaded_libraries\":records}\n(out/\"client-native.json\").write_text(json.dumps(result,indent=2))\nprint(json.dumps(result,indent=2))\nfmt=\"$\"+\"{binary:Package}\\t$\"+\"{Version}\\t$\"+\"{source:Package}\\t$\"+\"{source:Version}\\n\"\nsubprocess.run([\"dpkg-query\",\"-W\",\"-f=\"+fmt],stdout=(out/\"dpkg-packages.tsv\").open(\"w\"),check=True)\npackages=[\"libpq5\",\"libgssapi-krb5-2\",\"libkrb5-3\",\"libk5crypto3\",\"libkrb5support0\",\"libldap2\",\"liblber2\",\"libsasl2-2\",\"libcrypt1\",\"libssl3t64\",\"libpcre2-8-0\",\"libselinux1\",\"libcom-err2\",\"libkeyutils1\"]\np=subprocess.run([\"apt-cache\",\"policy\",*packages],capture_output=True,text=True)\n(out/\"apt-policy.txt\").write_text(p.stdout+p.stderr)\nch=out/\"changelogs\";ch.mkdir(exist_ok=True)\nimport gzip\nfor pkg in packages:\n    root=Path(\"/usr/share/doc\")/pkg\n    for log in root.glob(\"changelog*.gz\"):\n        try:(ch/(pkg+\"-\"+log.name.removesuffix(\".gz\"))).write_bytes(gzip.decompress(log.read_bytes()))\n        except OSError:pass\n"}
+          for name,content in files.items():(root/name).write_text(content)
+          PY
+          cp "$context/Dockerfile" "$context/prepare.py" "$context/inventory.py" audit/
+          docker pull --platform linux/amd64 python:3.12-slim-trixie
+          docker image inspect python:3.12-slim-trixie > audit/python-base.json
+          base=$(docker image inspect --format '{{index .RepoDigests 0}}' python:3.12-slim-trixie)
+          echo "$base" > audit/python-base-digest.txt
+          docker build --progress plain --build-arg BASE="$base" --target test -t local/client-test:ac51f91 "$context" 2>&1 | tee audit/client-build.log
+          docker build --progress plain --build-arg BASE="$base" --target runtime -t local/client-runtime:ac51f91 "$context" 2>&1 | tee audit/runtime-build.log
+          for kind in test runtime; do
+            docker image inspect "local/client-$kind:ac51f91" > "audit/$kind-image.json"
+            container=$(docker create "local/client-$kind:ac51f91")
+            mkdir -p "audit/$kind"
+            docker cp "$container:/audit/." "audit/$kind/"
+            docker rm "$container"
+          done
+      - name: Quality and full PostgreSQL suite with alternative client
+        env:
+          LIVE_ENABLED: "false"
+          TRADE_SYSTEM_ENVIRONMENT: PAPER
+          RUN_POSTGRES_TESTS: "1"
+        run: |
+          set -euo pipefail
+          export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::$POSTGRES_PASSWORD"
+          base='postgres@sha256:a77aa70e641402a21411b92b721c58d10f23b50ae5fdd2333efd22d166e1e5f7'
+          docker pull --platform linux/amd64 "$base"
+          docker image inspect "$base" > audit/server-image.json
+          compose=(docker compose -p maintained-client -f deploy/compose/postgres.yml -f audit/server-override.yml)
+          printf 'services:\n  postgres:\n    image: "%s"\n' "$base" > audit/server-override.yml
+          trap '"${compose[@]}" down --volumes' EXIT
+          "${compose[@]}" up -d --wait --wait-timeout 90
+          pg=$("${compose[@]}" ps -q postgres)
+          docker inspect --format '{{.Image}}' "$pg" > audit/running-server-id.txt
+          test_image=$(docker image inspect --format '{{.Id}}' local/client-test:ac51f91)
+          echo "$test_image" > audit/tested-image-id.txt
+          docker run --rm --network host -v "$PWD/audit/results:/results" -e POSTGRES_PASSWORD -e LIVE_ENABLED -e TRADE_SYSTEM_ENVIRONMENT -e RUN_POSTGRES_TESTS "$test_image" bash -ec '
+            set -o pipefail
+            ruff check src infrastructure apps tests 2>&1 | tee /results/ruff.log
+            ruff format --check src infrastructure apps tests 2>&1 | tee /results/format.log
+            mypy 2>&1 | tee /results/mypy.log
+            pytest --junitxml=/results/pytest.xml 2>&1 | tee /results/pytest.log
+          '
+          tls="$RUNNER_TEMP/client-tls"
+          mkdir -p "$tls"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' -keyout "$tls/server.key" -out "$tls/server.crt" 2>/dev/null
+          docker cp "$tls/server.key" "$pg:/tmp/audit-server.key"
+          docker cp "$tls/server.crt" "$pg:/tmp/audit-server.crt"
+          docker exec -u root "$pg" sh -ec 'cp /tmp/audit-server.key "$PGDATA/server.key"; cp /tmp/audit-server.crt "$PGDATA/server.crt"; chown postgres:postgres "$PGDATA/server.key" "$PGDATA/server.crt"; chmod 0600 "$PGDATA/server.key"; printf "\nssl=on\nssl_cert_file=\047server.crt\047\nssl_key_file=\047server.key\047\n" >> "$PGDATA/postgresql.conf"'
+          docker restart "$pg"
+          for n in $(seq 1 30); do docker exec "$pg" pg_isready -h 127.0.0.1 -U trade_system -d trade_system && break; sleep 1; done
+          cp "$tls/server.crt" audit/results/test-server-public.crt
+          runtime=$(docker image inspect --format '{{.Id}}' local/client-runtime:ac51f91)
+          echo "$runtime" > audit/runtime-tested-image-id.txt
+          docker run --rm --network host -i -v "$PWD/audit/results:/results" -e POSTGRES_PASSWORD "$runtime" python - <<'PY'
+          import json,os
+          from pathlib import Path
+          import psycopg
+          args=dict(host="localhost",hostaddr="127.0.0.1",port=55432,user="trade_system",dbname="trade_system",password=os.environ["POSTGRES_PASSWORD"],connect_timeout=5,sslrootcert="/results/test-server-public.crt",sslmode="verify-full")
+          results=[]
+          with psycopg.connect(**args) as c:
+              row=c.execute("SELECT ssl, version, cipher FROM pg_stat_ssl WHERE pid=pg_backend_pid()").fetchone()
+              assert row[0] is True
+              assert c.execute("SELECT 1").fetchone()==(1,)
+              results.append({"case":"trusted_hostname","result":"PASS","ssl":row})
+          for name,change in [("wrong_hostname",{"host":"wrong.invalid"}),("missing_trust",{"sslrootcert":"/does-not-exist.crt"})]:
+              try:
+                  with psycopg.connect(**(args|change)):pass
+              except psycopg.OperationalError as e:
+                  results.append({"case":name,"result":"PASS_REJECTED","error":str(e).replace(os.environ["POSTGRES_PASSWORD"],"[REDACTED]")})
+              else:raise AssertionError(name+" should fail")
+          Path("/results/tls-runtime.json").write_text(json.dumps(results,indent=2))
+          print(json.dumps(results,indent=2))
+          PY
+      - name: Inventory and security scan of minimal runtime
+        if: always()
+        run: |
+          set -euo pipefail
+          docker image inspect local/client-runtime:ac51f91 >/dev/null
+          docker pull aquasec/trivy:0.76.2
+          scanner=$(docker image inspect --format '{{index .RepoDigests 0}}' aquasec/trivy:0.76.2)
+          echo "$scanner" > audit/scanner-digest.txt
+          docker image inspect "$scanner" > audit/scanner-image.json
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/audit:/output" "$scanner" image --scanners vuln --format json --output /output/runtime-trivy.json local/client-runtime:ac51f91
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/audit:/output" "$scanner" image --format cyclonedx --output /output/runtime-sbom.cdx.json local/client-runtime:ac51f91
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/audit:/output" "$scanner" image --scanners vuln --format json --output /output/baseline-python-trivy.json "$(cat audit/python-base-digest.txt)"
+      - name: Preserve candidate identity and evidence integrity
+        if: always()
+        run: |
+          git rev-parse HEAD > audit/final-candidate.txt
+          sha256sum pyproject.toml uv.lock > audit/final-candidate-input-hashes.txt
+          diff -u audit/candidate-input-hashes.txt audit/final-candidate-input-hashes.txt
+          find audit -type f -print0 | sort -z | xargs -0 sha256sum > audit-SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ac02-maintained-client-ac51f91
+          path: |
+            audit/
+            audit-SHA256SUMS
+          include-hidden-files: true
+          if-no-files-found: error
