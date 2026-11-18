@@ -71,6 +71,28 @@ def check_context_source(package: Path, manifest: dict[str, Any]) -> None:
         raise ValueError("Unexpected uv base")
 
 
+def write_hardened_dockerfile(source: Path, output: Path) -> Path:
+    """Derive a test-only target without mutating approved source bytes."""
+    target = output / "test-without-pip.Dockerfile"
+    if target.exists():
+        raise ValueError("Fresh derived Dockerfile required")
+    suffix = (
+        "\n# Authorized test-only hardening; approved sources unchanged.\n"
+        "FROM test AS test-without-pip\n"
+        "RUN /usr/local/bin/python3.12 -m pip uninstall --yes pip && "
+        '/usr/local/bin/python3.12 -c "import pathlib; '
+        "p=pathlib.Path('/usr/local/lib/python3.12/ensurepip/_bundled'); "
+        "[f.unlink() for f in p.glob('*.whl')]" + '"\n'
+        'RUN /usr/local/bin/python3.12 -c "import importlib.util, pathlib; '
+        "assert importlib.util.find_spec('pip') is None; "
+        "p=pathlib.Path('/usr/local/lib/python3.12/ensurepip/_bundled'); "
+        "assert not list(p.glob('*.whl')); "
+        "assert not list(pathlib.Path('/usr/local/bin').glob('pip*'))" + '"\n'
+    )
+    target.write_bytes(source.read_bytes() + suffix.encode("utf-8"))
+    return target
+
+
 def probe_script() -> str:
     return r"""
 import hashlib, importlib.metadata as m, json, os, pathlib, subprocess
@@ -86,12 +108,18 @@ assert psycopg.__version__=="3.3.8" and pq.__impl__=="c"
 assert pq.version()==pq.__build_version__==180007
 assert not any(d.metadata["Name"].lower().replace("_","-")=="psycopg-binary"
                for d in m.distributions())
+bundled=pathlib.Path("/usr/local/lib/python3.12/ensurepip/_bundled")
+assert not list(bundled.glob("*.whl"))
+assert not list(pathlib.Path("/usr/local/bin").glob("pip*"))
+subprocess.run(["/usr/local/bin/python3.12","-c",
+    "import importlib.util; assert importlib.util.find_spec('pip') is None"],check=True)
+assert not any(d.metadata["Name"].lower()=="pip" for d in m.distributions())
 versions={}
 for cmd in [["pytest","--version"],["ruff","--version"],["mypy","--version"]]:
     versions[cmd[0]]=subprocess.check_output(cmd,text=True).strip()
 print(json.dumps({"source_verification":"PASS","probe_result":"PASS",
                   "psycopg":psycopg.__version__,"implementation":pq.__impl__,
-                  "libpq":pq.version(),"tools":versions},sort_keys=True))
+                  "libpq":pq.version(),"tools":versions,"pip_removal":"PASS"},sort_keys=True))
 """
 
 
@@ -220,6 +248,9 @@ class Builder:
             raise ValueError("Insufficient builder memory")
         run_id = os.environ["GITHUB_RUN_ID"] + "-" + os.environ["GITHUB_RUN_ATTEMPT"]
         tag = "local/dts-hml-tests:build-" + run_id
+        derived = write_hardened_dockerfile(
+            package / "source/deploy/docker/client-runtime.Dockerfile", self.output
+        )
         args = [
             "buildx",
             "build",
@@ -228,7 +259,7 @@ class Builder:
             "--platform",
             "linux/amd64",
             "--target",
-            "test",
+            "test-without-pip",
             "--pull",
             "--no-cache",
             "--provenance=false",
@@ -245,7 +276,7 @@ class Builder:
             "--metadata-file",
             str(self.output / "build-metadata.json"),
             "--file",
-            str(package / "source/deploy/docker/client-runtime.Dockerfile"),
+            str(derived),
             "--tag",
             tag,
         ]
@@ -305,6 +336,8 @@ class Builder:
                 pass  # The --rm probe may already be gone; preserve original failure.
             raise
         probe = json.loads(raw)
+        if probe.get("pip_removal") != "PASS":
+            raise ValueError("Pip removal probe must pass")
         test_tar = self.output / "test-image.tar"
         self.docker(["save", image["Id"], "-o", str(test_tar)], "docker-save.log", 180)
         with tarfile.open(test_tar) as archive:
@@ -331,6 +364,10 @@ class Builder:
             "source_verification": probe["source_verification"],
             "probe_result": probe["probe_result"],
             "tools": probe["tools"],
+            "pip_removal": probe["pip_removal"],
+            "derived_dockerfile_sha256": digest(derived),
+            "image_target": "test-without-pip",
+            "hardening_authorization": "User approved pip/ensurepip-wheel removal",
             "policy_sha256": digest(HERE / "policy.json"),
             "builder_script_sha256": digest(Path(__file__)),
             "source_manifest_sha256": digest(package / "harness/source-manifest.json"),
