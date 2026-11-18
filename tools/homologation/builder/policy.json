@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "plan": "TS-PLAN-HML-002",
+  "status": "IN_REVIEW",
+  "candidate": "a26c0a86ade2ec64d14c4bb06e27c93b2aea5205",
+  "approved_package_sha256": "5ce870779b1fa406b80a18e723712fa4e739e214a192dcd68cfc783f5fc839e4",
+  "runner": "ubuntu-24.04",
+  "platform": "linux/amd64",
+  "docker_version": "29.10.0",
+  "context": "dts-hml-builder",
+  "setup_docker_action": "docker/setup-docker-action@3f1ab1ab0e29231562e4db4ca600c1a49653bac6",
+  "buildx_required_version": "0.39.0",
+  "target": "test",
+  "base": "python@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89",
+  "uvbase": "ghcr.io/astral-sh/uv@sha256:9a23023be68b2ed09750ae636228e903a54a05ea56ed03a934d00fe9fbeded4b",
+  "timeouts": {
+    "job_minutes": 45,
+    "build_seconds": 2100,
+    "probe_seconds": 180
+  },
+  "minimum_available_ram_bytes": 4294967296,
+  "minimum_free_disk_bytes": 8589934592,
+  "per_build_step_limits": [
+    "memory=3g",
+    "cpu-period=100000",
+    "cpu-quota=200000"
+  ],
+  "artifact_retention_days": 14,
+  "registry_push": false,
+  "vps_access": false,
+  "backup_automation": "DEFERRED_BY_USER",
+  "setup_buildx_action": "docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069"
+}

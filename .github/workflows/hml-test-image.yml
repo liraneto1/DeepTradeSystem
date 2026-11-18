@@ -1,0 +1,96 @@
+# Published manual builder; no VPS deployment.
+name: HML test image build and freeze
+on:
+  workflow_dispatch:
+    inputs:
+      reviewed_commit:
+        description: "Exact SHA of the reviewed builder/package commit"
+        required: true
+        type: string
+      authorization:
+        description: "TS-PLAN-HML-002:build-test-image"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+concurrency:
+  group: hml-test-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-test-image:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Validate explicit request before checkout/setup
+        env:
+          EXPECTED_COMMIT: ${{ inputs.reviewed_commit }}
+          AUTHORIZATION: ${{ inputs.authorization }}
+          ACTUAL_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$AUTHORIZATION" = 'TS-PLAN-HML-002:build-test-image'
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$ACTUAL_SHA" = "$EXPECTED_COMMIT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.reviewed_commit }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Set up separate builder engine
+        uses: docker/setup-docker-action@3f1ab1ab0e29231562e4db4ca600c1a49653bac6
+        with:
+          version: v29.10.0
+          context: dts-hml-builder
+          set-host: false
+          daemon-config: |
+            {
+              "debug": false,
+              "features": {"containerd-snapshotter": true}
+            }
+      - name: Install pinned Buildx using the local Docker driver
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+        with:
+          version: v0.39.0
+          driver: docker
+          name: dts-hml-builder
+          endpoint: dts-hml-builder
+          use: false
+          cache-binary: false
+      - name: Build, verify and freeze for review
+        env:
+          HML_BUILD_AUTHORIZATION: ${{ inputs.authorization }}
+          HML_REVIEWED_COMMIT: ${{ inputs.reviewed_commit }}
+          LIVE_ENABLED: "false"
+          TRADE_SYSTEM_ENVIRONMENT: PAPER
+        run: |
+          python3 -B tools/homologation/builder/materialize.py --output "$RUNNER_TEMP/hml-reviewed-input"
+          python3 -B tools/homologation/builder/build_test_image.py \
+            --package "$RUNNER_TEMP/hml-reviewed-input" \
+            --output "$RUNNER_TEMP/hml-test-image"
+      - name: Preserve complete review artifact
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hml-test-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/hml-test-image/
+          retention-days: 14
+          compression-level: 0
+          if-no-files-found: error
+          include-hidden-files: true
+      - name: Preserve partial diagnostics if build fails
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hml-test-image-failed-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/hml-test-image/*.log
+            ${{ runner.temp }}/hml-test-image/*.json
+            ${{ runner.temp }}/hml-test-image/*.txt
+          retention-days: 14
+          if-no-files-found: ignore
+          include-hidden-files: false
+# No push/PR/schedule trigger, registry login, SSH, VPS command or deployment.
+

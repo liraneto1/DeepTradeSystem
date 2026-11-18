@@ -1,0 +1,158 @@
+{
+  "name": "${HML_PROJECT:?Set HML_PROJECT}",
+  "services": {
+    "postgres": {
+      "pull_policy": "never",
+      "restart": "no",
+      "labels": {
+        "io.deeptrade.hml.run": "${HML_RUN_ID:?Set HML_RUN_ID}",
+        "io.deeptrade.hml.owner": "TS-PLAN-HML-002"
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "${HML_SERVER_IMAGE:?Set verified local alias}",
+      "mem_limit": "2g",
+      "cpus": 2,
+      "pids_limit": 256,
+      "environment": {
+        "POSTGRES_USER": "trade_system",
+        "POSTGRES_DB": "trade_system",
+        "POSTGRES_PASSWORD_FILE": "/run/secrets/postgres_password",
+        "POSTGRES_INITDB_ARGS": "--auth-host=scram-sha-256"
+      },
+      "secrets": [
+        "postgres_password"
+      ],
+      "volumes": [
+        "data:/var/lib/postgresql/data"
+      ],
+      "networks": [
+        "isolated"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "pg_isready -h 127.0.0.1 -p 5432 -U trade_system -d trade_system"
+        ],
+        "interval": "2s",
+        "timeout": "3s",
+        "retries": 30
+      }
+    },
+    "tests": {
+      "pull_policy": "never",
+      "restart": "no",
+      "labels": {
+        "io.deeptrade.hml.run": "${HML_RUN_ID:?Set HML_RUN_ID}",
+        "io.deeptrade.hml.owner": "TS-PLAN-HML-002"
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "${HML_TEST_IMAGE:?Set verified local alias}",
+      "profiles": [
+        "manual"
+      ],
+      "mem_limit": "4g",
+      "cpus": 1,
+      "pids_limit": 256,
+      "network_mode": "service:postgres",
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        }
+      },
+      "secrets": [
+        "postgres_password"
+      ],
+      "volumes": [
+        "${HML_HARNESS:?Set harness path}:/hml:ro",
+        "${HML_EVIDENCE:?Set evidence path}:/results"
+      ],
+      "working_dir": "/workspace",
+      "environment": {
+        "LIVE_ENABLED": "false",
+        "TRADE_SYSTEM_ENVIRONMENT": "PAPER",
+        "POSTGRES_PORT": "5432",
+        "RUN_POSTGRES_TESTS": "1",
+        "HOME": "/tmp",
+        "RUFF_NO_CACHE": "1",
+        "HYPOTHESIS_STORAGE_DIRECTORY": "/tmp/hypothesis"
+      },
+      "cap_drop": [
+        "ALL"
+      ],
+      "entrypoint": [
+        "python",
+        "/hml/inside.py"
+      ],
+      "user": "${HML_OPERATOR_UID:?Set operator UID}:${HML_OPERATOR_GID:?Set operator GID}"
+    },
+    "runtime": {
+      "pull_policy": "never",
+      "restart": "no",
+      "labels": {
+        "io.deeptrade.hml.run": "${HML_RUN_ID:?Set HML_RUN_ID}",
+        "io.deeptrade.hml.owner": "TS-PLAN-HML-002"
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "${HML_RUNTIME_IMAGE:?Set verified local alias}",
+      "profiles": [
+        "manual"
+      ],
+      "mem_limit": "512m",
+      "cpus": 1,
+      "pids_limit": 128,
+      "network_mode": "service:postgres",
+      "secrets": [
+        "postgres_password"
+      ],
+      "volumes": [
+        "${HML_HARNESS:?Set harness path}:/hml:ro",
+        "${HML_EVIDENCE:?Set evidence path}:/results"
+      ],
+      "working_dir": "/workspace",
+      "environment": {
+        "LIVE_ENABLED": "false",
+        "TRADE_SYSTEM_ENVIRONMENT": "PAPER",
+        "POSTGRES_PORT": "5432",
+        "HOME": "/tmp",
+        "RUFF_NO_CACHE": "1",
+        "HYPOTHESIS_STORAGE_DIRECTORY": "/tmp/hypothesis"
+      },
+      "cap_drop": [
+        "ALL"
+      ],
+      "entrypoint": [
+        "python",
+        "/hml/inside.py"
+      ],
+      "user": "${HML_OPERATOR_UID:?Set operator UID}:${HML_OPERATOR_GID:?Set operator GID}"
+    }
+  },
+  "networks": {
+    "isolated": {
+      "internal": true,
+      "labels": {
+        "io.deeptrade.hml.run": "${HML_RUN_ID:?Set HML_RUN_ID}",
+        "io.deeptrade.hml.owner": "TS-PLAN-HML-002"
+      }
+    }
+  },
+  "volumes": {
+    "data": {
+      "labels": {
+        "io.deeptrade.hml.run": "${HML_RUN_ID:?Set HML_RUN_ID}",
+        "io.deeptrade.hml.owner": "TS-PLAN-HML-002"
+      }
+    }
+  },
+  "secrets": {
+    "postgres_password": {
+      "file": "${HML_PASSWORD_FILE:?Set private password file}"
+    }
+  }
+}

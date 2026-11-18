@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "plan": "TS-PLAN-HML-002",
+  "candidate": "a26c0a86ade2ec64d14c4bb06e27c93b2aea5205",
+  "audit_base_sha256": "6f1020ff12a807be4d7f942b80de8bbc4d2f78c4f677b093467d5061bdb070a4",
+  "audit_extension_sha256": "0c18178dcbc4d4e8468c4344ec0f1682826534afc902d59587d02434ac46412c",
+  "ready_for_execution_review": false,
+  "server": {
+    "id": "sha256:750c0c91aac5f4ec3b33942d74da652ef6c393f8572d21e9e46f5f0d6cdd780f",
+    "tar_sha256": "05077379fc3442d11607a4634661a5ab0e55586d97a523794fd81de50cab7a5a",
+    "filename": "server.tar"
+  },
+  "runtime": {
+    "id": "sha256:cf6e38c179717e442524e69b4062b34d2470eb6f873ce55641548da4f211b088",
+    "tar_sha256": "f41d02884114d833def58d590c807dd011b683862597e2b687325f3e3a4293b5",
+    "filename": "runtime.tar"
+  },
+  "test": null,
+  "scanner": "aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb",
+  "downloads": [
+    "Only pinned Trivy image if absent, when --allow-downloads is authorized",
+    "Trivy vulnerability database refresh over HTTPS",
+    "Test image must be built separately from source/; never built by runner"
+  ],
+  "backup_automation": "DEFERRED_BY_USER",
+  "pending": [
+    "Separate execution authorization",
+    "Review package SHA256",
+    "External network verification",
+    "Persistent adoption not authorized"
+  ]
+}
