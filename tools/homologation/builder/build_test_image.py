@@ -95,6 +95,27 @@ print(json.dumps({"source_verification":"PASS","probe_result":"PASS",
 """
 
 
+def parse_buildkit_inspect(text: str, context: str, endpoint: str) -> dict[str, Any]:
+    """Buildx 0.39 inspect has text output; do not assume a --format flag."""
+    drivers = re.findall(r"^Driver:\s+(\S+)\s*$", text, re.MULTILINE)
+    endpoints = re.findall(r"^\s*Endpoint:\s+(\S+)\s*$", text, re.MULTILINE)
+    statuses = re.findall(r"^\s*Status:\s+(\S+)\s*$", text, re.MULTILINE)
+    versions = re.findall(r"^\s*BuildKit version:\s+(\S+)", text, re.MULTILINE)
+    if (
+        drivers != ["docker"]
+        or len(endpoints) != 1
+        or endpoints[0] not in {context, endpoint}
+        or statuses != ["running"]
+    ):
+        raise ValueError("Builder must use the pinned local engine context")
+    return {
+        "driver": drivers[0],
+        "endpoint": endpoints[0],
+        "status": statuses[0],
+        "buildkit_versions": versions,
+    }
+
+
 class Builder:
     def __init__(self, policy: dict[str, Any], output: Path) -> None:
         self.policy = policy
@@ -180,19 +201,11 @@ class Builder:
         help_text = self.docker(["buildx", "build", "--help"], "buildx-help.txt")
         if "--resource" not in help_text:
             raise ValueError("Per-step build resource support required")
-        buildkit = json.loads(
-            self.docker(
-                ["buildx", "inspect", self.context, "--format", "{{json .}}"],
-                "buildkit-before.json",
-            )
+        buildkit_text = self.docker(
+            ["buildx", "inspect", self.context], "buildkit-before.txt"
         )
-        nodes = buildkit.get("Nodes", [])
-        if (
-            buildkit.get("Driver") != "docker"
-            or len(nodes) != 1
-            or nodes[0].get("Endpoint") not in {self.context, endpoint}
-        ):
-            raise ValueError("Builder must use the pinned local engine context")
+        buildkit = parse_buildkit_inspect(buildkit_text, self.context, endpoint)
+        json_write(self.output / "buildkit-before.json", buildkit)
         import shutil
 
         if shutil.disk_usage(self.output).free < policy["minimum_free_disk_bytes"]:
