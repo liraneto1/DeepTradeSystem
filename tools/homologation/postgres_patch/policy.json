@@ -1,0 +1,51 @@
+{
+  "candidate": "a26c0a86ade2ec64d14c4bb06e27c93b2aea5205",
+  "parent_server_id": "sha256:750c0c91aac5f4ec3b33942d74da652ef6c393f8572d21e9e46f5f0d6cdd780f",
+  "parent_tar_sha256": "05077379fc3442d11607a4634661a5ab0e55586d97a523794fd81de50cab7a5a",
+  "runtime_id": "sha256:cf6e38c179717e442524e69b4062b34d2470eb6f873ce55641548da4f211b088",
+  "runtime_tar_sha256": "f41d02884114d833def58d590c807dd011b683862597e2b687325f3e3a4293b5",
+  "test_id": "sha256:0fad8299e9f2f3e3218c2391b4372ace68a450f40f8631725b863a7fe9e684d8",
+  "test_tar_sha256": "e3cbc5e304e04bd6858f32dcdd078ec2f10d521203b0a5c02e54e7de9243587a",
+  "package_sha256": "8a25b97b30959db7f25cadbed41c753d6dca05a563b27ecabbd593ea6dec1924",
+  "gosu_sha256": "99450e87c219ee02cf76f2a34285c75036e74de7c2d1831e8e129ff9ba45e1cb",
+  "postgres_sha256": "0d21e79710dd311f8ae671c0a4cda5b622652dfe7ddc624a019590c59a694c93",
+  "artifacts": [
+    {
+      "id": 14371759521,
+      "sha256": "97ffda0ceabda3a73684598539083990facfd0def0d34bb136911d049dccb9f4"
+    },
+    {
+      "id": 14471543278,
+      "sha256": "7519fb82ff5502ccaa94664e739eb300b1e5fd99785f3e7df501eaa4a82f210e"
+    }
+  ],
+  "apks": [
+    {
+      "name": "libcrypto3",
+      "version": "3.5.9-r1",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/libcrypto3-3.5.9-r1.apk",
+      "sha256": "042026082cc9bc7872d1baa81755c50efa70b05f03b5369fdc5f0a1303009720",
+      "bytes": 1980117
+    },
+    {
+      "name": "libssl3",
+      "version": "3.5.9-r1",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/libssl3-3.5.9-r1.apk",
+      "sha256": "18c5778cbe52e1991303f8531970b05d4e6e036ea08349322f7422f42a689dc7",
+      "bytes": 382098
+    }
+  ],
+  "alpine_aports_commit": "0f4c7e8d0f5f7cebbdc2156eca4391080b732bf2",
+  "scanner": "aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb",
+  "target_cves": [
+    "CVE-2026-88822",
+    "CVE-2026-88823",
+    "CVE-2026-95691",
+    "CVE-2026-95692",
+    "CVE-2026-107496"
+  ],
+  "context": "dts-hml-builder",
+  "backup_automation": "DEFERRED_BY_USER",
+  "vps_access": false,
+  "registry_push": false
+}

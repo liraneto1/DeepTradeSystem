@@ -1,5 +1,5 @@
-# Published manual builder; no VPS deployment.
-name: HML test image build and freeze
+# Separate manual PostgreSQL patch builder; no VPS action or registry push.
+name: PostgreSQL OpenSSL patch and isolated pair tests
 on:
   workflow_dispatch:
     inputs:
@@ -8,21 +8,22 @@ on:
         required: true
         type: string
       authorization:
-        description: "TS-PLAN-HML-002:build-test-image"
+        description: "TS-PLAN-HML-002:patch-postgres"
         required: true
         type: string
 
 permissions:
   contents: read
+  actions: read
 concurrency:
-  group: hml-test-image-${{ github.ref }}
+  group: postgres-openssl-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  build-test-image:
+  postgres-patch:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Validate explicit request before checkout/setup
         env:
@@ -31,7 +32,7 @@ jobs:
           ACTUAL_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          test "$AUTHORIZATION" = 'TS-PLAN-HML-002:build-test-image'
+          test "$AUTHORIZATION" = 'TS-PLAN-HML-002:patch-postgres'
           [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
           test "$ACTUAL_SHA" = "$EXPECTED_COMMIT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -59,23 +60,21 @@ jobs:
           endpoint: dts-hml-builder
           use: false
           cache-binary: false
-      - name: Build, verify and freeze for review
+      - name: Patch, scan and test in the separate disposable builder
         env:
+          GH_ARTIFACT_TOKEN: ${{ github.token }}
           HML_BUILD_AUTHORIZATION: ${{ inputs.authorization }}
           HML_REVIEWED_COMMIT: ${{ inputs.reviewed_commit }}
           LIVE_ENABLED: "false"
           TRADE_SYSTEM_ENVIRONMENT: PAPER
         run: |
-          python3 -B tools/homologation/builder/materialize.py --output "$RUNNER_TEMP/hml-reviewed-input"
-          python3 -B tools/homologation/builder/build_test_image.py \
-            --package "$RUNNER_TEMP/hml-reviewed-input" \
-            --output "$RUNNER_TEMP/hml-test-image"
+          python3 -B tools/homologation/postgres_patch/build_and_test.py
       - name: Preserve complete review artifact
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: hml-test-image-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/hml-test-image/
+          name: postgres-openssl-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/postgres-openssl-review/
           retention-days: 14
           compression-level: 0
           if-no-files-found: error
@@ -84,11 +83,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: hml-test-image-failed-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/hml-test-image/*.log
-            ${{ runner.temp }}/hml-test-image/*.json
-            ${{ runner.temp }}/hml-test-image/*.txt
+          name: postgres-openssl-failed-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/postgres-openssl-review/
           retention-days: 14
           if-no-files-found: ignore
           include-hidden-files: false
