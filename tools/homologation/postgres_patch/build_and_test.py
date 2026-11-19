@@ -60,6 +60,19 @@ def validate_package_changes(
     return removed, added
 
 
+def compose_job_arguments(project: str, service: str, action: str) -> list[str]:
+    return [
+        "run",
+        "--no-deps",
+        "--name",
+        project + "-" + action,
+        "--env",
+        "RUFF_NO_CACHE=true",
+        service,
+        action,
+    ]
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -496,6 +509,26 @@ class Build:
             return trial.command(["docker", "--context", self.context, *args], **kwargs)
 
         trial.docker = docker
+
+        def job(service: str, action: str) -> None:
+            trial.compose(
+                *compose_job_arguments(trial.project, service, action),
+                log=action + ".log",
+                timeout=1200,
+            )
+            trial.record_state(action, "IN_PROGRESS")
+
+        trial.job = job
+        write(
+            self.output / "BUILDER-ADJUSTMENTS.json",
+            {
+                "RUFF_NO_CACHE": {"original": "1", "builder_job_override": "true"},
+                "reason": "Ruff boolean parser rejects 1; same no-cache intent",
+                "approved_package_unchanged": True,
+                "client_images_unchanged": True,
+                "scope": "disposable builder job invocation only",
+            },
+        )
 
         def assert_postgres() -> None:
             obj = json.loads(trial.docker("inspect", trial.postgres_id()).stdout)[0]

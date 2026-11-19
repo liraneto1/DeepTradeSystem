@@ -25,6 +25,13 @@ class PatchSafetyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.validate_package_changes(before, after[:-1])
 
+    def test_compose_job_passes_the_ruff_boolean_without_changing_the_service(self):
+        args = module.compose_job_arguments("project", "tests", "base")
+        self.assertEqual(args[-2:], ["tests", "base"])
+        self.assertEqual(args[args.index("--env") + 1], "RUFF_NO_CACHE=true")
+        self.assertEqual(args[args.index("--name") + 1], "project-base")
+        self.assertNotIn("--privileged", args)
+
     def test_zip_rejects_traversal_absolute_and_windows_paths(self):
         for name in [
             "../escape",
