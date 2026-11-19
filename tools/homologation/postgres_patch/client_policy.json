@@ -1,0 +1,71 @@
+{
+  "authorization": "TS-PLAN-HML-002:patch-clients",
+  "candidate": "a26c0a86ade2ec64d14c4bb06e27c93b2aea5205",
+  "package_sha256": "8a25b97b30959db7f25cadbed41c753d6dca05a563b27ecabbd593ea6dec1924",
+  "parent_runtime_id": "sha256:cf6e38c179717e442524e69b4062b34d2470eb6f873ce55641548da4f211b088",
+  "parent_runtime_tar_sha256": "f41d02884114d833def58d590c807dd011b683862597e2b687325f3e3a4293b5",
+  "parent_test_id": "sha256:0fad8299e9f2f3e3218c2391b4372ace68a450f40f8631725b863a7fe9e684d8",
+  "parent_test_tar_sha256": "e3cbc5e304e04bd6858f32dcdd078ec2f10d521203b0a5c02e54e7de9243587a",
+  "server_id": "sha256:db54f26c3e463543e0726c3b7a066661bc12a8380590aa5e20defc0e6ce34e63",
+  "server_tar_sha256": "1c20b970669448069100e99ec285f966ef5ab5c78f0a802dd4afc01112dae70d",
+  "artifacts": [
+    {
+      "id": 14371759521,
+      "sha256": "97ffda0ceabda3a73684598539083990facfd0def0d34bb136911d049dccb9f4"
+    },
+    {
+      "id": 14471543278,
+      "sha256": "7519fb82ff5502ccaa94664e739eb300b1e5fd99785f3e7df501eaa4a82f210e"
+    },
+    {
+      "id": 14559149918,
+      "sha256": "6df3f1a9f48f6381a9faeffe81e03c171848f8a8f57a53d774e7da1dbd4eb1bd"
+    }
+  ],
+  "apks": [
+    {
+      "name": "libcrypto3",
+      "version": "3.5.9-r1",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/libcrypto3-3.5.9-r1.apk",
+      "sha256": "042026082cc9bc7872d1baa81755c50efa70b05f03b5369fdc5f0a1303009720",
+      "bytes": 1980117
+    },
+    {
+      "name": "libssl3",
+      "version": "3.5.9-r1",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/libssl3-3.5.9-r1.apk",
+      "sha256": "18c5778cbe52e1991303f8531970b05d4e6e036ea08349322f7422f42a689dc7",
+      "bytes": 382098
+    },
+    {
+      "name": "openssl-dev",
+      "version": "3.5.9-r1",
+      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/openssl-dev-3.5.9-r1.apk",
+      "sha256": "6a5734c3a00cf03aaa9cb0f4ff8c6d12d3b0c0c5f1490a3491eaf13a16ae044c",
+      "bytes": 365989
+    }
+  ],
+  "allowed_package_updates": {
+    "runtime": [
+      "libcrypto3",
+      "libssl3"
+    ],
+    "test": [
+      "libcrypto3",
+      "libssl3",
+      "openssl-dev"
+    ]
+  },
+  "expected_library_hashes": {
+    "libcrypto.so.3": "d3170451aed163f70460726a08bfadd8c899d0ca43ea9b6105eaa45d3d1aa5c0",
+    "libssl.so.3": "6f35d9d1edb0f75228af331a88d740a891753a4fed32a1fccdbf8bf9183cd3cd"
+  },
+  "aports_commit": "0f4c7e8d0f5f7cebbdc2156eca4391080b732bf2",
+  "scanner": "aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb",
+  "context": "dts-hml-builder",
+  "backup_automation": "DEFERRED_BY_USER",
+  "vps_access": false,
+  "registry_push": false,
+  "persistent_adoption": false,
+  "setuptools": "Unchanged; existing Linux-specific disposition remains for review; no new blanket ignore"
+}

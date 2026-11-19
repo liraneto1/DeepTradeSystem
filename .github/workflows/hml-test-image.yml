@@ -1,5 +1,5 @@
-# Separate manual PostgreSQL patch builder; no VPS action or registry push.
-name: PostgreSQL OpenSSL patch and isolated pair tests
+# Separate manual client patch builder; no VPS action or registry push.
+name: Client OpenSSL patch and isolated pair tests
 on:
   workflow_dispatch:
     inputs:
@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       authorization:
-        description: "TS-PLAN-HML-002:patch-postgres"
+        description: "TS-PLAN-HML-002:patch-clients"
         required: true
         type: string
 
@@ -16,11 +16,11 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: postgres-openssl-${{ github.ref }}
+  group: client-openssl-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  postgres-patch:
+  client-patch:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -32,7 +32,7 @@ jobs:
           ACTUAL_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          test "$AUTHORIZATION" = 'TS-PLAN-HML-002:patch-postgres'
+          test "$AUTHORIZATION" = 'TS-PLAN-HML-002:patch-clients'
           [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
           test "$ACTUAL_SHA" = "$EXPECTED_COMMIT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -68,13 +68,13 @@ jobs:
           LIVE_ENABLED: "false"
           TRADE_SYSTEM_ENVIRONMENT: PAPER
         run: |
-          python3 -B tools/homologation/postgres_patch/build_and_test.py
+          python3 -B tools/homologation/postgres_patch/client_build_and_test.py
       - name: Preserve complete review artifact
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: postgres-openssl-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/postgres-openssl-review/
+          name: client-openssl-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/client-openssl-review/
           retention-days: 14
           compression-level: 0
           if-no-files-found: error
@@ -83,8 +83,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: postgres-openssl-failed-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/postgres-openssl-review/
+          name: client-openssl-failed-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/client-openssl-review/
           retention-days: 14
           if-no-files-found: ignore
           include-hidden-files: false
